@@ -4,11 +4,17 @@ import { useState } from "react";
 
 export default function Home() {
   const [eventNumber, setEventNumber] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = () => {
-    if (!eventNumber.trim()) return;
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!eventNumber) return;
+
+    await fetch("/api/parse-event", {
+      method: "POST",
+      body: JSON.stringify({ eventId: eventNumber }),
+    });
+
+    window.location.href = `/select`;
+    window.location.href = `/select?event=${eventNumber}`;
   };
 
   return (
@@ -18,49 +24,22 @@ export default function Home() {
           Введіть номер івенту
         </h1>
 
-        {!submitted && (
-          <>
-            <input
-              type="text"
-              value={eventNumber}
-              onChange={(e) => setEventNumber(e.target.value)}
-              placeholder="Наприклад: 12345"
-              className="w-full rounded-md border px-4 py-3 text-lg"
-            />
+        <>
+          <input
+            type="text"
+            value={eventNumber}
+            onChange={(e) => setEventNumber(e.target.value)}
+            placeholder="Наприклад: 12345"
+            className="w-full rounded-md border px-4 py-3 text-lg text-gray-900"
+          />
 
-            <button
-              onClick={handleSubmit}
-              className="w-full rounded-md bg-blue-600 py-3 text-white text-lg hover:bg-blue-700"
-            >
-              Відправити
-            </button>
-          </>
-        )}
-
-        {submitted && (
-          <div className="flex flex-col w-full gap-4">
-            <a
-              href={`/form?event=${eventNumber}`}
-              className="w-full rounded-md bg-green-600 py-3 text-white text-lg text-center hover:bg-green-700"
-            >
-              Заповнити форму
-            </a>
-
-            <a
-              href={`/results?event=${eventNumber}`}
-              className="w-full rounded-md bg-purple-600 py-3 text-white text-lg text-center hover:bg-purple-700"
-            >
-              Результати
-            </a>
-
-            <button
-              onClick={() => setSubmitted(false)}
-              className="mt-4 w-full rounded-md border border-gray-300 py-3 text-gray-700 hover:bg-gray-100"
-            >
-              Змінити номер івенту
-            </button>
-          </div>
-        )}
+          <button
+            onClick={handleSubmit}
+            className="w-full rounded-md bg-blue-600 py-3 text-white text-lg hover:bg-blue-700"
+          >
+            Відправити
+          </button>
+        </>
       </main>
     </div>
   );
