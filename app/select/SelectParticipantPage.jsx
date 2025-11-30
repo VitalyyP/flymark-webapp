@@ -20,8 +20,11 @@ export default function SelectParticipantPage() {
     const load = async () => {
       const res = await fetch(`/api/participants?event=${eventId}`);
       const data = await res.json();
-      setParticipants(data);
-      setFiltered(data);
+
+      const cleaned = (data || []).filter((item) => typeof item === "string");
+
+      setParticipants(cleaned);
+      setFiltered(cleaned);
     };
 
     load();
@@ -65,7 +68,7 @@ export default function SelectParticipantPage() {
             className="w-full rounded-md border px-4 py-3 text-lg text-gray-900"
           />
 
-          {query.length > 0 && filtered.length > 0 && (
+          {query.length > 0 && (
             <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow max-h-64 overflow-y-auto">
               {filtered.map((p) => (
                 <li

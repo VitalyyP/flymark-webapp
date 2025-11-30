@@ -1,14 +1,28 @@
 import { google } from "googleapis";
+import { parseEvent } from "@/utils/parseEvent";
+import { saveToGoogleSheet } from "@/utils/saveToGoogleSheet";
+import { convertRowsToObjects } from "@/utils/convertRowsToObjects";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const eventId = searchParams.get("event");
 
   if (!eventId) {
-    return Response.json({ error: "Missing event parameter" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "Missing event parameter" }), {
+      status: 400,
+    });
   }
 
   try {
+    const parsedData = await parseEvent(eventId);
+
+    const data = convertRowsToObjects(parsedData);
+
+    await saveToGoogleSheet(data, {
+      sheetName: `${eventId}/A`,
+      clearBeforeWrite: true,
+    });
+
     const auth = new google.auth.GoogleAuth({
       credentials: {
         type: "service_account",
@@ -30,15 +44,20 @@ export async function GET(req) {
 
     const DANCER_COLUMN_INDEX = 7;
 
-    const filtered = rows
+    const participants = rows
       .map((row) => row[DANCER_COLUMN_INDEX])
       .filter(Boolean);
 
-    const unique = [...new Set(filtered)];
+    const uniqueParticipants = [...new Set(participants)];
 
-    return Response.json(unique);
+    return new Response(JSON.stringify(uniqueParticipants), {
+      status: 200,
+    });
   } catch (err) {
-    console.error("Google Sheets error:", err);
-    return Response.json({ error: "Failed to load sheet" }, { status: 500 });
+    console.error("Error parsing/saving/fetching participants:", err);
+    return new Response(
+      JSON.stringify({ error: "Failed to load participants" }),
+      { status: 500 }
+    );
   }
 }
