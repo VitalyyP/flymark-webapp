@@ -51,12 +51,10 @@ export default function ResultsClient() {
   return (
     <div className="p-6 flex flex-col items-center min-h-screen bg-zinc-100">
       <h1 className="text-2xl font-semibold mb-4 text-black text-center">
-        Учасники на {time}
+        Учасники на {time || "—"}
       </h1>
 
-      {loading ? (
-        <p>Завантаження...</p>
-      ) : (
+      {participants.length > 0 && (
         <table className="border-collapse border border-gray-400 text-black">
           <thead>
             <tr>
@@ -96,9 +94,14 @@ export default function ResultsClient() {
 
       <button
         onClick={() => router.back()}
-        className="mt-8 px-4 py-2 bg-gray-200 rounded text-black hover:bg-gray-300"
+        disabled={loading}
+        className={`mt-8 px-4 py-2 rounded text-black ${
+          loading
+            ? "bg-gray-300 cursor-not-allowed"
+            : "bg-gray-200 hover:bg-gray-300"
+        }`}
       >
-        ← Повернутись назад
+        {loading ? "Завантаження..." : "← Повернутись назад"}
       </button>
     </div>
   );
