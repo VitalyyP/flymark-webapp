@@ -35,8 +35,15 @@ export default function SelectParticipantPage() {
     setFiltered(f);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!selected) return;
+
+    const button = e.currentTarget;
+    button.textContent = "Відправляю...";
+    button.classList.remove("bg-blue-600", "hover:bg-blue-700");
+    button.classList.add("bg-gray-400", "cursor-not-allowed");
+
     router.push(
       `/form?event=${eventId}&participant=${encodeURIComponent(selected)}`
     );
