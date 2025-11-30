@@ -19,6 +19,8 @@ export default function ParticipantForm({ name, results = [] }) {
   }
 
   const handleSubmit = async () => {
+    if (!canSubmit) return;
+
     setSending(true);
     setSuccess(false);
 
@@ -49,6 +51,8 @@ export default function ParticipantForm({ name, results = [] }) {
       setEmail("");
     }
   };
+
+  const canSubmit = regNumber && orderType && phone && email && !sending;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
@@ -94,7 +98,9 @@ export default function ParticipantForm({ name, results = [] }) {
               <input
                 type="number"
                 value={regNumber}
-                onChange={(e) => setRegNumber(e.target.value)}
+                onChange={(e) =>
+                  setRegNumber(e.target.value.replace(/\D/g, ""))
+                }
                 className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
               />
             </div>
@@ -134,7 +140,7 @@ export default function ParticipantForm({ name, results = [] }) {
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                 className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
               />
             </div>
@@ -144,15 +150,21 @@ export default function ParticipantForm({ name, results = [] }) {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  setEmail(e.target.value.replace(/[^a-zA-Z@._-]/g, ""))
+                }
                 className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
               />
             </div>
 
             <button
               onClick={handleSubmit}
-              disabled={sending}
-              className="w-full bg-blue-600 text-white text-lg py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              disabled={!canSubmit}
+              className={`w-full text-white text-lg py-3 rounded-md ${
+                sending
+                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } disabled:bg-gray-400`}
             >
               {sending ? "Відправляю..." : "Відправити"}
             </button>
