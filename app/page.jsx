@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Copy } from "lucide-react";
 
 export default function HomePage() {
   const [competitions, setCompetitions] = useState([]);
@@ -118,23 +119,44 @@ export default function HomePage() {
                   <span className="text-gray-500 md:ml-2">{c.CityName}</span>
                 </div>
 
-                <div className="flex gap-2 mt-2 md:mt-0">
-                  <button
-                    onClick={() =>
-                      router.push(`/select?event=${c.CompetitionId}`)
-                    }
-                    className="flex-1 md:flex-none bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-                  >
-                    Замовити
-                  </button>
-                  <button
-                    onClick={() =>
-                      router.push(`/parts?event=${c.CompetitionId}`)
-                    }
-                    className="flex-1 md:flex-none bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
-                  >
-                    Виконати
-                  </button>
+                <div className="flex gap-2 mt-2 md:mt-0 items-center">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        router.push(`/select?event=${c.CompetitionId}`)
+                      }
+                      className="flex-1 md:flex-none bg-blue-600 text-white py-2 px-4 rounded-md"
+                    >
+                      Замовити
+                    </button>
+
+                    <Copy
+                      className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                      onClick={() => {
+                        const link = `${window.location.origin}/select?event=${c.CompetitionId}`;
+                        navigator.clipboard.writeText(link);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        router.push(`/parts?event=${c.CompetitionId}`)
+                      }
+                      className="flex-1 md:flex-none bg-blue-600 text-white py-2 px-4 rounded-md"
+                    >
+                      Виконати
+                    </button>
+
+                    <Copy
+                      className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                      onClick={() => {
+                        const link = `${window.location.origin}/parts?event=${c.CompetitionId}`;
+                        navigator.clipboard.writeText(link);
+                      }}
+                    />
+                  </div>
                 </div>
               </li>
             ))}
