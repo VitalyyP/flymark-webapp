@@ -5,7 +5,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    const { eventId, name, items, regNumber, orderType, phone, email } = body;
+    const { eventId, name, items, regNumber, orderType, phone } = body;
 
     if (!name || !items || !Array.isArray(items)) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -19,7 +19,6 @@ export async function POST(req) {
         RegNumber: regNumber || "",
         OrderType: orderType || "",
         Phone: phone || "",
-        Email: email || "",
       };
     });
 

@@ -26,7 +26,6 @@ export default function ParticipantForm({
   const [regNumber, setRegNumber] = useState("");
   const [orderType, setOrderType] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -34,7 +33,7 @@ export default function ParticipantForm({
     return str.replace(/\s*\([^()]*\)$/, "");
   }
 
-  const canSubmit = regNumber && orderType && phone && email && !sending;
+  const canSubmit = regNumber && orderType && phone && !sending;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -55,7 +54,6 @@ export default function ParticipantForm({
         regNumber,
         orderType,
         phone,
-        email,
       }),
     });
 
@@ -66,7 +64,6 @@ export default function ParticipantForm({
       setRegNumber("");
       setOrderType("");
       setPhone("");
-      setEmail("");
     }
   };
 
@@ -166,18 +163,6 @@ export default function ParticipantForm({
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-lg mb-1">Емейл</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value.replace(/[^a-zA-Z@._-]/g, ""))
-                }
                 className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
               />
             </div>
