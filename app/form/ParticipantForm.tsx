@@ -1,12 +1,28 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 
-export default function ParticipantForm({ name, results = [] }) {
-  const searchParams = useSearchParams();
-  const eventId = searchParams.get("event");
+type ResultItem = {
+  category: string;
+  time: string;
+};
 
+type Props = {
+  name: string;
+  results: ResultItem[];
+  eventId: string;
+  eventName: string;
+  eventCoverUrl: string;
+};
+
+export default function ParticipantForm({
+  name,
+  results = [],
+  eventId,
+  eventName,
+  eventCoverUrl,
+}: Props) {
   const [regNumber, setRegNumber] = useState("");
   const [orderType, setOrderType] = useState("");
   const [phone, setPhone] = useState("");
@@ -14,9 +30,11 @@ export default function ParticipantForm({ name, results = [] }) {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  function removeLastBracket(str) {
+  function removeLastBracket(str: string) {
     return str.replace(/\s*\([^()]*\)$/, "");
   }
+
+  const canSubmit = regNumber && orderType && phone && email && !sending;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -52,8 +70,6 @@ export default function ParticipantForm({ name, results = [] }) {
     }
   };
 
-  const canSubmit = regNumber && orderType && phone && email && !sending;
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col gap-6">
@@ -66,6 +82,15 @@ export default function ParticipantForm({ name, results = [] }) {
           </div>
         ) : (
           <>
+            <Image
+              src={eventCoverUrl}
+              alt={eventName}
+              width={60}
+              height={90}
+              className="rounded-lg object-cover flex-shrink-0"
+              priority
+            />
+
             <h1 className="text-2xl font-semibold text-black text-center">
               Дані учасника
             </h1>

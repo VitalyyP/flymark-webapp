@@ -1,18 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useEventFromQuery } from "@/hooks/useEventFromQuery";
+import { encodeEvent } from "@/utils/eventPayload";
 
 export default function SelectParticipantPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const event = useEventFromQuery();
 
-  const eventId = searchParams.get("event");
-
-  const [participants, setParticipants] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [filtered, setFiltered] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
+
+  const eventId = event?.id ?? "";
+  const eventName = event?.name ?? "";
+  const coverUrl = event?.coverUrl ?? "";
 
   useEffect(() => {
     if (!eventId) return;
@@ -21,7 +26,9 @@ export default function SelectParticipantPage() {
       const res = await fetch(`/api/participants?event=${eventId}`);
       const data = await res.json();
 
-      const cleaned = (data || []).filter((item) => typeof item === "string");
+      const cleaned = (data || []).filter(
+        (item: unknown): item is string => typeof item === "string"
+      );
 
       setParticipants(cleaned);
       setFiltered(cleaned);
@@ -30,31 +37,56 @@ export default function SelectParticipantPage() {
     load();
   }, [eventId]);
 
-  const handleSearch = (value) => {
+  const handleSearch = (value: string) => {
     setQuery(value);
-    const f = participants.filter((name) =>
-      name.toLowerCase().includes(value.toLowerCase())
+    setFiltered(
+      participants.filter((name) =>
+        name.toLowerCase().includes(value.toLowerCase())
+      )
     );
-    setFiltered(f);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!selected) return;
+  const handleSubmit = () => {
+    if (!selected || !event) return;
 
-    const button = e.currentTarget;
-    button.textContent = "Відправляю...";
-    button.classList.remove("bg-blue-600", "hover:bg-blue-700");
-    button.classList.add("bg-gray-400", "cursor-not-allowed");
+    const encodedEvent = encodeEvent({
+      id: event.id,
+      name: event.name,
+      coverUrl: event.coverUrl,
+    });
 
     router.push(
-      `/form?event=${eventId}&participant=${encodeURIComponent(selected)}`
+      `/form?event=${encodeURIComponent(
+        encodedEvent
+      )}&participant=${encodeURIComponent(selected)}`
     );
   };
+
+  if (!event) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-lg text-gray-600">Подію не знайдено</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col gap-6">
+        <div className="flex items-center gap-4">
+          <Image
+            src={coverUrl}
+            alt={eventName}
+            width={60}
+            height={90}
+            className="rounded-lg object-cover flex-shrink-0"
+            priority
+          />
+          <span className="font-semibold text-gray-900 truncate">
+            {eventName}
+          </span>
+        </div>
+
         <h1 className="text-2xl font-semibold text-black text-center">
           Виберіть учасника
         </h1>
@@ -68,7 +100,7 @@ export default function SelectParticipantPage() {
             className="w-full rounded-md border px-4 py-3 text-lg text-gray-900"
           />
 
-          {query.length > 0 && (
+          {query.length > 0 && filtered.length > 0 && (
             <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow max-h-64 overflow-y-auto">
               {filtered.map((p) => (
                 <li
@@ -89,8 +121,8 @@ export default function SelectParticipantPage() {
 
         <button
           onClick={handleSubmit}
-          className="w-full rounded-md bg-blue-600 py-3 text-white text-lg hover:bg-blue-700 disabled:bg-gray-400"
           disabled={!selected}
+          className="w-full rounded-md bg-green-600 py-3 text-white text-lg hover:bg-green-500 disabled:bg-gray-400"
         >
           Відправити
         </button>

@@ -25,6 +25,9 @@ export default function HomePage() {
     zaporizhzhia: { id: 1756, name: "Запоріжжя" },
   };
 
+  const encodeEvent = (event) =>
+    btoa(unescape(encodeURIComponent(JSON.stringify(event))));
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -105,9 +108,15 @@ export default function HomePage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:w-auto">
                   <div className="relative flex items-center gap-2">
                     <button
-                      onClick={() =>
-                        router.push(`/select?event=${c.CompetitionId}`)
-                      }
+                      onClick={() => {
+                        const payload = encodeEvent({
+                          id: c.CompetitionId,
+                          name: c.CompetitionName,
+                          coverUrl: c.CoverPhoto,
+                        });
+
+                        router.push(`/select?event=${payload}`);
+                      }}
                       className="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                     >
                       Замовити
