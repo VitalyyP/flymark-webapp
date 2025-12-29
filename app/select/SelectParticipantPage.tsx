@@ -72,60 +72,63 @@ export default function SelectParticipantPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
-      <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <Image
-            src={coverUrl}
-            alt={eventName}
-            width={60}
-            height={90}
-            className="rounded-lg object-cover flex-shrink-0"
-            priority
-          />
-          <span className="font-semibold text-gray-900 truncate">
+      <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col items-center gap-25">
+        <div className="flex flex-col items-center gap-31">
+          <div className="w-55 h-55 rounded-full overflow-hidden">
+            <Image
+              src={coverUrl}
+              alt={eventName}
+              width={220}
+              height={220}
+              className="object-cover w-full h-full"
+              priority
+            />
+          </div>
+          <span className="text-3xl tracking-wider text-gray-900 truncate text-center">
             {eventName}
           </span>
         </div>
+        <div className="flex flex-col gap-8 w-full">
+          <h1 className="text-xl tracking-wider text-black">
+            Введіть прізвище/імʼя спортсмена (-ів)
+          </h1>
 
-        <h1 className="text-2xl font-semibold text-black text-center">
-          Виберіть учасника
-        </h1>
+          <div className="relative flex flex-col gap-6 w-full">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Оберіть учасника"
+              className="w-full rounded-md border px-4 py-3 text-xl tracking-wider text-gray-900"
+            />
 
-        <div className="relative">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Введіть ім’я учасника"
-            className="w-full rounded-md border px-4 py-3 text-lg text-gray-900"
-          />
+            {query.length > 0 && filtered.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow max-h-64 overflow-y-auto">
+                {filtered.map((p) => (
+                  <li
+                    key={p}
+                    onClick={() => {
+                      setSelected(p);
+                      setQuery(p);
+                      setFiltered([]);
+                    }}
+                    className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-gray-100"
+                  >
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            )}
 
-          {query.length > 0 && filtered.length > 0 && (
-            <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow max-h-64 overflow-y-auto">
-              {filtered.map((p) => (
-                <li
-                  key={p}
-                  onClick={() => {
-                    setSelected(p);
-                    setQuery(p);
-                    setFiltered([]);
-                  }}
-                  className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-gray-100"
-                >
-                  {p}
-                </li>
-              ))}
-            </ul>
-          )}
+            <button
+              onClick={handleSubmit}
+              disabled={!selected}
+              className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400"
+            >
+              Далі
+            </button>
+          </div>
         </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={!selected}
-          className="w-full rounded-md bg-green-600 py-3 text-white text-lg hover:bg-green-500 disabled:bg-gray-400"
-        >
-          Відправити
-        </button>
       </main>
     </div>
   );
