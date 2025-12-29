@@ -14,7 +14,7 @@
     "dotenv": "^17.2.3",
     "googleapis": "^166.0.0",
     "lucide-react": "^0.556.0",
-    "next": "16.0.3",
+    "next": "16.0.10",
     "puppeteer": "^24.31.0",
     "react": "19.2.0",
     "react-dom": "19.2.0"
