@@ -13,7 +13,7 @@ type Props = {
   results: ResultItem[];
   eventId: string;
   eventName: string;
-  eventCoverUrl: string;
+  coverUrl: string;
 };
 
 export default function ParticipantForm({
@@ -21,7 +21,7 @@ export default function ParticipantForm({
   results = [],
   eventId,
   eventName,
-  eventCoverUrl,
+  coverUrl,
 }: Props) {
   const [regNumber, setRegNumber] = useState("");
   const [orderType, setOrderType] = useState("");
@@ -79,16 +79,23 @@ export default function ParticipantForm({
           </div>
         ) : (
           <>
-            <Image
-              src={eventCoverUrl}
-              alt={eventName}
-              width={60}
-              height={90}
-              className="rounded-lg object-cover flex-shrink-0"
-              priority
-            />
+            <div className="flex flex-col items-center gap-31">
+              <div className="w-55 h-55 rounded-full overflow-hidden">
+                <Image
+                  src={coverUrl}
+                  alt={eventName}
+                  width={220}
+                  height={220}
+                  className="object-cover w-full h-full"
+                  priority
+                />
+              </div>
+              <span className="text-3xl tracking-wider text-gray-900 truncate text-center">
+                {eventName}
+              </span>
+            </div>
 
-            <h1 className="text-2xl font-semibold text-black text-center">
+            <h1 className="text-2xl text-wider text-black text-center">
               Дані учасника
             </h1>
 
