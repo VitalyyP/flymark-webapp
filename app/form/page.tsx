@@ -10,6 +10,15 @@ type PageProps = {
   searchParams: Promise<SearchParams>;
 };
 
+export type ParticipantResult = {
+  category: string;
+  time: string;
+};
+
+export type GetParticipantResponse = {
+  results: ParticipantResult[];
+};
+
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
 
@@ -22,7 +31,7 @@ export default async function Page({ searchParams }: PageProps) {
     return <div>Некоректні параметри</div>;
   }
 
-  let data: any;
+  let data: GetParticipantResponse = { results: [] };
 
   try {
     const res = await fetch(
@@ -33,7 +42,7 @@ export default async function Page({ searchParams }: PageProps) {
     );
 
     if (res.ok) {
-      data = await res.json();
+      data = (await res.json()) as GetParticipantResponse;
     }
   } catch {
     return <div>Помилка завантаження</div>;
@@ -42,7 +51,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <ParticipantForm
       name={name}
-      results={data?.results}
+      results={data.results}
       eventId={event.id}
       eventName={event.name}
       coverUrl={event.coverUrl}
