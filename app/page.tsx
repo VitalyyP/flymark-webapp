@@ -92,13 +92,16 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-5xl bg-white p-8 rounded-xl shadow flex flex-col gap-6">
+        <h1 className="text-2xl text-wider text-black text-center">
+          Перелік змагань
+        </h1>
         {loading && (
           <p className="text-center text-gray-700">Завантаження...</p>
         )}
 
         {!loading && competitions.length > 0 && (
           <>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-center gap-2 mb-4">
               <CustomCheckbox
                 checked={hideMarked}
                 onChange={() => setHideMarked(!hideMarked)}
