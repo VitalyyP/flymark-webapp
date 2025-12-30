@@ -28,6 +28,13 @@ export default function ParticipantForm({
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const handleCategoryToggle = (category: string, checked: boolean) => {
+    setSelectedCategories((prev) =>
+      checked ? [...prev, category] : prev.filter((c) => c !== category)
+    );
+  };
 
   function removeLastBracket(str: string) {
     return str.replace(/\s*\([^()]*\)$/, "");
@@ -47,10 +54,12 @@ export default function ParticipantForm({
       body: JSON.stringify({
         eventId,
         name,
-        items: results.map((r) => ({
-          category: removeLastBracket(r.category),
-          time: r.time,
-        })),
+        items: results
+          .filter((r) => selectedCategories.includes(r.category))
+          .map((r) => ({
+            category: removeLastBracket(r.category),
+            time: r.time,
+          })),
         regNumber,
         orderType,
         phone,
@@ -107,16 +116,34 @@ export default function ParticipantForm({
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg mb-1">
+              <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Категорії / Час:
               </label>
 
-              <ul className="list-disc pl-6 text-gray-900 text-lg bg-gray-100 border rounded-md px-4 py-3">
-                {results.map((r, i) => (
-                  <li key={i}>
-                    {removeLastBracket(r.category)} / {r.time}
-                  </li>
-                ))}
+              <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
+                {results.map((r, i) => {
+                  const itemId = `category-${i}`;
+                  return (
+                    <li key={i} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={itemId}
+                        value={r.category}
+                        checked={selectedCategories.includes(r.category)}
+                        onChange={(e) =>
+                          handleCategoryToggle(r.category, e.target.checked)
+                        }
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor={itemId}
+                        className="text-gray-900 cursor-pointer select-none"
+                      >
+                        {removeLastBracket(r.category)} / {r.time}
+                      </label>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
