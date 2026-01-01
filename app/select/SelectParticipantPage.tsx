@@ -72,7 +72,7 @@ export default function SelectParticipantPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
-      <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col items-center gap-25">
+      <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col items-center gap-12">
         <div className="flex flex-col items-center gap-31">
           <div className="w-55 h-55 rounded-full overflow-hidden">
             <Image
@@ -89,9 +89,12 @@ export default function SelectParticipantPage() {
           </span>
         </div>
         <div className="flex flex-col gap-8 w-full">
-          <h1 className="text-xl tracking-wider text-black">
-            Введіть прізвище/імʼя спортсмена (-ів)
+          <h1 className="text-2xl tracking-wider text-black text-center">
+            Запис на фото
           </h1>
+          <span className="text-xl tracking-wider text-black">
+            Введіть прізвище/імʼя спортсмена (-ів)
+          </span>
 
           <div className="relative flex flex-col gap-6 w-full">
             <input
