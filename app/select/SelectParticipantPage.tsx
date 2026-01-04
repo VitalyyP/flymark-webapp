@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEventFromQuery } from "@/hooks/useEventFromQuery";
@@ -11,7 +11,6 @@ export default function SelectParticipantPage() {
   const event = useEventFromQuery();
 
   const [participants, setParticipants] = useState<string[]>([]);
-  const [filtered, setFiltered] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
 
@@ -31,19 +30,26 @@ export default function SelectParticipantPage() {
       );
 
       setParticipants(cleaned);
-      setFiltered(cleaned);
     };
 
     load();
   }, [eventId]);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+
+    return participants.filter((name) =>
+      name
+        .toLowerCase()
+        .split(" ")
+        .some((part) => part.startsWith(q))
+    );
+  }, [participants, query]);
+
   const handleSearch = (value: string) => {
     setQuery(value);
-    setFiltered(
-      participants.filter((name) =>
-        name.toLowerCase().includes(value.toLowerCase())
-      )
-    );
+    setSelected("");
   };
 
   const handleSubmit = () => {
@@ -84,7 +90,7 @@ export default function SelectParticipantPage() {
               priority
             />
           </div>
-          <span className="text-3xl tracking-wider text-gray-900 truncate text-center">
+          <span className="text-3xl tracking-wider text-gray-900 text-center break-words line-clamp-2 max-w-full">
             {eventName}
           </span>
         </div>
@@ -96,32 +102,33 @@ export default function SelectParticipantPage() {
             Введіть прізвище/імʼя спортсмена (-ів)
           </span>
 
-          <div className="relative flex flex-col gap-6 w-full">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Оберіть учасника"
-              className="w-full rounded-md border px-4 py-3 text-xl tracking-wider text-gray-900"
-            />
+          <div className="flex flex-col gap-6 w-full">
+            <div className="relative w-full">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Оберіть учасника"
+                className="w-full rounded-md border px-4 py-3 text-xl tracking-wider text-gray-900"
+              />
 
-            {query.length > 0 && filtered.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 shadow max-h-64 overflow-y-auto">
-                {filtered.map((p) => (
-                  <li
-                    key={p}
-                    onClick={() => {
-                      setSelected(p);
-                      setQuery(p);
-                      setFiltered([]);
-                    }}
-                    className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-gray-100"
-                  >
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            )}
+              {query && filtered.length > 0 && (
+                <ul className="absolute top-full left-0 z-20 mt-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
+                  {filtered.map((p) => (
+                    <li
+                      key={p}
+                      onClick={() => {
+                        setSelected(p);
+                        setQuery(p);
+                      }}
+                      className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-gray-100"
+                    >
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             <button
               onClick={handleSubmit}

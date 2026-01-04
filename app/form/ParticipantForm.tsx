@@ -113,7 +113,7 @@ export default function ParticipantForm({
                   priority
                 />
               </div>
-              <span className="text-3xl tracking-wider text-gray-900 truncate text-center">
+              <span className="text-3xl tracking-wider text-gray-900 text-center break-words line-clamp-2 max-w-full">
                 {eventName}
               </span>
             </div>
