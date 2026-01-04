@@ -13,6 +13,10 @@ type PageProps = {
 export type ParticipantResult = {
   category: string;
   time: string;
+  dancer1Name: string;
+  dancer2Name?: string;
+  regNumber?: string;
+  orderType?: string;
 };
 
 export type GetParticipantResponse = {
@@ -31,7 +35,7 @@ export default async function Page({ searchParams }: PageProps) {
     return <div>Некоректні параметри</div>;
   }
 
-  let data: GetParticipantResponse = { results: [] };
+  const data: GetParticipantResponse = { results: [] };
 
   try {
     const res = await fetch(
@@ -42,9 +46,11 @@ export default async function Page({ searchParams }: PageProps) {
     );
 
     if (res.ok) {
-      data = (await res.json()) as GetParticipantResponse;
+      const json = await res.json();
+      data.results = json.results || [];
     }
-  } catch {
+  } catch (err) {
+    console.error("Помилка завантаження учасників:", err);
     return <div>Помилка завантаження</div>;
   }
 

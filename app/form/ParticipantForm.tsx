@@ -6,6 +6,8 @@ import Image from "next/image";
 type ResultItem = {
   category: string;
   time: string;
+  dancer1Name: string;
+  dancer2Name?: string;
 };
 
 type Props = {
@@ -36,11 +38,19 @@ export default function ParticipantForm({
     );
   };
 
-  function removeLastBracket(str: string) {
-    return str.replace(/\s*\([^()]*\)$/, "");
-  }
+  const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
   const canSubmit = regNumber && orderType && phone && !sending;
+
+  const secondName: string = (() => {
+    const r = results[0];
+    if (!r) return "";
+
+    if (r.dancer1Name && r.dancer1Name !== name) return r.dancer1Name;
+    if (r.dancer2Name && r.dancer2Name !== name) return r.dancer2Name;
+
+    return "";
+  })();
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -48,22 +58,25 @@ export default function ParticipantForm({
     setSending(true);
     setSuccess(false);
 
+    const payload = {
+      eventId: Number(eventId),
+      name,
+      secondName,
+      items: results
+        .filter((r) => selectedCategories.includes(r.category))
+        .map((r) => ({
+          category: removeLastBracket(r.category),
+          time: r.time,
+        })),
+      regNumber: regNumber || "",
+      orderType: orderType || "",
+      phone: phone || "",
+    };
+
     const res = await fetch("/api/save-form", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventId,
-        name,
-        items: results
-          .filter((r) => selectedCategories.includes(r.category))
-          .map((r) => ({
-            category: removeLastBracket(r.category),
-            time: r.time,
-          })),
-        regNumber,
-        orderType,
-        phone,
-      }),
+      body: JSON.stringify(payload),
     });
 
     setSending(false);
@@ -73,6 +86,7 @@ export default function ParticipantForm({
       setRegNumber("");
       setOrderType("");
       setPhone("");
+      setSelectedCategories([]);
     }
   };
 
@@ -88,7 +102,7 @@ export default function ParticipantForm({
           </div>
         ) : (
           <>
-            <div className="flex flex-col items-center gap-31">
+            <div className="flex flex-col items-center gap-6">
               <div className="w-55 h-55 rounded-full overflow-hidden">
                 <Image
                   src={coverUrl}
@@ -104,15 +118,26 @@ export default function ParticipantForm({
               </span>
             </div>
 
-            <h1 className="text-2xl text-wider text-black text-center">
-              Дані учасника
-            </h1>
+            <h1 className="text-2xl text-center text-black">Дані учасника</h1>
 
-            <div className="flex items-center gap-3">
-              <label className="text-gray-700 text-lg">Імʼя:</label>
-              <div className="rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100">
-                {name}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <label className="text-gray-700 text-lg whitespace-nowrap w-[52px]">
+                  Імʼя:
+                </label>
+                <div className="rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100 text-center flex-1">
+                  {name}
+                </div>
               </div>
+
+              {secondName && (
+                <div className="flex items-center gap-3">
+                  <div className="w-[52px]" />
+                  <div className="rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100 text-center flex-1">
+                    {secondName}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

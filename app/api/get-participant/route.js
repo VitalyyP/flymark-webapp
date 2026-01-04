@@ -46,16 +46,16 @@ export async function GET(request) {
     };
 
     for (const row of rows) {
-      const dancerName = row[7];
+      const dancer1 = row[7] || "";
+      const dancer2 = row[8] || "";
       const category = row[1];
 
-      if (
-        !dancerName ||
-        dancerName.trim().normalize("NFC") !== name.trim().normalize("NFC")
-      ) {
-        continue;
-      }
+      const normalizedName = name.trim().normalize("NFC");
+      const matches =
+        dancer1.trim().normalize("NFC") === normalizedName ||
+        dancer2.trim().normalize("NFC") === normalizedName;
 
+      if (!matches) continue;
       if (!category) continue;
 
       let time = null;
@@ -73,6 +73,8 @@ export async function GET(request) {
       results.push({
         category,
         time,
+        dancer1Name: dancer1,
+        dancer2Name: dancer2,
       });
     }
     return Response.json({ results });

@@ -42,11 +42,11 @@ export async function GET(req) {
 
     const rows = response.data.values || [];
 
-    const DANCER_COLUMN_INDEX = 7;
+    const DANCER_COLUMN_INDEXES = [7, 8];
 
-    const participants = rows
-      .map((row) => row[DANCER_COLUMN_INDEX])
-      .filter(Boolean);
+    const participants = rows.flatMap((row) =>
+      DANCER_COLUMN_INDEXES.map((i) => row[i]).filter(Boolean)
+    );
 
     const uniqueParticipants = [...new Set(participants)];
 
