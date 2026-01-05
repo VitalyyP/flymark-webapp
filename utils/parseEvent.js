@@ -3,7 +3,6 @@ import * as cheerio from "cheerio";
 
 async function fetchRegistrations(categoryId, competitionId) {
   const url = `https://flymark.com.ua/api/registration?categoryId=${categoryId}&competitionId=${competitionId}`;
-
   try {
     const { data } = await axios.get(url, {
       headers: {
@@ -11,19 +10,14 @@ async function fetchRegistrations(categoryId, competitionId) {
         "User-Agent": "Mozilla/5.0",
       },
     });
-
-    if (!data?.Registration) return [];
-
-    return data.Registration;
-  } catch (e) {
-    console.log(`Error in fetchRegistrations(${categoryId}):`, e.message);
+    return data?.Registration ?? [];
+  } catch {
     return [];
   }
 }
 
 export async function parseEvent(eventId) {
   const url = `https://flymark.com.ua/event/${eventId}`;
-
   try {
     const { data: html } = await axios.get(url, {
       headers: {
@@ -34,47 +28,49 @@ export async function parseEvent(eventId) {
     });
 
     const $ = cheerio.load(html);
+    const table = $("table").first();
+    if (!table.length) return [];
 
-    const table = $("table");
-    if (!table.length) {
-      console.log("Table not found!");
-      return [];
-    }
+    let headers = [];
+    table.find("thead tr").each((_, tr) => {
+      $(tr)
+        .find("th")
+        .each((_, th) => {
+          const text = $(th).text().replace(/\s+/g, " ").trim();
+          if (!/\d{1,2}\s[а-яіїє]+\s?,?\s?[а-яіїє]*/i.test(text)) {
+            headers.push(text);
+          }
+        });
+    });
 
-    const headers = [
-      "№",
-      "Categories",
-      "8:30 ",
-      "10:30 ",
-      "14:30 ",
-      "17:30 ",
-      "19:30 ",
-      "Dancer1Name",
-      "Dancer2Name",
-    ];
+    let divisionCounter = 1;
+    headers = headers.map((h) => {
+      if (/^\d{2}:\d{2}$/.test(h)) {
+        return `${h} відділення ${divisionCounter++}`;
+      }
+      return h;
+    });
+
+    headers.push("Dancer1Name", "Dancer2Name");
 
     const trs = table.find("tbody tr").toArray();
     const rows = [];
+    let rowCounter = 1;
 
     for (const tr of trs) {
       const tds = $(tr).find("td");
-
       let categoryId = null;
       const baseRow = {};
 
       for (let i = 0; i < tds.length; i++) {
         const td = $(tds[i]);
-
         if (i === 1) {
           const a = td.find("a[data-ng-click]");
-          if (a.length) {
-            const attr = a.attr("data-ng-click");
-            const match = attr.match(/showDetails\('(\d+)'\)/);
-            if (match) categoryId = match[1];
-          }
+          const attr = a.attr("data-ng-click");
+          const match = attr?.match(/showDetails\('(\d+)'\)/);
+          if (match) categoryId = match[1];
         }
-
-        baseRow[headers[i] || `col_${i}`] = td.text().trim();
+        baseRow[headers[i] ?? `col_${i}`] = td.text().trim();
       }
 
       if (!categoryId) continue;
@@ -84,6 +80,7 @@ export async function parseEvent(eventId) {
       for (const reg of registrations) {
         rows.push({
           ...baseRow,
+          "№": rowCounter++,
           Dancer1Name: reg.Dancers?.[0]?.FullName || "",
           Dancer2Name: reg.Dancers?.[1]?.FullName || "",
         });
@@ -91,8 +88,7 @@ export async function parseEvent(eventId) {
     }
 
     return [headers, ...rows.map((row) => headers.map((h) => row[h] || ""))];
-  } catch (err) {
-    console.error("Помилка парсингу:", err.message);
+  } catch {
     return [];
   }
 }

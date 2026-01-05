@@ -33,16 +33,12 @@ export async function saveToGoogleSheet(
   );
 
   if (!sheetExists) {
-    console.log(`Creating sheet "${sheetName}"...`);
-
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
         requests: [
           {
-            addSheet: {
-              properties: { title: sheetName },
-            },
+            addSheet: { properties: { title: sheetName } },
           },
         ],
       },
@@ -53,7 +49,6 @@ export async function saveToGoogleSheet(
   if (rowsArray.length === 0) return { appended: 0 };
 
   const headers = Object.keys(rowsArray[0]);
-
   const values = rowsArray.map((row) =>
     headers.map((h) =>
       typeof row[h] === "object" ? JSON.stringify(row[h]) : row[h] ?? ""
@@ -67,19 +62,12 @@ export async function saveToGoogleSheet(
     });
   }
 
+  const allValues = [headers, ...values];
   await sheets.spreadsheets.values.update({
     spreadsheetId,
     range: `${sheetName}!A1`,
-    valueInputOption: "RAW",
-    requestBody: { values: [headers] },
-  });
-
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: `${sheetName}!A2`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: { values },
+    requestBody: { values: allValues },
   });
 
   return { success: true };
