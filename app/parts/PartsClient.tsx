@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
+
+import { decodeEvent } from "@/utils/eventPayload";
 
 type SheetRow = {
   DancerName: string;
@@ -17,18 +20,40 @@ type ApiResponse = { headers: string[]; rows: SheetRow[] };
 export default function PartsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const event = searchParams.get("event");
+
+  const eventParam = searchParams.get("event");
+  const [eventName, setEventName] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [eventId, setEventId] = useState("");
 
   const [times, setTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!event) return;
+    if (!eventParam) return;
+
+    const decoded = decodeEvent(eventParam);
+
+    if (!decoded) {
+      console.error("Failed to decode event");
+      setEventId("");
+      setEventName("Подія");
+      setCoverUrl("");
+      return;
+    }
+
+    setEventId(decoded.id);
+    setEventName(decoded.name);
+    setCoverUrl(decoded.coverUrl);
+  }, [eventParam]);
+
+  useEffect(() => {
+    if (!eventId) return;
 
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/get-participants?event=${event}`);
+        const res = await fetch(`/api/get-participants?event=${eventId}`);
         if (!res.ok) throw new Error("Failed to fetch participants");
 
         const data: ApiResponse = await res.json();
@@ -56,21 +81,45 @@ export default function PartsClient() {
     };
 
     fetchData();
-  }, [event]);
+  }, [eventId]);
 
   const handleTimeSelect = (time: string) => {
-    if (!event) return;
+    if (!eventId) return;
     router.push(
-      `/parts/results?event=${event}&time=${encodeURIComponent(time)}`
+      `/parts/results?event=${encodeURIComponent(
+        eventParam!
+      )}&time=${encodeURIComponent(time)}`
     );
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-100 p-6">
-      <main className="w-full max-w-md bg-white p-8 rounded-xl shadow flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold text-black text-center">
+      <main className="w-full max-w-md bg-white p-8 rounded-xl shadow flex flex-col gap-6">
+        {eventName && (
+          <div className="flex flex-col items-center gap-8">
+            {coverUrl && (
+              <div className="flex flex-col items-center gap-31">
+                <div className="w-55 h-55 rounded-full overflow-hidden">
+                  <Image
+                    src={coverUrl}
+                    alt={eventName}
+                    width={220}
+                    height={220}
+                    className="object-cover w-full h-full"
+                    priority
+                  />
+                </div>
+              </div>
+            )}
+            <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
+              {eventName}
+            </h1>
+          </div>
+        )}
+
+        <span className="text-xl font-semibold text-black text-center">
           Виберіть час виступу
-        </h1>
+        </span>
 
         {loading && <p className="text-center text-gray-500">Завантаження…</p>}
 

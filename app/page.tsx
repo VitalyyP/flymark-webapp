@@ -181,9 +181,14 @@ export default function HomePage() {
 
                       <div className="relative flex items-center gap-2">
                         <button
-                          onClick={() =>
-                            router.push(`/parts?event=${c.CompetitionId}`)
-                          }
+                          onClick={() => {
+                            const payload = encodeEvent({
+                              id: c.CompetitionId,
+                              name: c.CompetitionName,
+                              coverUrl: c.CoverPhoto,
+                            });
+                            router.push(`/parts?event=${payload}`);
+                          }}
                           className="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                         >
                           Виконати
