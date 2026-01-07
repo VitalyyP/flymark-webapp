@@ -57,10 +57,10 @@ export default function ResultsClient() {
   if (participants.length === 0)
     return <p className="p-6 text-center text-gray-500">Немає учасників</p>;
 
-  const grouped: Record<string, string[]> = {};
+  const grouped: Record<string, Participant[]> = {};
   participants.forEach((p) => {
     if (!grouped[p.category]) grouped[p.category] = [];
-    grouped[p.category].push(p.regNumber);
+    grouped[p.category].push(p);
   });
 
   const categories = Object.keys(grouped).sort((a, b) =>
@@ -68,14 +68,16 @@ export default function ResultsClient() {
   );
 
   categories.forEach((cat) => {
-    grouped[cat].sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
+    grouped[cat].sort((a, b) =>
+      a.regNumber.localeCompare(b.regNumber, "uk", { numeric: true })
+    );
   });
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
       <div className="w-full max-w-2xl bg-white rounded-xl shadow p-6">
         <h1 className="text-2xl font-semibold text-black text-center mb-6">
-          Результати виступу — {time}
+          {time}
         </h1>
 
         <table className="w-full border-collapse border border-gray-200">
@@ -96,7 +98,19 @@ export default function ResultsClient() {
                   {cat}
                 </td>
                 <td className="border border-gray-200 px-4 py-2 text-black">
-                  {grouped[cat].join(", ")}
+                  {grouped[cat].map((p, idx) => (
+                    <span
+                      key={p.regNumber}
+                      className={
+                        p.orderType === "Ексклюзив"
+                          ? "text-green-600 font-semibold"
+                          : ""
+                      }
+                    >
+                      {p.regNumber}
+                      {idx < grouped[cat].length - 1 ? ", " : ""}
+                    </span>
+                  ))}
                 </td>
               </tr>
             ))}
