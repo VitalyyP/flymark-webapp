@@ -18,30 +18,36 @@ export default function SelectParticipantPage() {
   const eventName = event?.name ?? "";
   const coverUrl = event?.coverUrl ?? "";
 
+  const normalizeText = (s: string) => s.trim().toLowerCase();
+
   useEffect(() => {
     if (!eventId) return;
 
-    const load = async () => {
-      const res = await fetch(`/api/participants?event=${eventId}`);
-      const data = await res.json();
+    const loadParticipants = async () => {
+      try {
+        const res = await fetch(`/api/participants?event=${eventId}`);
+        const data = await res.json();
 
-      const cleaned = (data || []).filter(
-        (item: unknown): item is string => typeof item === "string"
-      );
+        const rawParticipants: unknown[] = Array.isArray(data) ? data : [];
+        const cleaned = rawParticipants.filter(
+          (item): item is string => typeof item === "string"
+        );
 
-      setParticipants(cleaned);
+        setParticipants(cleaned);
+      } catch {
+        setParticipants([]);
+      }
     };
 
-    load();
+    loadParticipants();
   }, [eventId]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = normalizeText(query);
     if (!q) return [];
 
     return participants.filter((name) =>
-      name
-        .toLowerCase()
+      normalizeText(name)
         .split(" ")
         .some((part) => part.startsWith(q))
     );
@@ -94,6 +100,7 @@ export default function SelectParticipantPage() {
             {eventName}
           </span>
         </div>
+
         <div className="flex flex-col gap-8 w-full">
           <h1 className="text-2xl tracking-wider text-black text-center">
             Запис на фото
@@ -111,7 +118,6 @@ export default function SelectParticipantPage() {
                 placeholder="Оберіть учасника"
                 className="w-full rounded-md border px-4 py-3 text-xl tracking-wider text-gray-900"
               />
-
               {query && filtered.length > 0 && (
                 <ul className="absolute top-full left-0 z-20 mt-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
                   {filtered.map((p) => (

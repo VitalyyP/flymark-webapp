@@ -1,6 +1,11 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 
+function toRoman(num) {
+  const roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+  return roman[num - 1] || String(num);
+}
+
 async function fetchRegistrations(categoryId, competitionId) {
   const url = `https://flymark.com.ua/api/registration?categoryId=${categoryId}&competitionId=${competitionId}`;
   try {
@@ -45,8 +50,9 @@ export async function parseEvent(eventId) {
 
     let divisionCounter = 1;
     headers = headers.map((h) => {
-      if (/^\d{2}:\d{2}$/.test(h)) {
-        return `${h} відділення ${divisionCounter++}`;
+      if (/^\d{1,2}:\d{2}$/.test(h)) {
+        const timeFormatted = h.replace(":", ".");
+        return `${toRoman(divisionCounter++)} відділення / ${timeFormatted}`;
       }
       return h;
     });

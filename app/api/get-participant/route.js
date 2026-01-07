@@ -34,36 +34,56 @@ export async function GET(request) {
     });
 
     const rows = response.data.values || [];
+    if (rows.length < 2) return Response.json({ results: [] });
+
+    const headers = rows[0].map((h) => (h || "").trim());
+    const dataRows = rows.slice(1);
+
+    const headerIndex = Object.fromEntries(headers.map((h, i) => [h, i]));
+
+    const dancer1Index = headerIndex["Dancer1Name"];
+    const dancer2Index = headerIndex["Dancer2Name"];
+    const categoryIndex = headerIndex["Категорії змагань"];
+
+    if (
+      dancer1Index === undefined ||
+      dancer2Index === undefined ||
+      categoryIndex === undefined
+    ) {
+      return Response.json(
+        {
+          error:
+            "Required columns (Dancer1Name, Dancer2Name, Категорії змагань) not found",
+        },
+        { status: 500 }
+      );
+    }
+
+    const divisionColumns = headers
+      .map((h, i) => ({ header: h, index: i }))
+      .filter((c) => c.header.toLowerCase().includes("відділення"));
+
+    const normalizeText = (s) => (s || "").trim().normalize("NFC");
+    const nameParts = normalizeText(name).split(" ");
 
     const results = [];
 
-    const timeMap = {
-      2: "I відділення  / 8:30",
-      3: "II відділення / 10:30",
-      4: "III відділення / 14:30",
-      5: "IV відділення / 17:30",
-      6: "V відділення / 19:30",
-    };
+    for (const row of dataRows) {
+      const dancer1 = row[dancer1Index] || "";
+      const dancer2 = row[dancer2Index] || "";
+      const category = row[categoryIndex] || "";
 
-    for (const row of rows) {
-      const dancer1 = row[7] || "";
-      const dancer2 = row[8] || "";
-      const category = row[1];
+      const matches = [dancer1, dancer2].some((dancer) =>
+        nameParts.every((part) => normalizeText(dancer).includes(part))
+      );
 
-      const normalizedName = name.trim().normalize("NFC");
-      const matches =
-        dancer1.trim().normalize("NFC") === normalizedName ||
-        dancer2.trim().normalize("NFC") === normalizedName;
-
-      if (!matches) continue;
-      if (!category) continue;
+      if (!matches || !category) continue;
 
       let time = null;
-
-      for (const colIndex of Object.keys(timeMap)) {
-        const index = Number(colIndex);
-        if (row[index] && row[index].trim() !== "") {
-          time = timeMap[index];
+      for (const col of divisionColumns) {
+        const cell = row[col.index];
+        if (cell && String(cell).trim() !== "") {
+          time = col.header;
           break;
         }
       }
@@ -77,9 +97,9 @@ export async function GET(request) {
         dancer2Name: dancer2,
       });
     }
+
     return Response.json({ results });
   } catch (e) {
-    console.error(e);
     return Response.json({ error: e.message }, { status: 500 });
   }
 }

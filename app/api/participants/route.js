@@ -41,11 +41,23 @@ export async function GET(req) {
     });
 
     const rows = response.data.values || [];
+    if (rows.length === 0)
+      return new Response(JSON.stringify([]), { status: 200 });
 
-    const DANCER_COLUMN_INDEXES = [7, 8];
+    const headers = rows[0];
+    const dataRows = rows.slice(1);
 
-    const participants = rows.flatMap((row) =>
-      DANCER_COLUMN_INDEXES.map((i) => row[i]).filter(Boolean)
+    const headerIndex = Object.fromEntries(headers.map((h, i) => [h, i]));
+    const dancer1Index = headerIndex["Dancer1Name"];
+    const dancer2Index = headerIndex["Dancer2Name"];
+
+    if (dancer1Index === undefined || dancer2Index === undefined) {
+      console.warn("Dancer1Name or Dancer2Name column not found!");
+      return new Response(JSON.stringify([]), { status: 200 });
+    }
+
+    const participants = dataRows.flatMap((row) =>
+      [dancer1Index, dancer2Index].map((i) => row[i]).filter(Boolean)
     );
 
     const uniqueParticipants = [...new Set(participants)];
