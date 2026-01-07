@@ -41,24 +41,18 @@ export async function saveToGoogleSheet(
   );
 
   if (!sheetExists) {
-    try {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [{ addSheet: { properties: { title: sheetName } } }],
-        },
-      });
-    } catch (err) {
-      if (err instanceof Error && !err.message.includes("already exists"))
-        throw err;
-    }
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: sheetName } } }],
+      },
+    });
   }
 
   const rowsArray = Array.isArray(data) ? data : [data];
   if (rowsArray.length === 0) return { appended: 0 };
 
   const headers = Object.keys(rowsArray[0]);
-
   const values: (string | number | boolean)[][] = rowsArray.map((row) =>
     headers.map((h) => {
       const v = row[h];
@@ -73,21 +67,40 @@ export async function saveToGoogleSheet(
     })
   );
 
-  if (clearBeforeWrite && sheetExists) {
+  if (clearBeforeWrite) {
     await sheets.spreadsheets.values.clear({
       spreadsheetId,
       range: `${sheetName}!A:Z`,
     });
+
+    const allValues: (string | number | boolean)[][] = [headers, ...values];
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!A1`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: allValues },
+    });
+  } else {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!1:1`,
+    });
+
+    const hasHeaders =
+      existing.data.values && existing.data.values[0].length > 0;
+
+    const appendValues: (string | number | boolean)[][] = hasHeaders
+      ? values
+      : [headers, ...values];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${sheetName}!A:Z`,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values: appendValues },
+    });
   }
-
-  const allValues: (string | number | boolean)[][] = [headers, ...values];
-
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: `${sheetName}!A1`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: allValues },
-  });
 
   return { success: true };
 }
