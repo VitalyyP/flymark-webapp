@@ -22,12 +22,26 @@ const cityMap = {
 type CityKey = keyof typeof cityMap;
 
 export default function HomePage() {
+  const router = useRouter();
+
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
-  const [hiddenEvents, setHiddenEvents] = useState<Set<string>>(new Set());
-  const [hideMarked, setHideMarked] = useState(false);
-  const router = useRouter();
+
+  const [hiddenEvents, setHiddenEvents] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("hiddenEvents");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const [hideMarked, setHideMarked] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("hideMarked") === "true";
+  });
 
   const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
     btoa(unescape(encodeURIComponent(JSON.stringify(event))));
@@ -39,6 +53,7 @@ export default function HomePage() {
 
       for (const cityKey of Object.keys(cityMap) as CityKey[]) {
         const { id: cityId, name: cityName } = cityMap[cityKey];
+
         const res = await fetch("/api/flymark/search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -52,17 +67,18 @@ export default function HomePage() {
             type: "Opened",
           }),
         });
+
         const data: Competition[] = await res.json();
         data.forEach((c) => (c.CityName = cityName));
         results.push(...data);
       }
 
       results.sort((a, b) => {
-        const [dayA, monthA, yearA] = a.DateTo.split("/").map(Number);
-        const [dayB, monthB, yearB] = b.DateTo.split("/").map(Number);
+        const [dA, mA, yA] = a.DateTo.split("/").map(Number);
+        const [dB, mB, yB] = b.DateTo.split("/").map(Number);
         return (
-          new Date(yearA, monthA - 1, dayA).getTime() -
-          new Date(yearB, monthB - 1, dayB).getTime()
+          new Date(yA, mA - 1, dA).getTime() -
+          new Date(yB, mB - 1, dB).getTime()
         );
       });
 
@@ -73,6 +89,17 @@ export default function HomePage() {
     load();
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "hiddenEvents",
+      JSON.stringify(Array.from(hiddenEvents))
+    );
+  }, [hiddenEvents]);
+
+  useEffect(() => {
+    localStorage.setItem("hideMarked", String(hideMarked));
+  }, [hideMarked]);
+
   const copyLink = (path: string, id: string) => {
     const link = `${window.location.origin}${path}`;
     navigator.clipboard.writeText(link);
@@ -82,19 +109,23 @@ export default function HomePage() {
 
   const toggleHidden = (competitionId: string) => {
     setHiddenEvents((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(competitionId)) newSet.delete(competitionId);
-      else newSet.add(competitionId);
-      return newSet;
+      const next = new Set(prev);
+
+      if (next.has(competitionId)) {
+        next.delete(competitionId);
+      } else {
+        next.add(competitionId);
+      }
+
+      return next;
     });
   };
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-5xl bg-white p-8 rounded-xl shadow flex flex-col gap-6">
-        <h1 className="text-2xl text-wider text-black text-center">
-          Перелік змагань
-        </h1>
+        <h1 className="text-2xl text-black text-center">Перелік змагань</h1>
+
         {loading && (
           <p className="text-center text-gray-700">Завантаження...</p>
         )}
@@ -104,7 +135,7 @@ export default function HomePage() {
             <div className="flex items-center justify-center gap-2 mb-4">
               <CustomCheckbox
                 checked={hideMarked}
-                onChange={() => setHideMarked(!hideMarked)}
+                onChange={() => setHideMarked((v) => !v)}
               />
               <span className="text-gray-700">Ховати позначені події</span>
             </div>
@@ -117,7 +148,7 @@ export default function HomePage() {
                 .map((c) => (
                   <li
                     key={`${c.CompetitionId}-${c.DateTo}-${c.CityName}`}
-                    className={`p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity duration-200 ${
+                    className={`p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity ${
                       hiddenEvents.has(c.CompetitionId)
                         ? "opacity-50"
                         : "opacity-100"
@@ -130,14 +161,14 @@ export default function HomePage() {
 
                     <Image
                       src={c.CoverPhoto}
-                      alt="Cover photo"
+                      alt={c.CompetitionName}
                       width={60}
                       height={90}
-                      className="rounded-lg object-cover flex-shrink-0"
+                      className="rounded-lg object-cover"
                       priority
                     />
 
-                    <div className="flex flex-col gap-2 flex-1 overflow-hidden">
+                    <div className="flex flex-col gap-1 flex-1 overflow-hidden">
                       <span className="font-semibold text-gray-900 truncate">
                         {c.CompetitionName}
                       </span>
@@ -145,7 +176,7 @@ export default function HomePage() {
                       <span className="text-gray-500">{c.CityName}</span>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-2 md:w-auto">
+                    <div className="flex flex-col md:flex-row gap-2">
                       <div className="relative flex items-center gap-2">
                         <button
                           onClick={() => {
@@ -156,27 +187,26 @@ export default function HomePage() {
                             });
                             router.push(`/select?event=${payload}`);
                           }}
-                          className="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
+                          className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                         >
                           Замовити
                         </button>
 
-                        <div className="relative">
-                          <Copy
-                            className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                            onClick={() =>
-                              copyLink(
-                                `/select?event=${c.CompetitionId}`,
-                                `${c.CompetitionId}-select`
-                              )
-                            }
-                          />
-                          {tooltipVisible === `${c.CompetitionId}-select` && (
-                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap z-50">
-                              Скопійовано!
-                            </span>
-                          )}
-                        </div>
+                        <Copy
+                          className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                          onClick={() =>
+                            copyLink(
+                              `/select?event=${c.CompetitionId}`,
+                              `${c.CompetitionId}-select`
+                            )
+                          }
+                        />
+
+                        {tooltipVisible === `${c.CompetitionId}-select` && (
+                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
+                            Скопійовано!
+                          </span>
+                        )}
                       </div>
 
                       <div className="relative flex items-center gap-2">
@@ -189,27 +219,26 @@ export default function HomePage() {
                             });
                             router.push(`/parts?event=${payload}`);
                           }}
-                          className="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
+                          className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                         >
                           Виконати
                         </button>
 
-                        <div className="relative">
-                          <Copy
-                            className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                            onClick={() =>
-                              copyLink(
-                                `/parts?event=${c.CompetitionId}`,
-                                `${c.CompetitionId}-parts`
-                              )
-                            }
-                          />
-                          {tooltipVisible === `${c.CompetitionId}-parts` && (
-                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap z-50">
-                              Скопійовано!
-                            </span>
-                          )}
-                        </div>
+                        <Copy
+                          className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                          onClick={() =>
+                            copyLink(
+                              `/parts?event=${c.CompetitionId}`,
+                              `${c.CompetitionId}-parts`
+                            )
+                          }
+                        />
+
+                        {tooltipVisible === `${c.CompetitionId}-parts` && (
+                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
+                            Скопійовано!
+                          </span>
+                        )}
                       </div>
                     </div>
                   </li>
