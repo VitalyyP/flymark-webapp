@@ -40,7 +40,11 @@ export default function ParticipantForm({
 
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
-  const canSubmit = regNumber && orderType && phone && !sending;
+  const hasRequiredFields = !!regNumber.trim() && !!orderType && !!phone.trim();
+
+  const hasCategories = selectedCategories.length > 0;
+
+  const canSubmit = hasRequiredFields && hasCategories && !sending;
 
   const secondName: string = (() => {
     const r = results[0];
@@ -68,9 +72,9 @@ export default function ParticipantForm({
           category: removeLastBracket(r.category),
           time: r.time,
         })),
-      regNumber: regNumber || "",
-      orderType: orderType || "",
-      phone: phone || "",
+      regNumber,
+      orderType,
+      phone,
     };
 
     const res = await fetch("/api/save-form", {
@@ -113,7 +117,7 @@ export default function ParticipantForm({
                   priority
                 />
               </div>
-              <span className="text-3xl tracking-wider text-gray-900 text-center break-words line-clamp-2 max-w-full">
+              <span className="text-3xl tracking-wider text-gray-900 text-center">
                 {eventName}
               </span>
             </div>
@@ -122,10 +126,8 @@ export default function ParticipantForm({
 
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <label className="text-gray-700 text-lg whitespace-nowrap w-[52px]">
-                  Імʼя:
-                </label>
-                <div className="rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100 text-center flex-1">
+                <label className="text-gray-700 text-lg w-[52px]">Імʼя:</label>
+                <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
                   {name}
                 </div>
               </div>
@@ -133,7 +135,7 @@ export default function ParticipantForm({
               {secondName && (
                 <div className="flex items-center gap-3">
                   <div className="w-[52px]" />
-                  <div className="rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100 text-center flex-1">
+                  <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
                     {secondName}
                   </div>
                 </div>
@@ -147,23 +149,17 @@ export default function ParticipantForm({
 
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
                 {results.map((r, i) => {
-                  const itemId = `category-${i}`;
+                  const id = `cat-${i}`;
                   return (
-                    <li key={i} className="flex items-center gap-2">
+                    <li key={id} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id={itemId}
-                        value={r.category}
                         checked={selectedCategories.includes(r.category)}
                         onChange={(e) =>
                           handleCategoryToggle(r.category, e.target.checked)
                         }
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <label
-                        htmlFor={itemId}
-                        className="text-gray-900 cursor-pointer select-none"
-                      >
+                      <label className="text-gray-900">
                         {removeLastBracket(r.category)} / {r.time}
                       </label>
                     </li>
@@ -173,7 +169,7 @@ export default function ParticipantForm({
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg mb-1">
+              <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Реєстраційний номер
               </label>
               <input
@@ -182,12 +178,12 @@ export default function ParticipantForm({
                 onChange={(e) =>
                   setRegNumber(e.target.value.replace(/\D/g, ""))
                 }
-                className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
+                className="w-full rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
               />
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg mb-2">
+              <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Вид замовлення
               </label>
 
@@ -197,34 +193,29 @@ export default function ParticipantForm({
                     <input
                       type="radio"
                       name="orderType"
-                      value={t}
+                      checked={orderType === t}
                       onChange={() => setOrderType(t)}
                     />
                     {t}
                   </label>
                 ))}
-                <ul className="text-sm text-gray-600 ml-4 space-y-0.5">
-                  <li>Одне-три фото — 100 грн за штуку</li>
-                  <li>Чотири-сім фото — 90 грн за штуку</li>
-                  <li>
-                    Всі фото від 700 грн до 1000 грн (залежно від категорії і
-                    кількості фото)
-                  </li>
-                </ul>
               </div>
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg mb-1">
+              <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Номер телефону
               </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                className="w-full rounded-md border px-4 py-3 text-gray-900 text-lg bg-gray-100"
+                className="w-full rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
               />
             </div>
+            <p className="text-sm text-gray-500 mb-2">
+              *Всі поля обовʼязкові для заповнення
+            </p>
 
             <button
               onClick={handleSubmit}
