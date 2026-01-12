@@ -1,27 +1,42 @@
 import { google } from "googleapis";
 import { parseEvent } from "@/utils/parseEvent";
 import { saveToGoogleSheet } from "@/utils/saveToGoogleSheet";
-import { convertRowsToObjects } from "@/utils/convertRowsToObjects";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const eventId = searchParams.get("event");
+  const eventIdParam = searchParams.get("event");
 
-  if (!eventId) {
+  if (!eventIdParam) {
     return new Response(JSON.stringify({ error: "Missing event parameter" }), {
       status: 400,
     });
   }
 
+  const eventId = Number(eventIdParam);
+
   try {
-    const parsedData = await parseEvent(eventId);
+    const rows = await parseEvent(eventId);
 
-    const data = convertRowsToObjects(parsedData);
+    const sheetRows = rows.map((r) => ({
+      SectionTime: r.SectionTime ?? "",
+      CategoryName: r.CategoryName ?? "",
+      Dancer1Name: r.Dancer1Name ?? "",
+      Dancer2Name: r.Dancer2Name ?? "",
+    }));
 
-    await saveToGoogleSheet(data, {
+    await saveToGoogleSheet(sheetRows, {
       sheetName: `${eventId}/A`,
       clearBeforeWrite: true,
     });
+
+    if (
+      !process.env.GCP_PROJECT_ID ||
+      !process.env.GOOGLE_PRIVATE_KEY ||
+      !process.env.GOOGLE_CLIENT_EMAIL ||
+      !process.env.SHEET_ID
+    ) {
+      throw new Error("Missing Google Sheets environment variables");
+    }
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -40,31 +55,26 @@ export async function GET(req) {
       range: `${eventId}/A`,
     });
 
-    const rows = response.data.values || [];
-    if (rows.length === 0)
+    const sheetData = response.data.values || [];
+    if (sheetData.length === 0)
       return new Response(JSON.stringify([]), { status: 200 });
 
-    const headers = rows[0];
-    const dataRows = rows.slice(1);
+    const headers = sheetData[0];
+    const dataRows = sheetData.slice(1);
 
-    const headerIndex = Object.fromEntries(headers.map((h, i) => [h, i]));
-    const dancer1Index = headerIndex["Dancer1Name"];
-    const dancer2Index = headerIndex["Dancer2Name"];
+    const dancer1Index = headers.indexOf("Dancer1Name");
+    const dancer2Index = headers.indexOf("Dancer2Name");
 
-    if (dancer1Index === undefined || dancer2Index === undefined) {
-      console.warn("Dancer1Name or Dancer2Name column not found!");
+    if (dancer1Index === -1 || dancer2Index === -1)
       return new Response(JSON.stringify([]), { status: 200 });
-    }
 
     const participants = dataRows.flatMap((row) =>
-      [dancer1Index, dancer2Index].map((i) => row[i]).filter(Boolean)
+      [row[dancer1Index], row[dancer2Index]].filter(Boolean)
     );
 
     const uniqueParticipants = [...new Set(participants)];
 
-    return new Response(JSON.stringify(uniqueParticipants), {
-      status: 200,
-    });
+    return new Response(JSON.stringify(uniqueParticipants), { status: 200 });
   } catch (err) {
     console.error("Error parsing/saving/fetching participants:", err);
     return new Response(
