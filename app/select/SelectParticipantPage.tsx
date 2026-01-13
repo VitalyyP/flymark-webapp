@@ -6,6 +6,11 @@ import Image from "next/image";
 import { useEventFromQuery } from "@/hooks/useEventFromQuery";
 import { encodeEvent } from "@/utils/eventPayload";
 
+interface ParticipantData {
+  Dancer1Name?: string;
+  Dancer2Name?: string;
+}
+
 export default function SelectParticipantPage() {
   const router = useRouter();
   const event = useEventFromQuery();
@@ -29,12 +34,23 @@ export default function SelectParticipantPage() {
         const data = await res.json();
 
         const rawParticipants: unknown[] = Array.isArray(data) ? data : [];
-        const cleaned = rawParticipants.filter(
-          (item): item is string => typeof item === "string"
+
+        const cleaned = Array.from(
+          new Set(
+            rawParticipants.flatMap((item) => {
+              if (typeof item !== "object" || item === null) return [];
+              const p = item as ParticipantData;
+              const names: string[] = [];
+              if (p.Dancer1Name) names.push(p.Dancer1Name);
+              if (p.Dancer2Name) names.push(p.Dancer2Name);
+              return names;
+            })
+          )
         );
 
         setParticipants(cleaned);
-      } catch {
+      } catch (err) {
+        console.error("Failed to load participants", err);
         setParticipants([]);
       }
     };

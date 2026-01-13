@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Image from "next/image";
 
-type ResultItem = {
+export type ResultItem = {
   category: string;
   time: string;
   dancer1Name: string;
   dancer2Name?: string;
+  program: string;
 };
 
 type Props = {
@@ -18,7 +19,7 @@ type Props = {
   coverUrl: string;
 };
 
-export default function ParticipantForm({
+export function ParticipantForm({
   name,
   results = [],
   eventId,
@@ -30,21 +31,25 @@ export default function ParticipantForm({
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const handleCategoryToggle = (category: string, checked: boolean) => {
-    setSelectedCategories((prev) =>
-      checked ? [...prev, category] : prev.filter((c) => c !== category)
-    );
-  };
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
+  const getItemKey = (r: ResultItem) =>
+    `${r.category}__${r.program}__${r.time}`;
+
+  const handleItemToggle = (key: string, checked: boolean) => {
+    setSelectedItems((prev) =>
+      checked ? [...prev, key] : prev.filter((k) => k !== key)
+    );
+  };
+
   const hasRequiredFields = !!regNumber.trim() && !!orderType && !!phone.trim();
 
-  const hasCategories = selectedCategories.length > 0;
+  const hasItems = selectedItems.length > 0;
 
-  const canSubmit = hasRequiredFields && hasCategories && !sending;
+  const canSubmit = hasRequiredFields && hasItems && !sending;
 
   const secondName: string = (() => {
     const r = results[0];
@@ -67,9 +72,10 @@ export default function ParticipantForm({
       name,
       secondName,
       items: results
-        .filter((r) => selectedCategories.includes(r.category))
+        .filter((r) => selectedItems.includes(getItemKey(r)))
         .map((r) => ({
           category: removeLastBracket(r.category),
+          program: r.program,
           time: r.time,
         })),
       regNumber,
@@ -90,7 +96,7 @@ export default function ParticipantForm({
       setRegNumber("");
       setOrderType("");
       setPhone("");
-      setSelectedCategories([]);
+      setSelectedItems([]);
     }
   };
 
@@ -144,23 +150,24 @@ export default function ParticipantForm({
 
             <div>
               <label className="block text-gray-700 text-lg mb-2 font-medium">
-                Категорії / Час:
+                Категорія / Програма / Час:
               </label>
 
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
-                {results.map((r, i) => {
-                  const id = `cat-${i}`;
+                {results.map((r) => {
+                  const key = getItemKey(r);
+
                   return (
-                    <li key={id} className="flex items-center gap-2">
+                    <li key={key} className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedCategories.includes(r.category)}
+                        checked={selectedItems.includes(key)}
                         onChange={(e) =>
-                          handleCategoryToggle(r.category, e.target.checked)
+                          handleItemToggle(key, e.target.checked)
                         }
                       />
                       <label className="text-gray-900">
-                        {removeLastBracket(r.category)} / {r.time}
+                        {removeLastBracket(r.category)} / {r.program} / {r.time}
                       </label>
                     </li>
                   );
@@ -213,6 +220,7 @@ export default function ParticipantForm({
                 className="w-full rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
               />
             </div>
+
             <p className="text-sm text-gray-500 mb-2">
               *Всі поля обовʼязкові для заповнення
             </p>

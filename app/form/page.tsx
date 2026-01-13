@@ -1,4 +1,4 @@
-import ParticipantForm from "./ParticipantForm";
+import { ParticipantForm, ResultItem } from "./ParticipantForm";
 import { decodeEvent } from "@/utils/eventPayload";
 
 type SearchParams = {
@@ -8,19 +8,6 @@ type SearchParams = {
 
 type PageProps = {
   searchParams: Promise<SearchParams>;
-};
-
-export type ParticipantResult = {
-  category: string;
-  time: string;
-  dancer1Name: string;
-  dancer2Name?: string;
-  regNumber?: string;
-  orderType?: string;
-};
-
-export type GetParticipantResponse = {
-  results: ParticipantResult[];
 };
 
 export default async function Page({ searchParams }: PageProps) {
@@ -35,7 +22,7 @@ export default async function Page({ searchParams }: PageProps) {
     return <div>Некоректні параметри</div>;
   }
 
-  const data: GetParticipantResponse = { results: [] };
+  let results: ResultItem[] = [];
 
   try {
     const res = await fetch(
@@ -45,11 +32,12 @@ export default async function Page({ searchParams }: PageProps) {
       { cache: "no-store" }
     );
 
-    if (res.ok) {
-      const json = await res.json();
-      data.results = json.results || [];
+    if (!res.ok) {
+      throw new Error("Failed to fetch participants");
     }
-  } catch (err) {
+
+    results = (await res.json()) as ResultItem[];
+  } catch (err: unknown) {
     console.error("Помилка завантаження учасників:", err);
     return <div>Помилка завантаження</div>;
   }
@@ -57,7 +45,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <ParticipantForm
       name={name}
-      results={data.results}
+      results={results}
       eventId={event.id}
       eventName={event.name}
       coverUrl={event.coverUrl}
