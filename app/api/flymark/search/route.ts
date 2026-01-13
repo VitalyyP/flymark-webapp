@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body: unknown = await req.json();
 
     const response = await fetch(
-      "https://flymark.com.ua/api/competition/search",
+      "https://flymark.dance/api/competition/search",
       {
         method: "POST",
         headers: {
@@ -15,11 +15,19 @@ export async function POST(req) {
       }
     );
 
-    const data = await response.json();
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "Flymark request failed" },
+        { status: response.status }
+      );
+    }
+
+    const data: unknown = await response.json();
 
     return NextResponse.json(data);
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("Flymark proxy error:", err);
+
     return NextResponse.json(
       { error: "Flymark request failed" },
       { status: 500 }
