@@ -15,6 +15,7 @@ export async function POST(req) {
       return {
         DancerName: name,
         Category: item.category,
+        Program: item.program,
         Time: item.time,
         RegNumber: regNumber || "",
         OrderType: orderType || "",

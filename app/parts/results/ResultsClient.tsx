@@ -10,6 +10,7 @@ type Participant = {
   regNumber: string;
   orderType: string;
   category: string;
+  program: string;
   name: string;
 };
 
@@ -82,10 +83,11 @@ export default function ResultsClient() {
   if (participants.length === 0)
     return <p className="p-6 text-center text-gray-500">Немає учасників</p>;
 
-  const grouped: Record<string, string[]> = {};
+  const grouped: Record<string, Record<string, string[]>> = {};
   participants.forEach((p) => {
-    if (!grouped[p.category]) grouped[p.category] = [];
-    grouped[p.category].push(p.regNumber);
+    if (!grouped[p.category]) grouped[p.category] = {};
+    if (!grouped[p.category][p.program]) grouped[p.category][p.program] = [];
+    grouped[p.category][p.program].push(p.regNumber);
   });
 
   const categories = Object.keys(grouped).sort((a, b) =>
@@ -93,12 +95,16 @@ export default function ResultsClient() {
   );
 
   categories.forEach((cat) => {
-    grouped[cat].sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
+    Object.keys(grouped[cat]).forEach((prog) => {
+      grouped[cat][prog].sort((a, b) =>
+        a.localeCompare(b, "uk", { numeric: true })
+      );
+    });
   });
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow p-6">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow p-6">
         {eventName && (
           <div className="flex flex-col items-center gap-8">
             {coverUrl && (
@@ -134,37 +140,50 @@ export default function ResultsClient() {
                 Категорія
               </th>
               <th className="border border-gray-200 px-4 py-2 text-black text-left">
+                Програма
+              </th>
+              <th className="border border-gray-200 px-4 py-2 text-black text-left">
                 Номери учасників
               </th>
             </tr>
           </thead>
           <tbody>
-            {categories.map((cat, i) => (
-              <tr key={cat} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                <td className="border border-gray-200 px-4 py-2 text-black">
-                  {cat}
-                </td>
-                <td className="border border-gray-200 px-4 py-2 text-black">
-                  {grouped[cat].map((num) => {
-                    const participant = participants.find(
-                      (p) => p.regNumber === num
-                    );
-                    return (
-                      <span
-                        key={num}
-                        className={
-                          participant?.orderType === "Ексклюзив"
-                            ? "text-green-600 mr-1"
-                            : "mr-1"
-                        }
-                      >
-                        {num}
-                      </span>
-                    );
-                  })}
-                </td>
-              </tr>
-            ))}
+            {categories.map((cat, i) =>
+              Object.keys(grouped[cat])
+                .sort((a, b) => a.localeCompare(b, "uk", { numeric: true }))
+                .map((prog) => (
+                  <tr
+                    key={`${cat}-${prog}`}
+                    className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
+                    <td className="border border-gray-200 px-4 py-2 text-black">
+                      {cat}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2 text-black">
+                      {prog}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2 text-black">
+                      {grouped[cat][prog].map((num) => {
+                        const participant = participants.find(
+                          (p) => p.regNumber === num && p.program === prog
+                        );
+                        return (
+                          <span
+                            key={num}
+                            className={
+                              participant?.orderType === "Ексклюзив"
+                                ? "text-green-600 mr-1"
+                                : "mr-1"
+                            }
+                          >
+                            {num}
+                          </span>
+                        );
+                      })}
+                    </td>
+                  </tr>
+                ))
+            )}
           </tbody>
         </table>
       </div>

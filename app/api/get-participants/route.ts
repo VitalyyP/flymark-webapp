@@ -9,15 +9,19 @@ function normalizePrivateKey(key?: string): string | undefined {
 type SheetRow = {
   DancerName: string;
   Category: string;
+  Program: string;
   Time: string;
   RegNumber: string;
   OrderType: string;
   Phone: string;
 };
 
-async function getParticipantsFromSheet(
-  eventId: string
-): Promise<{ headers: string[]; rows: SheetRow[] }> {
+type SheetResult = {
+  headers: string[];
+  rows: SheetRow[];
+};
+
+async function getParticipantsFromSheet(eventId: string): Promise<SheetResult> {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_CLIENT_EMAIL,
@@ -32,25 +36,33 @@ async function getParticipantsFromSheet(
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A:G`,
+    range: `${sheetName}!A:Z`,
   });
 
   const values = response.data.values ?? [];
-
   if (values.length < 2) {
     return { headers: [], rows: [] };
   }
 
-  const headers = values[0];
+  const headers = values[0].map((h) => h.trim());
   const dataRows = values.slice(1);
 
+  const indexByName = (name: string): number =>
+    headers.findIndex((h) => h.toLowerCase() === name.toLowerCase());
+
+  const getValue = (row: string[], name: string): string => {
+    const index = indexByName(name);
+    return index >= 0 ? row[index] ?? "" : "";
+  };
+
   const rows: SheetRow[] = dataRows.map((row) => ({
-    DancerName: row[0] ?? "",
-    Category: row[1] ?? "",
-    Time: row[2] ?? "",
-    RegNumber: row[3] ?? "",
-    OrderType: row[4] ?? "",
-    Phone: row[5] ?? "",
+    DancerName: getValue(row, "DancerName"),
+    Category: getValue(row, "Category"),
+    Program: getValue(row, "Program"),
+    Time: getValue(row, "Time"),
+    RegNumber: getValue(row, "RegNumber"),
+    OrderType: getValue(row, "OrderType"),
+    Phone: getValue(row, "Phone"),
   }));
 
   return { headers, rows };
@@ -78,10 +90,11 @@ export async function GET(req: Request) {
     const filtered = rows.filter((r) => r.Time === time);
 
     const participants = filtered.map((p) => ({
-      regNumber: p.RegNumber || "",
-      orderType: p.OrderType || "",
-      category: p.Category || "",
-      name: p.DancerName || "",
+      regNumber: p.RegNumber,
+      orderType: p.OrderType,
+      category: p.Category,
+      program: p.Program,
+      name: p.DancerName,
     }));
 
     return NextResponse.json({ participants });
