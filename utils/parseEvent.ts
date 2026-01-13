@@ -9,24 +9,39 @@ const api = axios.create({
   },
 });
 
-interface ApiDancer {
+export interface ApiDancer {
   Id: number;
   FullName: string;
 }
 
-interface ApiRegistration {
+export interface ApiProgram {
+  Id: number;
+  Name?: string;
+}
+
+export interface ApiRegistration {
   Id: number;
   Dancers?: ApiDancer[];
+  Programs?: ApiProgram[];
 }
 
-interface CategoryRow {
-  SectionTime: string;
+export interface ParsedCategory {
+  CategoryId: number;
   CategoryName: string;
-  Dancer1Name?: string;
-  Dancer2Name?: string;
+  Registrations: ApiRegistration[];
 }
 
-export async function fetchRegistrations(
+export interface ParsedSection {
+  SectionName: string;
+  Categories: ParsedCategory[];
+}
+
+export interface ParsedEvent {
+  EventId: number;
+  Sections: ParsedSection[];
+}
+
+async function fetchRegistrations(
   competitionId: number,
   categoryId: number
 ): Promise<ApiRegistration[]> {
@@ -43,29 +58,34 @@ export async function fetchRegistrations(
   }
 }
 
-export async function parseEvent(eventId: number): Promise<CategoryRow[]> {
+export async function parseEvent(eventId: number): Promise<ParsedEvent> {
   const { data } = await api.get(`/competition/${eventId}`);
 
-  const rows: CategoryRow[] = [];
+  const sections: ParsedSection[] = [];
 
   for (const sectionBlock of data.Sections ?? []) {
     const sectionName = sectionBlock.Section?.Name ?? "";
 
+    const categories: ParsedCategory[] = [];
+
     for (const category of sectionBlock.Categories ?? []) {
       const registrations = await fetchRegistrations(data.Id, category.Id);
 
-      for (const reg of registrations) {
-        const dancers = reg.Dancers ?? [];
-
-        rows.push({
-          SectionTime: sectionName,
-          CategoryName: category.Name,
-          Dancer1Name: dancers[0]?.FullName,
-          Dancer2Name: dancers[1]?.FullName,
-        });
-      }
+      categories.push({
+        CategoryId: category.Id,
+        CategoryName: category.Name,
+        Registrations: registrations,
+      });
     }
+
+    sections.push({
+      SectionName: sectionName,
+      Categories: categories,
+    });
   }
 
-  return rows;
+  return {
+    EventId: data.Id,
+    Sections: sections,
+  };
 }

@@ -36,24 +36,31 @@ export async function saveToGoogleSheet(
   const sheets = google.sheets({ version: "v4", auth });
 
   const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-  const sheetExists = spreadsheet.data.sheets?.some(
-    (s) => s.properties?.title?.trim() === sheetName.trim()
+
+  const existingSheet = spreadsheet.data.sheets?.find(
+    (s) => s.properties?.title === sheetName
   );
 
-  if (!sheetExists) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [{ addSheet: { properties: { title: sheetName } } }],
-      },
-    });
+  if (!existingSheet) {
+    try {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: sheetName } } }],
+        },
+      });
+    } catch (err) {
+      if (!(err instanceof Error) || !err.message.includes("already exists")) {
+        throw err;
+      }
+    }
   }
 
   const rowsArray = Array.isArray(data) ? data : [data];
   if (rowsArray.length === 0) return { appended: 0 };
 
   const headers = Object.keys(rowsArray[0]);
-  const values: (string | number | boolean)[][] = rowsArray.map((row) =>
+  const values = rowsArray.map((row) =>
     headers.map((h) => {
       const v = row[h];
       if (
@@ -73,34 +80,38 @@ export async function saveToGoogleSheet(
       range: `${sheetName}!A:Z`,
     });
 
-    const allValues: (string | number | boolean)[][] = [headers, ...values];
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!A1`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: allValues },
-    });
-  } else {
-    const existing = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${sheetName}!1:1`,
+      requestBody: {
+        values: [headers, ...values],
+      },
     });
 
-    const hasHeaders =
-      existing.data.values && existing.data.values[0].length > 0;
-
-    const appendValues: (string | number | boolean)[][] = hasHeaders
-      ? values
-      : [headers, ...values];
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `${sheetName}!A:Z`,
-      valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
-      requestBody: { values: appendValues },
-    });
+    return { cleared: true, written: values.length };
   }
 
-  return { success: true };
+  const headerCheck = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+
+  const hasHeaders =
+    headerCheck.data.values &&
+    headerCheck.data.values[0]?.length === headers.length;
+
+  const appendValues = hasHeaders ? values : [headers, ...values];
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${sheetName}!A:Z`,
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: {
+      values: appendValues,
+    },
+  });
+
+  return { appended: values.length };
 }
