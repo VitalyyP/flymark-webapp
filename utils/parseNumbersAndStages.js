@@ -29,7 +29,7 @@ import puppeteer from "puppeteer";
 const EMAIL = process.env.FLYMARK_LOGIN;
 const PASSWORD = process.env.FLYMARK_PASSWORD;
 // const EVENT_URL = "https://flymark.com.ua/competition/streamdetails/408355";
-const EVENT_URL = "https://flymark.com.ua/competition/streamdetails/408437";
+const EVENT_URL = "https://flymark.dance/competition/streamdetails/408437";
 console.log("LOGIN:", process.env.FLYMARK_LOGIN);
 
 (async () => {
@@ -45,7 +45,7 @@ console.log("LOGIN:", process.env.FLYMARK_LOGIN);
   try {
     // 1️⃣ Login
     await page.goto(
-      "https://flymark.dance/identity/account/login?returnUrl=&returnDomain=https://flymark.com.ua&language=uk",
+      "https://flymark.dance/identity/account/login?returnUrl=&returnDomain=https://flymark.dance&language=uk",
       {
         waitUntil: "networkidle2",
       }
