@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const body: unknown = await req.json();
+    const bodyRaw: Record<string, unknown> = await req.json();
+    const body = Object.fromEntries(
+      Object.entries(bodyRaw).filter(
+        ([_, v]) => v !== "" && v !== null && v !== undefined
+      )
+    );
 
     const response = await fetch(
       "https://flymark.dance/api/competition/search",
