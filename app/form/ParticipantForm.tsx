@@ -3,6 +3,44 @@
 import { useState } from "react";
 import Image from "next/image";
 
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+
+type CustomPhoneInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+const MAX_DIGITS = 12;
+
+function CustomPhoneInput({ value, onChange }: CustomPhoneInputProps) {
+  const handleChange = (phone?: string) => {
+    if (!phone) {
+      onChange("");
+      return;
+    }
+
+    const digits = phone.replace(/\D/g, "").slice(0, MAX_DIGITS);
+    onChange(`+${digits}`);
+  };
+
+  return (
+    <PhoneInput
+      international
+      defaultCountry="UA"
+      value={value}
+      onChange={handleChange}
+      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+        const digits = value.replace(/\D/g, "");
+        if (digits.length >= MAX_DIGITS && /\d/.test(e.key)) {
+          e.preventDefault();
+        }
+      }}
+      className="phone-wrapper"
+    />
+  );
+}
+
 export type ResultItem = {
   category: string;
   time: string;
@@ -45,7 +83,9 @@ export function ParticipantForm({
     );
   };
 
-  const hasRequiredFields = !!regNumber.trim() && !!orderType && !!phone.trim();
+  const isPhoneValid = phone.replace(/\D/g, "").length === 12;
+
+  const hasRequiredFields = !!regNumber.trim() && !!orderType && isPhoneValid;
 
   const hasItems = selectedItems.length > 0;
 
@@ -213,12 +253,8 @@ export function ParticipantForm({
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Номер телефону
               </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                className="w-full rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
-              />
+
+              <CustomPhoneInput value={phone} onChange={setPhone} />
             </div>
 
             <p className="text-sm text-gray-500 mb-2">

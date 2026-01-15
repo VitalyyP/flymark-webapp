@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+.phone-wrapper {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+  padding: 0 16px;
+}
+
+.phone-wrapper .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+  font-size: 18px;
+  color: #374151;
+}
+
+.phone-wrapper .PhoneInputInput {
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  line-height: 70px;
+  color: #374151;
+  outline: none;
+}
