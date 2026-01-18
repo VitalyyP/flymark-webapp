@@ -1,5 +1,40 @@
 import axios from "axios";
 
+export type Dancer = {
+  Id: number;
+  FullName: string;
+};
+
+export type Program = {
+  Id: number;
+  Name: string;
+};
+
+export type Registration = {
+  Id: number;
+  Dancers?: Dancer[];
+  Programs?: Program[];
+};
+
+export type Category = {
+  Id: number;
+  Name: string;
+  SectionData?: Record<string, Program[]>;
+};
+
+export type Section = {
+  Id: number;
+  Name: string;
+};
+
+export type PerformanceRow = {
+  SectionTime: string;
+  CategoryName: string;
+  ProgramName: string;
+  Dancer1Name: string;
+  Dancer2Name: string;
+};
+
 const api = axios.create({
   baseURL: "https://flymark.dance/api",
   headers: {
@@ -9,83 +44,58 @@ const api = axios.create({
   },
 });
 
-export interface ApiDancer {
-  Id: number;
-  FullName: string;
-}
-
-export interface ApiProgram {
-  Id: number;
-  Name?: string;
-}
-
-export interface ApiRegistration {
-  Id: number;
-  Dancers?: ApiDancer[];
-  Programs?: ApiProgram[];
-}
-
-export interface ParsedCategory {
-  CategoryId: number;
-  CategoryName: string;
-  Registrations: ApiRegistration[];
-}
-
-export interface ParsedSection {
-  SectionName: string;
-  Categories: ParsedCategory[];
-}
-
-export interface ParsedEvent {
-  EventId: number;
-  Sections: ParsedSection[];
-}
-
 async function fetchRegistrations(
-  competitionId: number,
+  eventId: number,
   categoryId: number
-): Promise<ApiRegistration[]> {
-  try {
-    const { data } = await api.get<{ Registration?: ApiRegistration[] }>(
-      "/registration",
-      {
-        params: { competitionId, categoryId },
-      }
-    );
-    return data.Registration ?? [];
-  } catch {
-    return [];
-  }
+): Promise<Registration[]> {
+  const { data } = await api.get<{ Registration?: Registration[] }>(
+    "/registration",
+    {
+      params: { competitionId: eventId, categoryId },
+    }
+  );
+  return data.Registration ?? [];
 }
 
-export async function parseEvent(eventId: number): Promise<ParsedEvent> {
-  const { data } = await api.get(`/competition/${eventId}`);
+export async function parseEvent(eventId: number): Promise<PerformanceRow[]> {
+  const { data } = await api.get(`/competition/${eventId}?mode=table`);
 
-  const sections: ParsedSection[] = [];
-
-  for (const sectionBlock of data.Sections ?? []) {
-    const sectionName = sectionBlock.Section?.Name ?? "";
-
-    const categories: ParsedCategory[] = [];
-
-    for (const category of sectionBlock.Categories ?? []) {
-      const registrations = await fetchRegistrations(data.Id, category.Id);
-
-      categories.push({
-        CategoryId: category.Id,
-        CategoryName: category.Name,
-        Registrations: registrations,
-      });
+  const sectionMap = new Map<number, string>();
+  for (const dg of data.Categories?.DateGroups ?? []) {
+    for (const s of dg.Sections ?? []) {
+      sectionMap.set(s.Id, s.Name);
     }
-
-    sections.push({
-      SectionName: sectionName,
-      Categories: categories,
-    });
   }
 
-  return {
-    EventId: data.Id,
-    Sections: sections,
-  };
+  const rows: PerformanceRow[] = [];
+
+  for (const category of data.Categories?.Categories ?? []) {
+    const registrations = await fetchRegistrations(eventId, category.Id);
+    if (!registrations.length) continue;
+
+    for (const reg of registrations) {
+      const dancers = reg.Dancers ?? [];
+      for (const program of reg.Programs ?? []) {
+        const entry = Object.entries(category.SectionData ?? {}).find(
+          ([_, programs]) =>
+            (programs as Program[]).some((p) => p.Name === program.Name)
+        );
+
+        if (!entry) continue;
+
+        const sectionIdStr = entry[0];
+        const sectionTime = sectionMap.get(Number(sectionIdStr)) ?? "";
+
+        rows.push({
+          SectionTime: sectionTime,
+          CategoryName: category.Name,
+          ProgramName: program.Name,
+          Dancer1Name: dancers[0]?.FullName ?? "",
+          Dancer2Name: dancers[1]?.FullName ?? "",
+        });
+      }
+    }
+  }
+
+  return rows;
 }
