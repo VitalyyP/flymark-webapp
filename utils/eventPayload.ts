@@ -2,6 +2,8 @@ export type EventPayload = {
   id: string;
   name: string;
   coverUrl: string;
+  time?: string;
+  part?: string;
 };
 
 export const encodeEvent = (event: EventPayload): string => {

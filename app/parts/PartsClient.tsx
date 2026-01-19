@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 
-import { decodeEvent } from "@/utils/eventPayload";
+import { decodeEvent, encodeEvent } from "@/utils/eventPayload";
 
 type SheetRow = {
   Time: string;
@@ -15,6 +15,7 @@ type ApiResponse = {
 };
 
 type TimeItem = {
+  part: number;
   time: string;
   enabled: boolean;
 };
@@ -59,21 +60,21 @@ export default function PartsClient() {
         const flymarkData: { times: string[] } = await flymarkRes.json();
 
         const sheetTimes = new Set(
-          (sheetData.rows ?? []).map((r) => r.Time).filter(Boolean)
+          sheetData.rows.map((r) => r.Time).filter(Boolean)
         );
 
         const allTimes = Array.from(
-          new Set([...(flymarkData.times ?? []), ...sheetTimes])
+          new Set([...flymarkData.times, ...sheetTimes])
         ).sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
 
-        const merged: TimeItem[] = allTimes.map((t) => ({
-          time: t,
-          enabled: sheetTimes.has(t),
+        const merged: TimeItem[] = allTimes.map((time, index) => ({
+          part: index + 1,
+          time,
+          enabled: sheetTimes.has(time),
         }));
 
         setTimes(merged);
-      } catch (e) {
-        console.error(e);
+      } catch {
         setTimes([]);
       } finally {
         setLoading(false);
@@ -83,14 +84,18 @@ export default function PartsClient() {
     load();
   }, [eventId]);
 
-  const handleTimeSelect = (time: string, enabled: boolean) => {
-    if (!enabled) return;
+  const handleTimeSelect = (item: TimeItem) => {
+    if (!item.enabled) return;
 
-    router.push(
-      `/parts/results?event=${encodeURIComponent(
-        eventParam!
-      )}&time=${encodeURIComponent(time)}`
-    );
+    const encoded = encodeEvent({
+      id: eventId,
+      name: eventName,
+      coverUrl,
+      time: item.time,
+      part: item.part.toString(),
+    });
+
+    router.push(`/parts/results?event=${encodeURIComponent(encoded)}`);
   };
 
   return (
@@ -121,19 +126,19 @@ export default function PartsClient() {
         {loading && <p className="text-center text-gray-500">Завантаження…</p>}
 
         <div className="flex flex-col gap-3">
-          {times.map(({ time, enabled }) => (
+          {times.map((item) => (
             <button
-              key={time}
-              onClick={() => handleTimeSelect(time, enabled)}
-              disabled={!enabled}
+              key={`${item.part}-${item.time}`}
+              onClick={() => handleTimeSelect(item)}
+              disabled={!item.enabled}
               className={`py-3 px-4 rounded-md text-lg font-medium border
                 ${
-                  enabled
+                  item.enabled
                     ? "bg-white text-black border-gray-300 hover:bg-gray-200"
                     : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                 }`}
             >
-              {time}
+              {item.part} відділення / {item.time}
             </button>
           ))}
         </div>

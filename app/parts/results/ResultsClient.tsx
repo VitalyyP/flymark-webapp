@@ -17,11 +17,12 @@ type Participant = {
 export default function ResultsClient() {
   const searchParams = useSearchParams();
   const eventParam = searchParams.get("event");
-  const time = searchParams.get("time");
 
+  const [eventId, setEventId] = useState("");
   const [eventName, setEventName] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
-  const [eventId, setEventId] = useState("");
+  const [part, setPart] = useState("");
+  const [time, setTime] = useState("");
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,15 +34,14 @@ export default function ResultsClient() {
 
     if (!decoded) {
       console.error("Failed to decode event");
-      setEventId("");
-      setEventName("Подія");
-      setCoverUrl("");
       return;
     }
 
     setEventId(decoded.id);
     setEventName(decoded.name);
     setCoverUrl(decoded.coverUrl);
+    setPart(decoded.part ?? "");
+    setTime(decoded.time ?? "");
   }, [eventParam]);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function ResultsClient() {
             time
           )}`
         );
-        const data = await res.json();
+        const data: { participants?: Participant[] } = await res.json();
         setParticipants(data.participants ?? []);
       } catch (err) {
         console.error("Failed to fetch participants:", err);
@@ -68,22 +68,26 @@ export default function ResultsClient() {
     fetchParticipants();
   }, [eventId, time]);
 
-  if (!eventId || !time)
+  if (!eventId || !time) {
     return (
       <p className="p-6 text-center text-red-600">
-        Помилка: не вказано event або time
+        Помилка: некоректні дані події
       </p>
     );
+  }
 
-  if (loading)
+  if (loading) {
     return (
       <p className="p-6 text-center text-gray-500">Завантаження учасників…</p>
     );
+  }
 
-  if (participants.length === 0)
+  if (participants.length === 0) {
     return <p className="p-6 text-center text-gray-500">Немає учасників</p>;
+  }
 
   const grouped: Record<string, Record<string, string[]>> = {};
+
   participants.forEach((p) => {
     if (!grouped[p.category]) grouped[p.category] = {};
     if (!grouped[p.category][p.program]) grouped[p.category][p.program] = [];
@@ -104,54 +108,52 @@ export default function ResultsClient() {
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow p-6">
-        {eventName && (
-          <div className="flex flex-col items-center gap-8">
-            {coverUrl && (
-              <div className="flex flex-col items-center gap-31">
-                <div className="w-55 h-55 rounded-full overflow-hidden">
-                  <Image
-                    src={coverUrl}
-                    alt={eventName}
-                    width={220}
-                    height={220}
-                    className="object-cover w-full h-full"
-                    priority
-                  />
-                </div>
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow p-0 sm:p-6 overflow-hidden">
+        <div className="flex flex-col items-center gap-8">
+          {coverUrl && (
+            <div className="flex flex-col items-center gap-31">
+              <div className="w-55 h-55 rounded-full overflow-hidden">
+                <Image
+                  src={coverUrl}
+                  alt={eventName}
+                  width={220}
+                  height={220}
+                  className="object-cover w-full h-full"
+                  priority
+                />
               </div>
-            )}
-            <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
-              {eventName}
-            </h1>
-          </div>
-        )}
+            </div>
+          )}
+
+          <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
+            {eventName}
+          </h1>
+        </div>
 
         <div className="flex justify-center my-6">
           <span className="text-xl font-semibold text-black text-center">
-            {time}
+            {part} відділення / {time}
           </span>
         </div>
 
-        <table className="w-full border-collapse border border-gray-200">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-200 px-4 py-2 text-black text-left">
-                Категорія
-              </th>
-              <th className="border border-gray-200 px-4 py-2 text-black text-left">
-                Програма
-              </th>
-              <th className="border border-gray-200 px-4 py-2 text-black text-left">
-                Номери учасників
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map((cat, i) =>
-              Object.keys(grouped[cat])
-                .sort((a, b) => a.localeCompare(b, "uk", { numeric: true }))
-                .map((prog) => (
+        <div className="w-full overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-200 px-4 py-2 text-black text-left">
+                  Категорія
+                </th>
+                <th className="border border-gray-200 px-4 py-2 text-black text-left">
+                  Програма
+                </th>
+                <th className="border border-gray-200 px-4 py-2 text-black text-left">
+                  Номери учасників
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((cat, i) =>
+                Object.keys(grouped[cat]).map((prog) => (
                   <tr
                     key={`${cat}-${prog}`}
                     className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -183,9 +185,10 @@ export default function ResultsClient() {
                     </td>
                   </tr>
                 ))
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
