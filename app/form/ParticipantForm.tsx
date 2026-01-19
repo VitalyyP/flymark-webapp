@@ -65,6 +65,7 @@ export function ParticipantForm({
   coverUrl,
 }: Props) {
   const [regNumber, setRegNumber] = useState("");
+  const [regNumberUnknown, setRegNumberUnknown] = useState(false);
   const [orderType, setOrderType] = useState("");
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
@@ -134,6 +135,7 @@ export function ParticipantForm({
     if (res.ok) {
       setSuccess(true);
       setRegNumber("");
+      setRegNumberUnknown(false);
       setOrderType("");
       setPhone("");
       setSelectedItems([]);
@@ -219,14 +221,29 @@ export function ParticipantForm({
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Реєстраційний номер
               </label>
-              <input
-                type="number"
-                value={regNumber}
-                onChange={(e) =>
-                  setRegNumber(e.target.value.replace(/\D/g, ""))
-                }
-                className="w-full rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  value={regNumberUnknown ? "Не знаю" : regNumber}
+                  onChange={(e) =>
+                    setRegNumber(e.target.value.replace(/\D/g, ""))
+                  }
+                  disabled={regNumberUnknown}
+                  className="w-2/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
+                />
+                <label className="flex items-center gap-1 text-gray-900 w-1/3">
+                  <input
+                    type="checkbox"
+                    checked={regNumberUnknown}
+                    onChange={(e) => {
+                      setRegNumberUnknown(e.target.checked);
+                      if (e.target.checked) setRegNumber("Не знаю");
+                      else setRegNumber("");
+                    }}
+                  />
+                  Не знаю
+                </label>
+              </div>
             </div>
 
             <div>
