@@ -25,6 +25,8 @@ export default function ResultsClient() {
   const [time, setTime] = useState("");
 
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [crossedKeys, setCrossedKeys] = useState<Set<string>>(new Set());
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -165,23 +167,51 @@ export default function ResultsClient() {
                       {prog}
                     </td>
                     <td className="border border-gray-200 px-4 py-2 text-black">
-                      {grouped[cat][prog].map((num) => {
-                        const participant = participants.find(
-                          (p) => p.regNumber === num && p.program === prog
-                        );
-                        return (
-                          <span
-                            key={num}
-                            className={
-                              participant?.orderType === "Ексклюзив"
-                                ? "text-green-600 mr-1"
-                                : "mr-1"
-                            }
-                          >
-                            {num}
-                          </span>
-                        );
-                      })}
+                      {grouped[cat][prog]
+                        .map((num, idx) => {
+                          const participant = participants.find(
+                            (p) => p.regNumber === num && p.program === prog
+                          );
+
+                          const key = `${cat}-${prog}-${idx}`; // унікальний ключ для кожного спана
+                          const isCrossed = crossedKeys.has(key);
+
+                          const handleClick = () => {
+                            setCrossedKeys((prev) => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(key)) newSet.delete(key);
+                              else newSet.add(key);
+                              return newSet;
+                            });
+                          };
+
+                          return participant?.orderType === "Ексклюзив" ? (
+                            <span
+                              key={key}
+                              onClick={handleClick}
+                              className={`cursor-pointer ${
+                                isCrossed ? "line-through" : ""
+                              } text-green-600`}
+                            >
+                              {num}
+                            </span>
+                          ) : (
+                            <span
+                              key={key}
+                              onClick={handleClick}
+                              className={`cursor-pointer ${
+                                isCrossed ? "line-through" : ""
+                              }`}
+                            >
+                              {num}
+                            </span>
+                          );
+                        })
+                        .reduce(
+                          (prev: React.ReactNode[], curr) =>
+                            prev.length === 0 ? [curr] : [...prev, ", ", curr],
+                          [] as React.ReactNode[]
+                        )}
                     </td>
                   </tr>
                 ))
