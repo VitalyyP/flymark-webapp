@@ -25,7 +25,7 @@ export default function ResultsClient() {
   const [time, setTime] = useState("");
 
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [crossedKeys, setCrossedKeys] = useState<Set<string>>(new Set());
+  const [crossedKeys, setCrossedKeys] = useState<string[]>([]); // масив перекреслених ключів
 
   const [loading, setLoading] = useState(true);
 
@@ -33,17 +33,25 @@ export default function ResultsClient() {
     if (!eventParam) return;
 
     const decoded = decodeEvent(eventParam);
-
-    if (!decoded) {
-      console.error("Failed to decode event");
-      return;
-    }
+    if (!decoded) return;
 
     setEventId(decoded.id);
     setEventName(decoded.name);
     setCoverUrl(decoded.coverUrl);
     setPart(decoded.part ?? "");
     setTime(decoded.time ?? "");
+
+    try {
+      const stored = localStorage.getItem(
+        `crossed:${decoded.id}:${decoded.time}`
+      );
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.expiresAt && parsed.expiresAt > Date.now()) {
+          setCrossedKeys(parsed.value || []);
+        }
+      }
+    } catch {}
   }, [eventParam]);
 
   useEffect(() => {
@@ -59,8 +67,7 @@ export default function ResultsClient() {
         );
         const data: { participants?: Participant[] } = await res.json();
         setParticipants(data.participants ?? []);
-      } catch (err) {
-        console.error("Failed to fetch participants:", err);
+      } catch {
         setParticipants([]);
       } finally {
         setLoading(false);
@@ -70,26 +77,21 @@ export default function ResultsClient() {
     fetchParticipants();
   }, [eventId, time]);
 
-  if (!eventId || !time) {
+  if (!eventId || !time)
     return (
       <p className="p-6 text-center text-red-600">
         Помилка: некоректні дані події
       </p>
     );
-  }
 
-  if (loading) {
+  if (loading)
     return (
       <p className="p-6 text-center text-gray-500">Завантаження учасників…</p>
     );
-  }
-
-  if (participants.length === 0) {
+  if (participants.length === 0)
     return <p className="p-6 text-center text-gray-500">Немає учасників</p>;
-  }
 
   const grouped: Record<string, Record<string, string[]>> = {};
-
   participants.forEach((p) => {
     if (!grouped[p.category]) grouped[p.category] = {};
     if (!grouped[p.category][p.program]) grouped[p.category][p.program] = [];
@@ -99,14 +101,34 @@ export default function ResultsClient() {
   const categories = Object.keys(grouped).sort((a, b) =>
     a.localeCompare(b, "uk", { numeric: true })
   );
-
-  categories.forEach((cat) => {
-    Object.keys(grouped[cat]).forEach((prog) => {
+  categories.forEach((cat) =>
+    Object.keys(grouped[cat]).forEach((prog) =>
       grouped[cat][prog].sort((a, b) =>
         a.localeCompare(b, "uk", { numeric: true })
-      );
+      )
+    )
+  );
+
+  const toggleKey = (key: string) => {
+    setCrossedKeys((prev) => {
+      const next = prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key];
+
+      try {
+        localStorage.setItem(
+          `crossed:${eventId}:${time}`,
+          JSON.stringify({
+            value: next,
+            expiresAt: Date.now() + 24 * 60 * 60 * 1000, // TTL 24 години
+          })
+        );
+      } catch {}
+      return next;
     });
-  });
+  };
+
+  const isCrossed = (key: string) => crossedKeys.includes(key);
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
@@ -126,7 +148,6 @@ export default function ResultsClient() {
               </div>
             </div>
           )}
-
           <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
             {eventName}
           </h1>
@@ -169,38 +190,22 @@ export default function ResultsClient() {
                     <td className="border border-gray-200 px-4 py-2 text-black">
                       {grouped[cat][prog]
                         .map((num, idx) => {
+                          const key = `${cat}-${prog}-${num}-${idx}`;
                           const participant = participants.find(
                             (p) => p.regNumber === num && p.program === prog
                           );
+                          const crossed = isCrossed(key);
 
-                          const key = `${cat}-${prog}-${idx}`; // унікальний ключ для кожного спана
-                          const isCrossed = crossedKeys.has(key);
-
-                          const handleClick = () => {
-                            setCrossedKeys((prev) => {
-                              const newSet = new Set(prev);
-                              if (newSet.has(key)) newSet.delete(key);
-                              else newSet.add(key);
-                              return newSet;
-                            });
-                          };
-
-                          return participant?.orderType === "Ексклюзив" ? (
+                          return (
                             <span
                               key={key}
-                              onClick={handleClick}
+                              onClick={() => toggleKey(key)}
                               className={`cursor-pointer ${
-                                isCrossed ? "line-through" : ""
-                              } text-green-600`}
-                            >
-                              {num}
-                            </span>
-                          ) : (
-                            <span
-                              key={key}
-                              onClick={handleClick}
-                              className={`cursor-pointer ${
-                                isCrossed ? "line-through" : ""
+                                crossed ? "line-through opacity-60" : ""
+                              } ${
+                                participant?.orderType === "Ексклюзив"
+                                  ? "text-green-600"
+                                  : ""
                               }`}
                             >
                               {num}
