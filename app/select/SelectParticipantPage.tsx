@@ -18,6 +18,7 @@ export default function SelectParticipantPage() {
   const [participants, setParticipants] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const eventId = event?.id ?? "";
   const eventName = event?.name ?? "";
@@ -29,6 +30,7 @@ export default function SelectParticipantPage() {
     if (!eventId) return;
 
     const loadParticipants = async () => {
+      setLoadingParticipants(true);
       try {
         const res = await fetch(`/api/participants?event=${eventId}`);
         const data = await res.json();
@@ -52,6 +54,8 @@ export default function SelectParticipantPage() {
       } catch (err) {
         console.error("Failed to load participants", err);
         setParticipants([]);
+      } finally {
+        setLoadingParticipants(false);
       }
     };
 
@@ -131,10 +135,20 @@ export default function SelectParticipantPage() {
                 type="text"
                 value={query}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Оберіть учасника"
+                placeholder={loadingParticipants ? "" : "Оберіть учасника"}
                 className="w-full rounded-md border px-4 py-3 text-xl tracking-wider text-gray-900"
+                disabled={loadingParticipants}
               />
-              {query && filtered.length > 0 && (
+
+              {loadingParticipants && (
+                <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 flex gap-3">
+                  <span className="w-4 h-4 rounded-full bg-gray-400 animate-loadingDot" />
+                  <span className="w-4 h-4 rounded-full bg-gray-400 animate-loadingDot animation-delay-150" />
+                  <span className="w-4 h-4 rounded-full bg-gray-400 animate-loadingDot animation-delay-300" />
+                </div>
+              )}
+
+              {query && filtered.length > 0 && !loadingParticipants && (
                 <ul className="absolute top-full left-0 z-20 mt-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
                   {filtered.map((p) => (
                     <li
@@ -154,7 +168,7 @@ export default function SelectParticipantPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={!selected}
+              disabled={!selected || loadingParticipants}
               className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400"
             >
               Далі
@@ -162,6 +176,39 @@ export default function SelectParticipantPage() {
           </div>
         </div>
       </main>
+
+      <style jsx>{`
+        @keyframes loadingDot {
+          0% {
+            opacity: 0.25;
+            transform: scale(0.55);
+          }
+          35% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          70% {
+            opacity: 0.25;
+            transform: scale(0.55);
+          }
+          100% {
+            opacity: 0.25;
+            transform: scale(0.55);
+          }
+        }
+
+        .animate-loadingDot {
+          animation: loadingDot 0.9s infinite ease-in-out;
+        }
+
+        .animation-delay-150 {
+          animation-delay: 0.15s;
+        }
+
+        .animation-delay-300 {
+          animation-delay: 0.3s;
+        }
+      `}</style>
     </div>
   );
 }
