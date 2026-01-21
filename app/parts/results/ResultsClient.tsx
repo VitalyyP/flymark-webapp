@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 import { decodeEvent } from "@/utils/eventPayload";
+import Link from "next/link";
 
 type Participant = {
   regNumber: string;
@@ -25,7 +26,7 @@ export default function ResultsClient() {
   const [time, setTime] = useState("");
 
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [crossedKeys, setCrossedKeys] = useState<string[]>([]); // масив перекреслених ключів
+  const [crossedKeys, setCrossedKeys] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -182,8 +183,16 @@ export default function ResultsClient() {
                     className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   >
                     <td className="border border-gray-200 px-4 py-2 text-black">
-                      {cat}
+                      <Link
+                        href={`/parts/results/category?event=${eventParam}&category=${encodeURIComponent(
+                          cat
+                        )}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {cat}
+                      </Link>
                     </td>
+
                     <td className="border border-gray-200 px-4 py-2 text-black">
                       {prog}
                     </td>
