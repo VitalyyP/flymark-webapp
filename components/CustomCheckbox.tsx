@@ -1,33 +1,30 @@
-export const CustomCheckbox = ({
-  checked,
-  onChange,
-}: {
+"use client";
+
+type Props = {
   checked: boolean;
   onChange: () => void;
-}) => (
-  <label className="inline-flex items-center cursor-pointer gap-2">
-    <input
-      type="checkbox"
-      className="hidden"
-      checked={checked}
-      onChange={onChange}
-    />
-    <span
-      className={`w-5 h-5 border border-gray-300 rounded flex-shrink-0 relative transition-colors ${
-        checked ? "bg-green-600" : "bg-white"
-      }`}
+  disabled?: boolean;
+};
+
+export function CustomCheckbox({ checked, onChange, disabled = false }: Props) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-disabled={disabled}
+      onClick={() => {
+        if (disabled) return;
+        onChange();
+      }}
+      className={`w-5 h-5 rounded border flex items-center justify-center transition
+        ${
+          checked ? "bg-green-600 border-green-600" : "bg-white border-gray-400"
+        }
+        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+      `}
     >
-      {checked && (
-        <svg
-          className="absolute top-1/2 left-1/2 w-3 h-3 text-white -translate-x-1/2 -translate-y-1/2"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={3}
-          viewBox="0 0 24 24"
-        >
-          <path d="M5 13l4 4L19 7" />
-        </svg>
-      )}
-    </span>
-  </label>
-);
+      {checked && <span className="text-white text-xs leading-none">✓</span>}
+    </button>
+  );
+}

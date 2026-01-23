@@ -14,12 +14,14 @@ interface Competition {
   CoverPhoto: string;
 }
 
-const cityMap = {
-  dnipro: { id: 20, name: "Дніпро" },
-  zaporizhzhia: { id: 1756, name: "Запоріжжя" },
+type VisibleEventsResponse = {
+  ids?: unknown;
 };
 
-type CityKey = keyof typeof cityMap;
+const CITIES_IDS: number[] =
+  process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
+    .map((id) => Number(id.trim()))
+    .filter(Boolean) ?? [];
 
 export default function HomePage() {
   const router = useRouter();
@@ -43,15 +45,10 @@ export default function HomePage() {
     return localStorage.getItem("hideMarked") === "true";
   });
 
-  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const stored = localStorage.getItem("visibleEvents");
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
+  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
+  const [visibleLoading, setVisibleLoading] = useState(true);
+
+  const [savingCount, setSavingCount] = useState(0);
 
   const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
     btoa(unescape(encodeURIComponent(JSON.stringify(event))));
@@ -61,39 +58,54 @@ export default function HomePage() {
       setLoading(true);
       const results: Competition[] = [];
 
-      for (const cityKey of Object.keys(cityMap) as CityKey[]) {
-        const { id: cityId, name: cityName } = cityMap[cityKey];
+      try {
+        for (const cityId of CITIES_IDS) {
+          const res = await fetch("/api/flymark/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cityId,
+              countryId: 1,
+              organisationId: "",
+              from: "",
+              to: "",
+              page: 1,
+              type: "Opened",
+            }),
+          });
 
-        const res = await fetch("/api/flymark/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cityId,
-            countryId: 1,
-            organisationId: "",
-            from: "",
-            to: "",
-            page: 1,
-            type: "Opened",
-          }),
+          if (!res.ok) continue;
+
+          const raw: unknown = await res.json();
+          const data: Competition[] = Array.isArray(raw)
+            ? (raw as Competition[])
+            : [];
+
+          data.forEach((c) => {
+            c.CompetitionId = String(
+              (c as unknown as { CompetitionId: unknown }).CompetitionId
+            ).trim();
+            c.CityName = String(
+              (c as unknown as { CityName?: unknown }).CityName ?? ""
+            ).trim();
+          });
+
+          results.push(...data);
+        }
+
+        results.sort((a, b) => {
+          const [dA, mA, yA] = a.DateTo.split("/").map(Number);
+          const [dB, mB, yB] = b.DateTo.split("/").map(Number);
+          return (
+            new Date(yA, mA - 1, dA).getTime() -
+            new Date(yB, mB - 1, dB).getTime()
+          );
         });
 
-        const data: Competition[] = await res.json();
-        data.forEach((c) => (c.CityName = cityName));
-        results.push(...data);
+        setCompetitions(results);
+      } finally {
+        setLoading(false);
       }
-
-      results.sort((a, b) => {
-        const [dA, mA, yA] = a.DateTo.split("/").map(Number);
-        const [dB, mB, yB] = b.DateTo.split("/").map(Number);
-        return (
-          new Date(yA, mA - 1, dA).getTime() -
-          new Date(yB, mB - 1, dB).getTime()
-        );
-      });
-      console.log("RESULTS:", results);
-      setCompetitions(results);
-      setLoading(false);
     };
 
     load();
@@ -110,12 +122,36 @@ export default function HomePage() {
     localStorage.setItem("hideMarked", String(hideMarked));
   }, [hideMarked]);
 
+  const loadVisibleEvents = async () => {
+    setVisibleLoading(true);
+    try {
+      const res = await fetch("/api/visible-events", { cache: "no-store" });
+      const data: VisibleEventsResponse = await res.json();
+
+      const idsRaw = data?.ids;
+      const ids: string[] = Array.isArray(idsRaw)
+        ? idsRaw
+            .map((x) =>
+              typeof x === "string"
+                ? x.trim()
+                : typeof x === "number"
+                ? String(x)
+                : ""
+            )
+            .filter(Boolean)
+        : [];
+
+      setVisibleEvents(new Set(ids));
+    } catch {
+      setVisibleEvents(new Set());
+    } finally {
+      setVisibleLoading(false);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem(
-      "visibleEvents",
-      JSON.stringify(Array.from(visibleEvents))
-    );
-  }, [visibleEvents]);
+    void loadVisibleEvents();
+  }, []);
 
   const copyLink = (path: string, id: string) => {
     const link = `${window.location.origin}${path}`;
@@ -127,15 +163,39 @@ export default function HomePage() {
   const toggleHidden = (competitionId: string) => {
     setHiddenEvents((prev) => {
       const next = new Set(prev);
-
-      if (next.has(competitionId)) {
-        next.delete(competitionId);
-      } else {
-        next.add(competitionId);
-      }
-
+      if (next.has(competitionId)) next.delete(competitionId);
+      else next.add(competitionId);
       return next;
     });
+  };
+
+  const persistVisibleEvents = async (next: Set<string>) => {
+    setSavingCount((c) => c + 1);
+    try {
+      const res = await fetch("/api/visible-events", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(next) }),
+      });
+
+      if (res.status === 401) {
+        alert(
+          "Сесія адміністратора закінчилась. Онови сторінку і введи пароль."
+        );
+        return;
+      }
+
+      if (!res.ok) {
+        alert("Не вдалося зберегти. Спробуй ще раз.");
+        return;
+      }
+
+      await loadVisibleEvents();
+    } catch {
+      alert("Не вдалося зберегти. Спробуй ще раз.");
+    } finally {
+      setSavingCount((c) => Math.max(0, c - 1));
+    }
   };
 
   const toggleVisible = (competitionId: string) => {
@@ -143,6 +203,9 @@ export default function HomePage() {
       const next = new Set(prev);
       if (next.has(competitionId)) next.delete(competitionId);
       else next.add(competitionId);
+
+      void persistVisibleEvents(next);
+
       return next;
     });
   };
@@ -158,7 +221,15 @@ export default function HomePage() {
 
         {!loading && competitions.length > 0 && (
           <>
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-3">
+              {savingCount > 0 && (
+                <span className="text-sm text-gray-500">Збереження…</span>
+              )}
+
+              {visibleLoading && (
+                <span className="text-sm text-gray-500">Синхронізація…</span>
+              )}
+
               <button
                 onClick={() => {
                   window.location.href = "/admin/logout";
@@ -168,6 +239,7 @@ export default function HomePage() {
                 Вийти
               </button>
             </div>
+
             <div className="flex items-center justify-center gap-2 mb-4">
               <CustomCheckbox
                 checked={hideMarked}
@@ -179,121 +251,124 @@ export default function HomePage() {
             <ul className="space-y-4">
               {competitions
                 .filter(
-                  (c) => !(hideMarked && hiddenEvents.has(c.CompetitionId))
+                  (c) =>
+                    !(
+                      hideMarked &&
+                      hiddenEvents.has(String(c.CompetitionId).trim())
+                    )
                 )
-                .map((c) => (
-                  <li
-                    key={`${c.CompetitionId}-${c.DateTo}-${c.CityName}`}
-                    className={`p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity ${
-                      hiddenEvents.has(c.CompetitionId)
-                        ? "opacity-50"
-                        : "opacity-100"
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <CustomCheckbox
-                          checked={visibleEvents.has(c.CompetitionId)}
-                          onChange={() => toggleVisible(c.CompetitionId)}
-                        />
-                        <span className="text-gray-700 text-sm">
-                          Показувати
+                .map((c) => {
+                  const id = String(c.CompetitionId).trim();
+
+                  return (
+                    <li
+                      key={`${id}-${c.DateTo}-${c.CityName}`}
+                      className={`p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity ${
+                        hiddenEvents.has(id) ? "opacity-50" : "opacity-100"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <CustomCheckbox
+                            checked={visibleEvents.has(id)}
+                            onChange={() => toggleVisible(id)}
+                            disabled={visibleLoading || savingCount > 0}
+                          />
+                          <span className="text-gray-700 text-sm">
+                            Показувати
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <CustomCheckbox
+                            checked={hiddenEvents.has(id)}
+                            onChange={() => toggleHidden(id)}
+                          />
+                          <span className="text-gray-700 text-sm">
+                            Приховати
+                          </span>
+                        </div>
+                      </div>
+
+                      <Image
+                        src={c.CoverPhoto}
+                        alt={c.CompetitionName}
+                        width={60}
+                        height={90}
+                        className="rounded-lg object-cover"
+                        priority
+                      />
+
+                      <div className="flex flex-col gap-1 flex-1 overflow-hidden">
+                        <span className="font-semibold text-gray-900 truncate">
+                          {c.CompetitionName}
                         </span>
+                        <span className="text-gray-700">{c.DateTo}</span>
+                        <span className="text-gray-500">{c.CityName}</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <CustomCheckbox
-                          checked={hiddenEvents.has(c.CompetitionId)}
-                          onChange={() => toggleHidden(c.CompetitionId)}
-                        />
-                        <span className="text-gray-700 text-sm">Приховати</span>
+                      <div className="flex flex-col md:flex-row gap-2">
+                        <div className="relative flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const payload = encodeEvent({
+                                id,
+                                name: c.CompetitionName,
+                                coverUrl: c.CoverPhoto,
+                              });
+                              router.push(`/select?event=${payload}`);
+                            }}
+                            className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
+                          >
+                            Замовити
+                          </button>
+
+                          <Copy
+                            className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                            onClick={() =>
+                              copyLink(`/select?event=${id}`, `${id}-select`)
+                            }
+                          />
+
+                          {tooltipVisible === `${id}-select` && (
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                              Скопійовано!
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="relative flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const payload = encodeEvent({
+                                id,
+                                name: c.CompetitionName,
+                                coverUrl: c.CoverPhoto,
+                              });
+                              router.push(`/parts?event=${payload}`);
+                            }}
+                            className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
+                          >
+                            Виконати
+                          </button>
+
+                          <Copy
+                            className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                            onClick={() =>
+                              copyLink(`/parts?event=${id}`, `${id}-parts`)
+                            }
+                          />
+
+                          {tooltipVisible === `${id}-parts` && (
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                              Скопійовано!
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-
-                    <Image
-                      src={c.CoverPhoto}
-                      alt={c.CompetitionName}
-                      width={60}
-                      height={90}
-                      className="rounded-lg object-cover"
-                      priority
-                    />
-
-                    <div className="flex flex-col gap-1 flex-1 overflow-hidden">
-                      <span className="font-semibold text-gray-900 truncate">
-                        {c.CompetitionName}
-                      </span>
-                      <span className="text-gray-700">{c.DateTo}</span>
-                      <span className="text-gray-500">{c.CityName}</span>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row gap-2">
-                      <div className="relative flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const payload = encodeEvent({
-                              id: c.CompetitionId,
-                              name: c.CompetitionName,
-                              coverUrl: c.CoverPhoto,
-                            });
-                            router.push(`/select?event=${payload}`);
-                          }}
-                          className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
-                        >
-                          Замовити
-                        </button>
-
-                        <Copy
-                          className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                          onClick={() =>
-                            copyLink(
-                              `/select?event=${c.CompetitionId}`,
-                              `${c.CompetitionId}-select`
-                            )
-                          }
-                        />
-
-                        {tooltipVisible === `${c.CompetitionId}-select` && (
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                            Скопійовано!
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="relative flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const payload = encodeEvent({
-                              id: c.CompetitionId,
-                              name: c.CompetitionName,
-                              coverUrl: c.CoverPhoto,
-                            });
-                            router.push(`/parts?event=${payload}`);
-                          }}
-                          className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
-                        >
-                          Виконати
-                        </button>
-
-                        <Copy
-                          className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                          onClick={() =>
-                            copyLink(
-                              `/parts?event=${c.CompetitionId}`,
-                              `${c.CompetitionId}-parts`
-                            )
-                          }
-                        />
-
-                        {tooltipVisible === `${c.CompetitionId}-parts` && (
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                            Скопійовано!
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
             </ul>
           </>
         )}
