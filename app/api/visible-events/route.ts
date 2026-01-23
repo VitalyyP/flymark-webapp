@@ -1,6 +1,5 @@
+import { readSheetValues, saveRowsToSheet } from "@/utils/googleSheets";
 import { NextResponse } from "next/server";
-import { saveToGoogleSheet } from "@/utils/saveToGoogleSheet";
-import { readFromGoogleSheet } from "@/utils/readFromGoogleSheet";
 
 const SHEET_NAME = process.env.VISIBLE_EVENTS_SHEET ?? "visibleEvents";
 
@@ -10,7 +9,7 @@ type VisibleEventsPayload = {
 
 export async function GET() {
   try {
-    const rows = await readFromGoogleSheet({
+    const rows = await readSheetValues({
       sheetName: SHEET_NAME,
       range: "A:A",
     });
@@ -55,7 +54,7 @@ export async function PUT(req: Request) {
 
     const rows = ids.map((CompetitionId) => ({ CompetitionId }));
 
-    await saveToGoogleSheet(rows, {
+    await saveRowsToSheet(rows, {
       sheetName: SHEET_NAME,
       clearBeforeWrite: true,
     });

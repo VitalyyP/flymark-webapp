@@ -1,5 +1,5 @@
+import { saveRowsToSheet } from "@/utils/googleSheets";
 import { parseEvent, PerformanceRow } from "@/utils/parseEvent";
-import { saveToGoogleSheet } from "@/utils/saveToGoogleSheet";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   try {
     const rows: PerformanceRow[] = await parseEvent(eventId);
 
-    await saveToGoogleSheet(rows, {
+    await saveRowsToSheet(rows, {
       sheetName: `${eventId}/A`,
       clearBeforeWrite: true,
     });
