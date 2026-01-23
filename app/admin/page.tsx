@@ -43,6 +43,16 @@ export default function HomePage() {
     return localStorage.getItem("hideMarked") === "true";
   });
 
+  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("visibleEvents");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
   const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
     btoa(unescape(encodeURIComponent(JSON.stringify(event))));
 
@@ -81,7 +91,7 @@ export default function HomePage() {
           new Date(yB, mB - 1, dB).getTime()
         );
       });
-
+      console.log("RESULTS:", results);
       setCompetitions(results);
       setLoading(false);
     };
@@ -100,6 +110,13 @@ export default function HomePage() {
     localStorage.setItem("hideMarked", String(hideMarked));
   }, [hideMarked]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "visibleEvents",
+      JSON.stringify(Array.from(visibleEvents))
+    );
+  }, [visibleEvents]);
+
   const copyLink = (path: string, id: string) => {
     const link = `${window.location.origin}${path}`;
     navigator.clipboard.writeText(link);
@@ -117,6 +134,15 @@ export default function HomePage() {
         next.add(competitionId);
       }
 
+      return next;
+    });
+  };
+
+  const toggleVisible = (competitionId: string) => {
+    setVisibleEvents((prev) => {
+      const next = new Set(prev);
+      if (next.has(competitionId)) next.delete(competitionId);
+      else next.add(competitionId);
       return next;
     });
   };
@@ -164,10 +190,25 @@ export default function HomePage() {
                         : "opacity-100"
                     }`}
                   >
-                    <CustomCheckbox
-                      checked={hiddenEvents.has(c.CompetitionId)}
-                      onChange={() => toggleHidden(c.CompetitionId)}
-                    />
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <CustomCheckbox
+                          checked={visibleEvents.has(c.CompetitionId)}
+                          onChange={() => toggleVisible(c.CompetitionId)}
+                        />
+                        <span className="text-gray-700 text-sm">
+                          Показувати
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <CustomCheckbox
+                          checked={hiddenEvents.has(c.CompetitionId)}
+                          onChange={() => toggleHidden(c.CompetitionId)}
+                        />
+                        <span className="text-gray-700 text-sm">Приховати</span>
+                      </div>
+                    </div>
 
                     <Image
                       src={c.CoverPhoto}

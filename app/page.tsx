@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Copy } from "lucide-react";
-import { CustomCheckbox } from "./CustomCheckbox";
 
 interface Competition {
   CompetitionId: string;
@@ -14,34 +12,16 @@ interface Competition {
   CoverPhoto: string;
 }
 
-const cityMap = {
-  dnipro: { id: 20, name: "Дніпро" },
-  zaporizhzhia: { id: 1756, name: "Запоріжжя" },
-};
-
-type CityKey = keyof typeof cityMap;
+const CITIES_IDS: number[] =
+  process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
+    .map((id) => Number(id.trim()))
+    .filter(Boolean) ?? [];
 
 export default function HomePage() {
   const router = useRouter();
 
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(false);
-  const [tooltipVisible, setTooltipVisible] = useState<string | null>(null);
-
-  const [hiddenEvents, setHiddenEvents] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const stored = localStorage.getItem("hiddenEvents");
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
-
-  const [hideMarked, setHideMarked] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("hideMarked") === "true";
-  });
 
   const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
     btoa(unescape(encodeURIComponent(JSON.stringify(event))));
@@ -51,9 +31,7 @@ export default function HomePage() {
       setLoading(true);
       const results: Competition[] = [];
 
-      for (const cityKey of Object.keys(cityMap) as CityKey[]) {
-        const { id: cityId, name: cityName } = cityMap[cityKey];
-
+      for (const cityId of CITIES_IDS) {
         const res = await fetch("/api/flymark/search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -69,7 +47,6 @@ export default function HomePage() {
         });
 
         const data: Competition[] = await res.json();
-        data.forEach((c) => (c.CityName = cityName));
         results.push(...data);
       }
 
@@ -82,6 +59,7 @@ export default function HomePage() {
         );
       });
 
+      console.log("RESULTS:", results);
       setCompetitions(results);
       setLoading(false);
     };
@@ -89,37 +67,30 @@ export default function HomePage() {
     load();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(
-      "hiddenEvents",
-      JSON.stringify(Array.from(hiddenEvents))
-    );
-  }, [hiddenEvents]);
+  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("visibleEvents");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
   useEffect(() => {
-    localStorage.setItem("hideMarked", String(hideMarked));
-  }, [hideMarked]);
-
-  const copyLink = (path: string, id: string) => {
-    const link = `${window.location.origin}${path}`;
-    navigator.clipboard.writeText(link);
-    setTooltipVisible(id);
-    setTimeout(() => setTooltipVisible(null), 1500);
-  };
-
-  const toggleHidden = (competitionId: string) => {
-    setHiddenEvents((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(competitionId)) {
-        next.delete(competitionId);
-      } else {
-        next.add(competitionId);
+    const sync = () => {
+      try {
+        const stored = localStorage.getItem("visibleEvents");
+        setVisibleEvents(stored ? new Set(JSON.parse(stored)) : new Set());
+      } catch {
+        setVisibleEvents(new Set());
       }
+    };
 
-      return next;
-    });
-  };
+    sync();
+    window.addEventListener("focus", sync);
+    return () => window.removeEventListener("focus", sync);
+  }, []);
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-100 p-6">
@@ -132,33 +103,19 @@ export default function HomePage() {
 
         {!loading && competitions.length > 0 && (
           <>
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <CustomCheckbox
-                checked={hideMarked}
-                onChange={() => setHideMarked((v) => !v)}
-              />
-              <span className="text-gray-700">Ховати позначені події</span>
-            </div>
-
             <ul className="space-y-4">
               {competitions
-                .filter(
-                  (c) => !(hideMarked && hiddenEvents.has(c.CompetitionId))
-                )
+                .filter((c) => {
+                  const allowedByAdmin =
+                    visibleEvents.size === 0 ||
+                    visibleEvents.has(c.CompetitionId);
+                  return allowedByAdmin;
+                })
                 .map((c) => (
                   <li
                     key={`${c.CompetitionId}-${c.DateTo}-${c.CityName}`}
-                    className={`p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity ${
-                      hiddenEvents.has(c.CompetitionId)
-                        ? "opacity-50"
-                        : "opacity-100"
-                    }`}
+                    className={`p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity`}
                   >
-                    <CustomCheckbox
-                      checked={hiddenEvents.has(c.CompetitionId)}
-                      onChange={() => toggleHidden(c.CompetitionId)}
-                    />
-
                     <Image
                       src={c.CoverPhoto}
                       alt={c.CompetitionName}
@@ -191,54 +148,6 @@ export default function HomePage() {
                         >
                           Замовити
                         </button>
-
-                        <Copy
-                          className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                          onClick={() =>
-                            copyLink(
-                              `/select?event=${c.CompetitionId}`,
-                              `${c.CompetitionId}-select`
-                            )
-                          }
-                        />
-
-                        {tooltipVisible === `${c.CompetitionId}-select` && (
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                            Скопійовано!
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="relative flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const payload = encodeEvent({
-                              id: c.CompetitionId,
-                              name: c.CompetitionName,
-                              coverUrl: c.CoverPhoto,
-                            });
-                            router.push(`/parts?event=${payload}`);
-                          }}
-                          className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
-                        >
-                          Виконати
-                        </button>
-
-                        <Copy
-                          className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                          onClick={() =>
-                            copyLink(
-                              `/parts?event=${c.CompetitionId}`,
-                              `${c.CompetitionId}-parts`
-                            )
-                          }
-                        />
-
-                        {tooltipVisible === `${c.CompetitionId}-parts` && (
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                            Скопійовано!
-                          </span>
-                        )}
                       </div>
                     </div>
                   </li>
