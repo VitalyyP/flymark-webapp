@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 
 interface Competition {
   CompetitionId: string;
@@ -71,12 +72,7 @@ export default function HomePage() {
         }
 
         results.sort((a, b) => {
-          const [dA, mA, yA] = a.DateTo.split("/").map(Number);
-          const [dB, mB, yB] = b.DateTo.split("/").map(Number);
-          return (
-            new Date(yA, mA - 1, dA).getTime() -
-            new Date(yB, mB - 1, dB).getTime()
-          );
+          return new Date(a.DateTo).getTime() - new Date(b.DateTo).getTime();
         });
 
         setCompetitions(results);
@@ -170,7 +166,9 @@ export default function HomePage() {
                   <span className="font-semibold text-gray-900 truncate">
                     {c.CompetitionName}
                   </span>
-                  <span className="text-gray-700">{c.DateTo}</span>
+                  <span className="text-gray-700">
+                    {formatUaDateFromISO(c.DateTo)}
+                  </span>
                   <span className="text-gray-500">{c.CityName}</span>
                 </div>
 
