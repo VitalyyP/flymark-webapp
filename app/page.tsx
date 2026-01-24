@@ -3,15 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 
-interface Competition {
-  CompetitionId: string;
-  CompetitionName: string;
-  DateTo: string;
-  CityName: string;
-  CoverPhoto: string;
-}
+import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
+import {
+  Competition,
+  normalizeCompetition,
+  RawCompetition,
+} from "@/utils/normalizeCompetition";
 
 const CITIES_IDS: number[] =
   process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
@@ -59,7 +57,9 @@ export default function HomePage() {
 
           const data: unknown = await res.json();
           const list: Competition[] = Array.isArray(data)
-            ? (data as Competition[])
+            ? (data as RawCompetition[])
+                .map(normalizeCompetition)
+                .filter((x): x is Competition => x !== null)
             : [];
 
           list.forEach((c) => {

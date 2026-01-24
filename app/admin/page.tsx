@@ -6,14 +6,11 @@ import Image from "next/image";
 import { Copy } from "lucide-react";
 import { CustomCheckbox } from "@/components/CustomCheckbox";
 import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
-
-interface Competition {
-  CompetitionId: string;
-  CompetitionName: string;
-  DateTo: string;
-  CityName: string;
-  CoverPhoto: string;
-}
+import {
+  Competition,
+  normalizeCompetition,
+  RawCompetition,
+} from "@/utils/normalizeCompetition";
 
 type VisibleEventsResponse = {
   ids?: unknown;
@@ -77,12 +74,14 @@ export default function HomePage() {
 
           if (!res.ok) continue;
 
-          const raw: unknown = await res.json();
-          const data: Competition[] = Array.isArray(raw)
-            ? (raw as Competition[])
+          const data: unknown = await res.json();
+          const list: Competition[] = Array.isArray(data)
+            ? (data as RawCompetition[])
+                .map(normalizeCompetition)
+                .filter((x): x is Competition => x !== null)
             : [];
 
-          data.forEach((c) => {
+          list.forEach((c) => {
             c.CompetitionId = String(
               (c as unknown as { CompetitionId: unknown }).CompetitionId
             ).trim();
@@ -91,7 +90,7 @@ export default function HomePage() {
             ).trim();
           });
 
-          results.push(...data);
+          results.push(...list);
         }
 
         results.sort((a, b) => {
