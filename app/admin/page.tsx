@@ -303,6 +303,9 @@ export default function HomePage() {
                         </span>
                         <span className="text-gray-500">{c.CityName}</span>
                       </div>
+                      <div>
+                        <span className="text-gray-500">{c.CompetitionId}</span>
+                      </div>
 
                       <div className="flex flex-col md:flex-row gap-2">
                         <div className="relative flex items-center gap-2">
