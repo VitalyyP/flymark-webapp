@@ -304,7 +304,15 @@ export default function HomePage() {
                         <span className="text-gray-500">{c.CityName}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">{c.CompetitionId}</span>
+                        <a
+                          href={`/api/sheet-link?id=${encodeURIComponent(id)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 hover:underline text-sm"
+                          title={`Відкрити аркуш ${id}/B`}
+                        >
+                          {id}
+                        </a>
                       </div>
 
                       <div className="flex flex-col md:flex-row gap-2">
