@@ -205,6 +205,14 @@ export default function HomePage() {
     });
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/admin/logout", { cache: "no-store" });
+    } finally {
+      window.location.href = "/admin";
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-5xl bg-white p-8 rounded-xl shadow flex flex-col gap-6">
@@ -226,9 +234,7 @@ export default function HomePage() {
               )}
 
               <button
-                onClick={() => {
-                  window.location.href = "/admin/logout";
-                }}
+                onClick={() => void handleLogout()}
                 className="rounded-md bg-gray-200 px-3 py-2 text-sm hover:bg-gray-300 text-gray-700"
               >
                 Вийти
