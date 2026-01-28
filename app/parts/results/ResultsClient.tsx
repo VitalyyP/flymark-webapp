@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 import { decodeEvent } from "@/utils/eventPayload";
-import Link from "next/link";
 
 type Participant = {
   regNumber: string;
@@ -14,6 +14,14 @@ type Participant = {
   program: string;
   name: string;
 };
+function makeCrossKey(
+  category: string,
+  program: string,
+  regNumber: string,
+  idx: number
+) {
+  return `${category}|||${program}|||${regNumber}|||${idx}`;
+}
 
 export default function ResultsClient() {
   const searchParams = useSearchParams();
@@ -27,7 +35,6 @@ export default function ResultsClient() {
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [crossedKeys, setCrossedKeys] = useState<string[]>([]);
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,9 +54,24 @@ export default function ResultsClient() {
         `crossed:${decoded.id}:${decoded.time}`
       );
       if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed?.expiresAt && parsed.expiresAt > Date.now()) {
-          setCrossedKeys(parsed.value || []);
+        const parsed: unknown = JSON.parse(stored);
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "expiresAt" in parsed &&
+          "value" in parsed
+        ) {
+          const expiresAt = (parsed as { expiresAt?: unknown }).expiresAt;
+          const value = (parsed as { value?: unknown }).value;
+
+          if (typeof expiresAt === "number" && expiresAt > Date.now()) {
+            if (Array.isArray(value)) {
+              const keys = value.filter(
+                (x): x is string => typeof x === "string"
+              );
+              setCrossedKeys(keys);
+            }
+          }
         }
       }
     } catch {}
@@ -78,19 +100,25 @@ export default function ResultsClient() {
     fetchParticipants();
   }, [eventId, time]);
 
-  if (!eventId || !time)
+  const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
+
+  if (!eventId || !time) {
     return (
       <p className="p-6 text-center text-red-600">
         Помилка: некоректні дані події
       </p>
     );
+  }
 
-  if (loading)
+  if (loading) {
     return (
       <p className="p-6 text-center text-gray-500">Завантаження учасників…</p>
     );
-  if (participants.length === 0)
+  }
+
+  if (participants.length === 0) {
     return <p className="p-6 text-center text-gray-500">Немає учасників</p>;
+  }
 
   const grouped: Record<string, Record<string, string[]>> = {};
   participants.forEach((p) => {
@@ -102,6 +130,7 @@ export default function ResultsClient() {
   const categories = Object.keys(grouped).sort((a, b) =>
     a.localeCompare(b, "uk", { numeric: true })
   );
+
   categories.forEach((cat) =>
     Object.keys(grouped[cat]).forEach((prog) =>
       grouped[cat][prog].sort((a, b) =>
@@ -109,27 +138,6 @@ export default function ResultsClient() {
       )
     )
   );
-
-  const toggleKey = (key: string) => {
-    setCrossedKeys((prev) => {
-      const next = prev.includes(key)
-        ? prev.filter((k) => k !== key)
-        : [...prev, key];
-
-      try {
-        localStorage.setItem(
-          `crossed:${eventId}:${time}`,
-          JSON.stringify({
-            value: next,
-            expiresAt: Date.now() + 24 * 60 * 60 * 1000, // TTL 24 години
-          })
-        );
-      } catch {}
-      return next;
-    });
-  };
-
-  const isCrossed = (key: string) => crossedKeys.includes(key);
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
@@ -196,20 +204,23 @@ export default function ResultsClient() {
                     <td className="border border-gray-200 px-4 py-2 text-black">
                       {prog}
                     </td>
+
                     <td className="border border-gray-200 px-4 py-2 text-black">
                       {grouped[cat][prog]
                         .map((num, idx) => {
-                          const key = `${cat}-${prog}-${num}-${idx}`;
+                          const key = makeCrossKey(cat, prog, num, idx);
                           const participant = participants.find(
-                            (p) => p.regNumber === num && p.program === prog
+                            (p) =>
+                              p.regNumber === num &&
+                              p.program === prog &&
+                              p.category === cat
                           );
-                          const crossed = isCrossed(key);
+                          const crossed = crossedSet.has(key);
 
                           return (
                             <span
                               key={key}
-                              onClick={() => toggleKey(key)}
-                              className={`cursor-pointer ${
+                              className={`${
                                 crossed ? "line-through opacity-60" : ""
                               } ${
                                 participant?.orderType === "Ексклюзив"
