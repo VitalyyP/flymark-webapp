@@ -86,7 +86,9 @@ export function ParticipantForm({
 
   const isPhoneValid = phone.replace(/\D/g, "").length === 12;
 
-  const hasRequiredFields = !!regNumber.trim() && !!orderType && isPhoneValid;
+  const hasRegNumber = regNumberUnknown || !!regNumber.trim();
+
+  const hasRequiredFields = hasRegNumber && !!orderType && isPhoneValid;
 
   const hasItems = selectedItems.length > 0;
 
@@ -119,7 +121,7 @@ export function ParticipantForm({
           program: r.program,
           time: r.time,
         })),
-      regNumber,
+      regNumber: regNumberUnknown ? "Не знаю" : regNumber,
       orderType,
       phone,
     };
@@ -221,24 +223,28 @@ export function ParticipantForm({
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Реєстраційний номер
               </label>
+
               <div className="flex items-center gap-3">
                 <input
                   type="number"
-                  value={regNumberUnknown ? "Не знаю" : regNumber}
+                  inputMode="numeric"
+                  value={regNumberUnknown ? "" : regNumber}
                   onChange={(e) =>
                     setRegNumber(e.target.value.replace(/\D/g, ""))
                   }
                   disabled={regNumberUnknown}
+                  placeholder={regNumberUnknown ? "Не знаю" : ""}
                   className="w-2/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
                 />
+
                 <label className="flex items-center gap-1 text-gray-900 w-1/3">
                   <input
                     type="checkbox"
                     checked={regNumberUnknown}
                     onChange={(e) => {
-                      setRegNumberUnknown(e.target.checked);
-                      if (e.target.checked) setRegNumber("Не знаю");
-                      else setRegNumber("");
+                      const checked = e.target.checked;
+                      setRegNumberUnknown(checked);
+                      if (checked) setRegNumber("");
                     }}
                   />
                   Не знаю

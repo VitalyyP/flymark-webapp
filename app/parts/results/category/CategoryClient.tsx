@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 import { decodeEvent } from "@/utils/eventPayload";
+import {
+  makeCrossedStorageKey,
+  makeCrossKey,
+  readCrossedFromStorage,
+  toggleCrossedKey,
+} from "@/utils/crossedStorage";
 
 type Participant = {
   regNumber: string;
@@ -13,19 +19,117 @@ type Participant = {
   program: string;
 };
 
+function CrossTable({
+  storageKey,
+  categoryParam,
+  participants,
+}: {
+  storageKey: string;
+  categoryParam: string;
+  participants: Participant[];
+}) {
+  const [crossedKeys, setCrossedKeys] = useState<string[]>(() =>
+    readCrossedFromStorage(storageKey)
+  );
+
+  const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
+
+  const grouped: Record<string, string[]> = {};
+  participants.forEach((p) => {
+    if (!grouped[p.program]) grouped[p.program] = [];
+    grouped[p.program].push(p.regNumber);
+  });
+
+  Object.keys(grouped).forEach((prog) =>
+    grouped[prog].sort((a, b) => a.localeCompare(b, "uk", { numeric: true }))
+  );
+
+  return (
+    <div className="w-full overflow-x-auto mt-6">
+      <table className="w-full border-collapse border border-gray-200">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-200 px-4 py-2 text-left text-black">
+              Програма
+            </th>
+            <th className="border border-gray-200 px-4 py-2 text-left text-black">
+              Номери учасників
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {Object.keys(grouped).map((prog, i) => (
+            <tr key={prog} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+              <td className="border border-gray-200 px-4 py-2 text-black">
+                {prog}
+              </td>
+
+              <td className="border border-gray-200 px-4 py-2 text-black">
+                {grouped[prog]
+                  .map((num, idx) => {
+                    const key = makeCrossKey(categoryParam, prog, num, idx);
+                    const crossed = crossedSet.has(key);
+
+                    const participant = participants.find(
+                      (p) => p.regNumber === num && p.program === prog
+                    );
+
+                    return (
+                      <span
+                        key={key}
+                        onClick={() =>
+                          setCrossedKeys((prev) =>
+                            toggleCrossedKey(prev, key, storageKey)
+                          )
+                        }
+                        className={`cursor-pointer ${
+                          crossed ? "line-through opacity-60" : ""
+                        } ${
+                          participant?.orderType === "Ексклюзив"
+                            ? "text-green-600"
+                            : ""
+                        }`}
+                      >
+                        {num}
+                      </span>
+                    );
+                  })
+                  .reduce(
+                    (prev: React.ReactNode[], curr) =>
+                      prev.length === 0 ? [curr] : [...prev, ", ", curr],
+                    [] as React.ReactNode[]
+                  )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function CategoryClient() {
   const searchParams = useSearchParams();
 
-  const eventParam = searchParams.get("event");
-  const categoryParam = searchParams.get("category");
+  const eventParam = searchParams.get("event") ?? "";
+  const categoryParam = searchParams.get("category") ?? "";
 
-  const decoded = eventParam ? decodeEvent(eventParam) : null;
+  const decoded = useMemo(
+    () => (eventParam ? decodeEvent(eventParam) : null),
+    [eventParam]
+  );
 
   const eventId = decoded?.id ?? "";
   const eventName = decoded?.name ?? "";
   const coverUrl = decoded?.coverUrl ?? "";
   const time = decoded?.time ?? "";
   const part = decoded?.part ?? "";
+
+  const storageKey = useMemo(() => {
+    if (!eventId || !time) return "";
+    return makeCrossedStorageKey(eventId, time);
+  }, [eventId, time]);
 
   const [participants, setParticipants] = useState<Participant[] | null>(null);
 
@@ -37,15 +141,15 @@ export default function CategoryClient() {
     )
       .then((res) => res.json())
       .then((data) => {
-        const filtered = (data.participants ?? []).filter(
-          (p: Participant) => p.category === categoryParam
-        );
-        setParticipants(filtered);
+        const list: Participant[] = Array.isArray(data?.participants)
+          ? (data.participants as Participant[])
+          : [];
+        setParticipants(list.filter((p) => p.category === categoryParam));
       })
       .catch(() => setParticipants([]));
   }, [eventId, time, categoryParam]);
 
-  if (!eventParam || !categoryParam || !decoded) {
+  if (!decoded || !eventId || !time || !eventParam || !categoryParam) {
     return (
       <p className="p-6 text-center text-red-600">Помилка: некоректні дані</p>
     );
@@ -62,16 +166,6 @@ export default function CategoryClient() {
       </p>
     );
   }
-
-  const grouped: Record<string, string[]> = {};
-  participants.forEach((p) => {
-    if (!grouped[p.program]) grouped[p.program] = [];
-    grouped[p.program].push(p.regNumber);
-  });
-
-  Object.keys(grouped).forEach((prog) =>
-    grouped[prog].sort((a, b) => a.localeCompare(b, "uk", { numeric: true }))
-  );
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
@@ -107,35 +201,12 @@ export default function CategoryClient() {
           </div>
         </div>
 
-        <div className="w-full overflow-x-auto mt-6">
-          <table className="w-full border-collapse border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-200 px-4 py-2 text-left text-black">
-                  Програма
-                </th>
-                <th className="border border-gray-200 px-4 py-2 text-left text-black">
-                  Номери учасників
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(grouped).map((prog, i) => (
-                <tr
-                  key={prog}
-                  className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="border border-gray-200 px-4 py-2 text-black">
-                    {prog}
-                  </td>
-                  <td className="border border-gray-200 px-4 py-2 text-black">
-                    {grouped[prog].join(", ")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CrossTable
+          key={storageKey}
+          storageKey={storageKey}
+          categoryParam={categoryParam}
+          participants={participants}
+        />
       </div>
     </div>
   );

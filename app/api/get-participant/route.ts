@@ -1,114 +1,168 @@
 import { google } from "googleapis";
+import { NextResponse } from "next/server";
+
+type SheetRow = (string | undefined)[];
+
+type ResultItem = {
+  category: string;
+  time: string;
+  dancer1Name: string;
+  dancer2Name: string;
+  program: string;
+};
+
+function normalizePrivateKey(key?: string): string | undefined {
+  if (!key) return undefined;
+  return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
+}
+
+function normalizeText(s: string): string {
+  return s.trim().normalize("NFC");
+}
+
+function safeCell(row: SheetRow, idx: number): string {
+  const v = row[idx];
+  return typeof v === "string" ? v : "";
+}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const name = searchParams.get("name");
-    const eventId = searchParams.get("event");
 
-    if (!name) {
-      return new Response(JSON.stringify({ error: "Missing name" }), {
-        status: 400,
-      });
-    }
+    const eventIdRaw = searchParams.get("event");
+    const nameRaw = searchParams.get("name");
+    const idRaw = searchParams.get("id");
+
+    const eventId = normalizeText(eventIdRaw ?? "");
+    const name = normalizeText(nameRaw ?? "");
+    const dancerId = normalizeText(idRaw ?? "");
 
     if (!eventId) {
-      return new Response(
-        JSON.stringify({ error: "Missing event parameter" }),
+      return NextResponse.json(
+        { error: "Missing event parameter" },
         { status: 400 }
       );
     }
 
-    if (
-      !process.env.GOOGLE_CLIENT_EMAIL ||
-      !process.env.GOOGLE_PRIVATE_KEY ||
-      !process.env.SHEET_ID
-    ) {
-      throw new Error("Missing Google Sheets environment variables");
+    if (!dancerId && !name) {
+      return NextResponse.json(
+        { error: "Missing id or name parameter" },
+        { status: 400 }
+      );
+    }
+
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
+    const spreadsheetId = process.env.SHEET_ID;
+
+    if (!clientEmail || !privateKey || !spreadsheetId) {
+      return NextResponse.json(
+        { error: "Missing Google Sheets environment variables" },
+        { status: 500 }
+      );
     }
 
     const auth = new google.auth.GoogleAuth({
       credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        client_email: clientEmail,
+        private_key: privateKey,
       },
       scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-    const spreadsheetId = process.env.SHEET_ID;
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range: `${eventId}/A!A:Z`,
     });
 
-    const rows = response.data.values || [];
+    const rows = (response.data.values ?? []) as SheetRow[];
 
-    if (rows.length < 2)
-      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    if (rows.length < 2) {
+      return NextResponse.json([], { status: 200 });
+    }
 
-    const headers = rows[0].map((h) => (h || "").trim());
+    const headers = rows[0].map((h) => (typeof h === "string" ? h.trim() : ""));
     const dataRows = rows.slice(1);
 
-    const dancer1Index = headers.indexOf("Dancer1Name");
-    const dancer2Index = headers.indexOf("Dancer2Name");
-    const categoryIndex = headers.indexOf("CategoryName");
-    const timeIndex = headers.indexOf("SectionTime");
-    const programIndex = headers.indexOf("ProgramName");
+    const dancer1NameIdx = headers.indexOf("Dancer1Name");
+    const dancer2NameIdx = headers.indexOf("Dancer2Name");
+    const categoryIdx = headers.indexOf("CategoryName");
+    const timeIdx = headers.indexOf("SectionTime");
+    const programIdx = headers.indexOf("ProgramName");
 
-    if (
-      dancer1Index === -1 ||
-      dancer2Index === -1 ||
-      categoryIndex === -1 ||
-      timeIndex === -1 ||
-      programIndex === -1
-    ) {
-      return new Response(
-        JSON.stringify({ error: "Required columns not found" }),
+    const dancer1IdIdx = headers.indexOf("Dancer1Id");
+    const dancer2IdIdx = headers.indexOf("Dancer2Id");
+
+    const required = [
+      dancer1NameIdx,
+      dancer2NameIdx,
+      categoryIdx,
+      timeIdx,
+      programIdx,
+    ];
+    if (required.some((x) => x === -1)) {
+      return NextResponse.json(
+        { error: "Required columns not found" },
         { status: 500 }
       );
     }
 
-    const normalize = (s: string | undefined) =>
-      (s || "").trim().normalize("NFC");
-    const nameParts = normalize(name).split(" ");
+    const nameParts = name
+      ? normalizeText(name).split(/\s+/).filter(Boolean)
+      : [];
 
-    const results = dataRows
+    const results: ResultItem[] = dataRows
       .map((row) => {
-        const dancer1 = row[dancer1Index] || "";
-        const dancer2 = row[dancer2Index] || "";
-        const category = row[categoryIndex] || "";
-        const time = row[timeIndex] || "";
-        const program = row[programIndex] || "";
+        const dancer1Name = safeCell(row, dancer1NameIdx);
+        const dancer2Name = safeCell(row, dancer2NameIdx);
+        const category = safeCell(row, categoryIdx);
+        const time = safeCell(row, timeIdx);
+        const program = safeCell(row, programIdx);
 
-        const matches = [dancer1, dancer2].some((d) =>
-          nameParts.every((part) => normalize(d).includes(part))
-        );
+        if (!category) return null;
 
-        if (!matches || !category) return null;
+        if (dancerId) {
+          const d1id = dancer1IdIdx >= 0 ? safeCell(row, dancer1IdIdx) : "";
+          const d2id = dancer2IdIdx >= 0 ? safeCell(row, dancer2IdIdx) : "";
+
+          const matchesById =
+            normalizeText(d1id) === dancerId ||
+            normalizeText(d2id) === dancerId;
+
+          if (!matchesById) return null;
+
+          return {
+            category,
+            time,
+            dancer1Name,
+            dancer2Name,
+            program,
+          };
+        }
+
+        const matchesByName = [dancer1Name, dancer2Name].some((d) => {
+          const nd = normalizeText(d);
+          return nameParts.every((part) => nd.includes(part));
+        });
+
+        if (!matchesByName) return null;
 
         return {
           category,
           time,
-          dancer1Name: dancer1,
-          dancer2Name: dancer2,
+          dancer1Name,
+          dancer2Name,
           program,
         };
       })
-      .filter(Boolean);
+      .filter((x): x is ResultItem => x !== null);
 
-    return new Response(JSON.stringify(results), { status: 200 });
+    return NextResponse.json(results, { status: 200 });
   } catch (e: unknown) {
     console.error("Error:", e);
-
-    if (e instanceof Error) {
-      return new Response(JSON.stringify({ error: e.message }), {
-        status: 500,
-      });
-    }
-    return new Response(JSON.stringify({ error: "Unknown error occurred" }), {
-      status: 500,
-    });
+    const message = e instanceof Error ? e.message : "Unknown error occurred";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

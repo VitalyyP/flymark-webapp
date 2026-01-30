@@ -6,25 +6,64 @@ import Image from "next/image";
 import { useEventFromQuery } from "@/hooks/useEventFromQuery";
 import { encodeEvent } from "@/utils/eventPayload";
 
-interface ParticipantData {
-  Dancer1Name?: string;
-  Dancer2Name?: string;
+type ParticipantOption = {
+  id: string;
+  name: string;
+};
+
+type ParticipantRow = {
+  Dancer1Name?: unknown;
+  Dancer1Id?: unknown;
+  Dancer2Name?: unknown;
+  Dancer2Id?: unknown;
+};
+
+function toTrimmedString(v: unknown): string {
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number") return String(v);
+  return "";
+}
+
+function normalizeText(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function rowToOptions(row: unknown): ParticipantOption[] {
+  if (!isRecord(row)) return [];
+
+  const r = row as ParticipantRow;
+
+  const d1Name = toTrimmedString(r.Dancer1Name);
+  const d1Id = toTrimmedString(r.Dancer1Id);
+
+  const d2Name = toTrimmedString(r.Dancer2Name);
+  const d2Id = toTrimmedString(r.Dancer2Id);
+
+  const out: ParticipantOption[] = [];
+
+  if (d1Name && d1Id) out.push({ id: d1Id, name: d1Name });
+  if (d2Name && d2Id) out.push({ id: d2Id, name: d2Name });
+
+  return out;
 }
 
 export default function SelectParticipantPage() {
   const router = useRouter();
   const event = useEventFromQuery();
 
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<ParticipantOption[]>([]);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState("");
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<ParticipantOption | null>(null);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const eventId = event?.id ?? "";
   const eventName = event?.name ?? "";
   const coverUrl = event?.coverUrl ?? "";
-
-  const normalizeText = (s: string) => s.trim().toLowerCase();
 
   useEffect(() => {
     if (!eventId) return;
@@ -33,21 +72,18 @@ export default function SelectParticipantPage() {
       setLoadingParticipants(true);
       try {
         const res = await fetch(`/api/participants?event=${eventId}`);
-        const data = await res.json();
+        const data: unknown = await res.json();
 
-        const rawParticipants: unknown[] = Array.isArray(data) ? data : [];
+        const rows: unknown[] = Array.isArray(data) ? data : [];
+        const options = rows.flatMap(rowToOptions);
 
-        const cleaned = Array.from(
-          new Set(
-            rawParticipants.flatMap((item) => {
-              if (typeof item !== "object" || item === null) return [];
-              const p = item as ParticipantData;
-              const names: string[] = [];
-              if (p.Dancer1Name) names.push(p.Dancer1Name);
-              if (p.Dancer2Name) names.push(p.Dancer2Name);
-              return names;
-            })
-          )
+        const uniq = new Map<string, ParticipantOption>();
+        for (const opt of options) {
+          if (!uniq.has(opt.id)) uniq.set(opt.id, opt);
+        }
+
+        const cleaned = Array.from(uniq.values()).sort((a, b) =>
+          a.name.localeCompare(b.name, "uk", { numeric: true })
         );
 
         setParticipants(cleaned);
@@ -66,8 +102,8 @@ export default function SelectParticipantPage() {
     const q = normalizeText(query);
     if (!q) return [];
 
-    return participants.filter((name) =>
-      normalizeText(name)
+    return participants.filter((p) =>
+      normalizeText(p.name)
         .split(" ")
         .some((part) => part.startsWith(q))
     );
@@ -75,23 +111,28 @@ export default function SelectParticipantPage() {
 
   const handleSearch = (value: string) => {
     setQuery(value);
-    setSelected("");
+    setSelectedParticipant(null);
+  };
+
+  const handlePick = (p: ParticipantOption) => {
+    setSelectedParticipant(p);
+    setQuery(p.name);
   };
 
   const handleSubmit = () => {
-    if (!selected || !event) return;
+    if (!selectedParticipant || !event) return;
 
-    const encodedEvent = encodeEvent({
+    const encoded = encodeEvent({
       id: event.id,
       name: event.name,
       coverUrl: event.coverUrl,
+      participant: {
+        id: selectedParticipant.id,
+        name: selectedParticipant.name,
+      },
     });
 
-    router.push(
-      `/form?event=${encodeURIComponent(
-        encodedEvent
-      )}&participant=${encodeURIComponent(selected)}`
-    );
+    router.push(`/form?event=${encodeURIComponent(encoded)}`);
   };
 
   if (!event) {
@@ -154,14 +195,12 @@ export default function SelectParticipantPage() {
                 <ul className="absolute top-full left-0 z-20 mt-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
                   {filtered.map((p) => (
                     <li
-                      key={p}
-                      onClick={() => {
-                        setSelected(p);
-                        setQuery(p);
-                      }}
+                      key={p.id}
+                      onClick={() => handlePick(p)}
                       className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-gray-100"
+                      title={p.id}
                     >
-                      {p}
+                      {p.name}
                     </li>
                   ))}
                 </ul>
@@ -170,7 +209,7 @@ export default function SelectParticipantPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={!selected || loadingParticipants}
+              disabled={!selectedParticipant || loadingParticipants}
               className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400"
             >
               Далі
@@ -198,15 +237,12 @@ export default function SelectParticipantPage() {
             transform: scale(0.55);
           }
         }
-
         .animate-loadingDot {
           animation: loadingDot 0.9s infinite ease-in-out;
         }
-
         .animation-delay-150 {
           animation-delay: 0.15s;
         }
-
         .animation-delay-300 {
           animation-delay: 0.3s;
         }
