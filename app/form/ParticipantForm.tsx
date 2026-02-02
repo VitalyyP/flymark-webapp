@@ -62,7 +62,7 @@ export function ParticipantForm({
   results = [],
   eventId,
   eventName,
-  coverUrl,
+  coverUrl
 }: Props) {
   const [regNumber, setRegNumber] = useState("");
   const [regNumberUnknown, setRegNumberUnknown] = useState(false);
@@ -82,7 +82,7 @@ export function ParticipantForm({
 
   const handleItemToggle = (key: string, checked: boolean) => {
     setSelectedItems((prev) =>
-      checked ? [...prev, key] : prev.filter((k) => k !== key),
+      checked ? [...prev, key] : prev.filter((k) => k !== key)
     );
   };
 
@@ -126,7 +126,7 @@ export function ParticipantForm({
             турніру.
           </p>
         </div>
-      ),
+      )
     },
     {
       id: "exclusive",
@@ -180,8 +180,8 @@ export function ParticipantForm({
             ⚠️ Важливо чітко вказати категорію згідно з програмою!
           </p>
         </div>
-      ),
-    },
+      )
+    }
   ];
 
   const secondName: string = (() => {
@@ -209,17 +209,17 @@ export function ParticipantForm({
         .map((r) => ({
           category: removeLastBracket(r.category),
           program: r.program,
-          time: r.time,
+          time: r.time
         })),
       regNumber,
       orderType,
-      phone,
+      phone
     };
 
     const res = await fetch("/api/save-form", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     setSending(false);
@@ -355,13 +355,13 @@ export function ParticipantForm({
                       type="button"
                       onClick={() =>
                         setOpenAccordion(
-                          openAccordion === option.id ? null : option.id,
+                          openAccordion === option.id ? null : option.id
                         )
                       }
                       className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       <span
-                        className={`text-sm sm:text-base leading-tight tracking-tight ${orderType === option.id ? "text-blue-600 font-bold" : "text-gray-900 font-medium"}`}
+                        className={`text-sm sm:text-base leading-tight tracking-tight ${orderType === option.id ? "text-green-700 font-bold" : "text-gray-900 font-medium"}`}
                       >
                         {option.title} {orderType === option.id && "✓"}
                       </span>
