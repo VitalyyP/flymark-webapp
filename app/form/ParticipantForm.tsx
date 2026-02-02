@@ -374,9 +374,9 @@ export function ParticipantForm({
                       className={`transition-all duration-500 ease-in-out overflow-hidden ${openAccordion === option.id ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
                     >
                       <div className="p-4 pt-2 bg-gray-50">
-                        <p className="text-gray-700 text-sm mb-4 leading-normal">
+                        <div className="text-gray-700 text-sm mb-4 leading-normal">
                           {option.description}
-                        </p>
+                        </div>
                         <button
                           type="button"
                           onClick={() => setOrderType(option.id)}
