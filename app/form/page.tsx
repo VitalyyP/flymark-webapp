@@ -42,7 +42,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   return (
     <ParticipantForm
-      name={participant.name}
+      participant={participant}
       results={results}
       eventId={event.id}
       eventName={event.name}

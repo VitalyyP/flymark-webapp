@@ -10,6 +10,7 @@ import {
   normalizeCompetition,
   RawCompetition,
 } from "@/utils/normalizeCompetition";
+import { encodeEvent } from "@/utils/eventPayload";
 
 const CITIES_IDS: number[] =
   process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
@@ -28,9 +29,6 @@ export default function HomePage() {
 
   const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
   const [loadingVisible, setLoadingVisible] = useState(true);
-
-  const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
-    btoa(unescape(encodeURIComponent(JSON.stringify(event))));
 
   useEffect(() => {
     const load = async () => {
@@ -177,11 +175,14 @@ export default function HomePage() {
                     <button
                       onClick={() => {
                         const payload = encodeEvent({
-                          id: String(c.CompetitionId).trim(),
+                          id: c.CompetitionId,
                           name: c.CompetitionName,
                           coverUrl: c.CoverPhoto,
                         });
-                        router.push(`/select?event=${payload}`);
+
+                        router.push(
+                          `/select?event=${encodeURIComponent(payload)}`
+                        );
                       }}
                       className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                     >
