@@ -62,7 +62,7 @@ export default function HomePage() {
 
           list.forEach((c) => {
             c.CompetitionId = String(
-              (c as unknown as { CompetitionId: unknown }).CompetitionId,
+              (c as unknown as { CompetitionId: unknown }).CompetitionId
             ).trim();
           });
 
@@ -115,7 +115,7 @@ export default function HomePage() {
     if (loadingVisible) return [];
     if (visibleEvents.size === 0) return [];
     return competitions.filter((c) =>
-      visibleEvents.has(String(c.CompetitionId).trim()),
+      visibleEvents.has(String(c.CompetitionId).trim())
     );
   }, [competitions, visibleEvents, loadingVisible]);
 

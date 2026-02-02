@@ -83,10 +83,10 @@ export default function HomePage() {
 
           list.forEach((c) => {
             c.CompetitionId = String(
-              (c as unknown as { CompetitionId: unknown }).CompetitionId,
+              (c as unknown as { CompetitionId: unknown }).CompetitionId
             ).trim();
             c.CityName = String(
-              (c as unknown as { CityName?: unknown }).CityName ?? "",
+              (c as unknown as { CityName?: unknown }).CityName ?? ""
             ).trim();
           });
 
@@ -109,7 +109,7 @@ export default function HomePage() {
   useEffect(() => {
     localStorage.setItem(
       "hiddenEvents",
-      JSON.stringify(Array.from(hiddenEvents)),
+      JSON.stringify(Array.from(hiddenEvents))
     );
   }, [hiddenEvents]);
 
@@ -130,8 +130,8 @@ export default function HomePage() {
               typeof x === "string"
                 ? x.trim()
                 : typeof x === "number"
-                  ? String(x)
-                  : "",
+                ? String(x)
+                : ""
             )
             .filter(Boolean)
         : [];
@@ -175,7 +175,7 @@ export default function HomePage() {
 
       if (res.status === 401) {
         alert(
-          "Сесія адміністратора закінчилась. Онови сторінку і введи пароль.",
+          "Сесія адміністратора закінчилась. Онови сторінку і введи пароль."
         );
         return;
       }
@@ -256,7 +256,7 @@ export default function HomePage() {
                     !(
                       hideMarked &&
                       hiddenEvents.has(String(c.CompetitionId).trim())
-                    ),
+                    )
                 )
                 .map((c) => {
                   const id = String(c.CompetitionId).trim();
