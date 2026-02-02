@@ -64,7 +64,7 @@ export default function HomePage() {
 
           list.forEach((c) => {
             c.CompetitionId = String(
-              (c as unknown as { CompetitionId: unknown }).CompetitionId
+              (c as unknown as { CompetitionId: unknown }).CompetitionId,
             ).trim();
           });
 
@@ -117,7 +117,7 @@ export default function HomePage() {
     if (loadingVisible) return [];
     if (visibleEvents.size === 0) return [];
     return competitions.filter((c) =>
-      visibleEvents.has(String(c.CompetitionId).trim())
+      visibleEvents.has(String(c.CompetitionId).trim()),
     );
   }, [competitions, visibleEvents, loadingVisible]);
 
@@ -151,7 +151,7 @@ export default function HomePage() {
             {filteredCompetitions.map((c) => (
               <li
                 key={`${c.CompetitionId}-${c.DateTo}-${c.CityName}`}
-                className="p-4 border rounded-lg shadow-sm flex gap-4 items-center transition-opacity"
+                className="p-4 border rounded-lg shadow-sm flex flex-col sm:flex-row gap-4 item-start sm:items-center transition-opacity"
               >
                 <Image
                   src={c.CoverPhoto}
