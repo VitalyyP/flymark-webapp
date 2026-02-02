@@ -80,7 +80,7 @@ export function ParticipantForm({
 
   const handleItemToggle = (key: string, checked: boolean) => {
     setSelectedItems((prev) =>
-      checked ? [...prev, key] : prev.filter((k) => k !== key)
+      checked ? [...prev, key] : prev.filter((k) => k !== key),
     );
   };
 
@@ -201,15 +201,18 @@ export function ParticipantForm({
 
                   return (
                     <li key={key} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.includes(key)}
-                        onChange={(e) =>
-                          handleItemToggle(key, e.target.checked)
-                        }
-                      />
-                      <label className="text-gray-900">
-                        {removeLastBracket(r.category)} / {r.program} / {r.time}
+                      <label className="text-gray-900 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(key)}
+                          onChange={(e) =>
+                            handleItemToggle(key, e.target.checked)
+                          }
+                        />
+                        <span className="ml-2">
+                          {removeLastBracket(r.category)} / {r.program} /{" "}
+                          {r.time}
+                        </span>
                       </label>
                     </li>
                   );
@@ -231,18 +234,20 @@ export function ParticipantForm({
                   disabled={regNumberUnknown}
                   className="w-2/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
                 />
-                <label className="flex items-center gap-1 text-gray-900 w-1/3">
-                  <input
-                    type="checkbox"
-                    checked={regNumberUnknown}
-                    onChange={(e) => {
-                      setRegNumberUnknown(e.target.checked);
-                      if (e.target.checked) setRegNumber("Не знаю");
-                      else setRegNumber("");
-                    }}
-                  />
-                  Не знаю
-                </label>
+                <div className="flex items-center gap-1 text-gray-900 w-1/3">
+                  <label className="cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={regNumberUnknown}
+                      onChange={(e) => {
+                        setRegNumberUnknown(e.target.checked);
+                        if (e.target.checked) setRegNumber("Не знаю");
+                        else setRegNumber("");
+                      }}
+                    />
+                    <span className="ml-2">Не знаю</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -285,7 +290,7 @@ export function ParticipantForm({
                 sending
                   ? "bg-yellow-600 hover:bg-yellow-700"
                   : "bg-blue-600 hover:bg-blue-700"
-              } disabled:bg-gray-400`}
+              } disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed`}
             >
               {sending ? "Відправляю..." : "Відправити"}
             </button>

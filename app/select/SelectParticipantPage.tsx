@@ -46,8 +46,8 @@ export default function SelectParticipantPage() {
               if (p.Dancer1Name) names.push(p.Dancer1Name);
               if (p.Dancer2Name) names.push(p.Dancer2Name);
               return names;
-            })
-          )
+            }),
+          ),
         );
 
         setParticipants(cleaned);
@@ -69,7 +69,7 @@ export default function SelectParticipantPage() {
     return participants.filter((name) =>
       normalizeText(name)
         .split(" ")
-        .some((part) => part.startsWith(q))
+        .some((part) => part.startsWith(q)),
     );
   }, [participants, query]);
 
@@ -89,8 +89,8 @@ export default function SelectParticipantPage() {
 
     router.push(
       `/form?event=${encodeURIComponent(
-        encodedEvent
-      )}&participant=${encodeURIComponent(selected)}`
+        encodedEvent,
+      )}&participant=${encodeURIComponent(selected)}`,
     );
   };
 
@@ -171,7 +171,7 @@ export default function SelectParticipantPage() {
             <button
               onClick={handleSubmit}
               disabled={!selected || loadingParticipants}
-              className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400"
+              className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400 cursor-pointer"
             >
               Далі
             </button>
