@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import PhoneInput from "react-phone-number-input";
@@ -50,7 +50,10 @@ export type ResultItem = {
 };
 
 type Props = {
-  name: string;
+  participant: {
+    name: string;
+    id: string;
+  };
   results: ResultItem[];
   eventId: string;
   eventName: string;
@@ -58,7 +61,7 @@ type Props = {
 };
 
 export function ParticipantForm({
-  name,
+  participant,
   results = [],
   eventId,
   eventName,
@@ -70,9 +73,48 @@ export function ParticipantForm({
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [loadingNumber, setLoadingNumber] = useState(true);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const dancerId = Number(participant.id);
+    const competitionId = Number(eventId);
+
+    if (!Number.isFinite(dancerId) || !Number.isFinite(competitionId)) {
+      setLoadingNumber(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/flymark/find-number?competitionId=${competitionId}&dancerId=${dancerId}`,
+          { cache: "no-store" }
+        );
+        const data = (await res.json()) as { number: number | null };
+
+        if (cancelled) return;
+
+        if (typeof data.number === "number") {
+          setRegNumber(String(data.number));
+          setRegNumberUnknown(false);
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoadingNumber(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [participant.id, eventId]);
+
+  const { name, id } = participant;
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
   const getItemKey = (r: ResultItem) =>
@@ -86,7 +128,9 @@ export function ParticipantForm({
 
   const isPhoneValid = phone.replace(/\D/g, "").length === 12;
 
-  const hasRequiredFields = !!regNumber.trim() && !!orderType && isPhoneValid;
+  const hasRegNumber = regNumberUnknown || !!regNumber.trim();
+
+  const hasRequiredFields = hasRegNumber && !!orderType && isPhoneValid;
 
   const hasItems = selectedItems.length > 0;
 
@@ -119,7 +163,7 @@ export function ParticipantForm({
           program: r.program,
           time: r.time,
         })),
-      regNumber,
+      regNumber: regNumberUnknown ? "Не знаю" : regNumber,
       orderType,
       phone,
     };
@@ -221,24 +265,34 @@ export function ParticipantForm({
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Реєстраційний номер
               </label>
+
               <div className="flex items-center gap-3">
                 <input
                   type="number"
-                  value={regNumberUnknown ? "Не знаю" : regNumber}
+                  inputMode="numeric"
+                  value={regNumberUnknown ? "" : regNumber}
+                  disabled={regNumberUnknown || loadingNumber}
+                  placeholder={
+                    loadingNumber
+                      ? "Шукаю номер..."
+                      : regNumberUnknown
+                      ? "Не знаю"
+                      : ""
+                  }
                   onChange={(e) =>
                     setRegNumber(e.target.value.replace(/\D/g, ""))
                   }
-                  disabled={regNumberUnknown}
                   className="w-2/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
                 />
+
                 <label className="flex items-center gap-1 text-gray-900 w-1/3">
                   <input
                     type="checkbox"
                     checked={regNumberUnknown}
                     onChange={(e) => {
-                      setRegNumberUnknown(e.target.checked);
-                      if (e.target.checked) setRegNumber("Не знаю");
-                      else setRegNumber("");
+                      const checked = e.target.checked;
+                      setRegNumberUnknown(checked);
+                      if (checked) setRegNumber("");
                     }}
                   />
                   Не знаю

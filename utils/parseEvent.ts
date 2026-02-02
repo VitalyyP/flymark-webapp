@@ -32,7 +32,9 @@ export type PerformanceRow = {
   CategoryName: string;
   ProgramName: string;
   Dancer1Name: string;
+  Dancer1Id: string;
   Dancer2Name: string;
+  Dancer2Id: string;
 };
 
 const api = axios.create({
@@ -75,6 +77,7 @@ export async function parseEvent(eventId: number): Promise<PerformanceRow[]> {
 
     for (const reg of registrations) {
       const dancers = reg.Dancers ?? [];
+
       for (const program of reg.Programs ?? []) {
         const entry = Object.entries(category.SectionData ?? {}).find(
           ([_, programs]) =>
@@ -91,7 +94,9 @@ export async function parseEvent(eventId: number): Promise<PerformanceRow[]> {
           CategoryName: category.Name,
           ProgramName: program.Name,
           Dancer1Name: dancers[0]?.FullName ?? "",
+          Dancer1Id: dancers[0]?.Id.toString() ?? "",
           Dancer2Name: dancers[1]?.FullName ?? "",
+          Dancer2Id: dancers[1]?.Id?.toString() ?? "",
         });
       }
     }
