@@ -65,7 +65,7 @@ export function ParticipantForm({
   results = [],
   eventId,
   eventName,
-  coverUrl,
+  coverUrl
 }: Props) {
   const [regNumber, setRegNumber] = useState("");
   const [regNumberUnknown, setRegNumberUnknown] = useState(false);
@@ -74,6 +74,8 @@ export function ParticipantForm({
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [loadingNumber, setLoadingNumber] = useState(true);
+
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
@@ -136,6 +138,96 @@ export function ParticipantForm({
 
   const canSubmit = hasRequiredFields && hasItems && !sending;
 
+  const orderOptions = [
+    {
+      id: "basic",
+      title: "📸 ВИБІР фото ЗА ЗРАЗКАМИ",
+      description: (
+        <div className="space-y-2">
+          <ul className="list-disc ml-4 space-y-1">
+            <li>
+              Одне-три фото —{" "}
+              <strong className="text-gray-900">100.00 грн.</strong> за штуку
+            </li>
+            <li>
+              Чотири і більше —{" "}
+              <strong className="text-gray-900">90.00 грн.</strong> за штуку
+            </li>
+            <li>
+              Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
+              до <strong className="text-gray-900">1000.00 грн.</strong>
+            </li>
+          </ul>
+          <p className="mt-3">
+            😇{" "}
+            <span className="font-semibold text-green-700">
+              НІЯКИХ ПЕРЕДПЛАТ
+            </span>{" "}
+            — оплата після вибору фото!
+          </p>
+          <p className="text-xs text-gray-500 italic">
+            Посилання на хмару надійде на Viber/Telegram протягом 3–7 днів після
+            турніру.
+          </p>
+        </div>
+      )
+    },
+    {
+      id: "exclusive",
+      title: `🏆 Premium ПАКЕТ: ВСІ ФОТО вже ЗАВТРА`,
+      description: (
+        <div className="space-y-3">
+          <div className="bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
+            <p className="text-blue-900 font-bold">Вартість: 1000.00 грн.</p>
+          </div>
+
+          <ul className="space-y-2">
+            <li className="flex gap-2">
+              <span>⚡</span>
+              <span>
+                Ви отримуєте всі оригінальні світлини (мінімум{" "}
+                <strong className="text-gray-900">27 шт.</strong>){" "}
+                <strong className="text-gray-900">ПРОТЯГОМ ДОБИ</strong> після
+                завершення турніру
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span>🔝</span>
+              <span>
+                Спортсмени з Premium-пакетом мають{" "}
+                <strong className="text-gray-900">пріоритет</strong> під час
+                зйомки перед іншими замовниками.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span>🔒</span>
+              <span>
+                Вартість фіксується під час оплати й не залежить від кількості
+                фото.
+              </span>
+            </li>
+          </ul>
+
+          <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-xs border border-yellow-200">
+            <p className="font-bold mb-1 underline">УМОВИ ОПЛАТИ:</p>
+            <p>
+              100% оплата здійснюється у день турніру після реєстрації та
+              повідомлення номера участі асистенту фотографа біля{" "}
+              <strong className="text-gray-900 underline">
+                зеленого рекламного банера А Фото
+              </strong>
+              !
+            </p>
+          </div>
+
+          <p className="text-[10px] uppercase font-bold text-red-600 ">
+            ⚠️ Важливо чітко вказати категорію згідно з програмою!
+          </p>
+        </div>
+      )
+    }
+  ];
+
   const secondName: string = (() => {
     const r = results[0];
     if (!r) return "";
@@ -161,17 +253,17 @@ export function ParticipantForm({
         .map((r) => ({
           category: removeLastBracket(r.category),
           program: r.program,
-          time: r.time,
+          time: r.time
         })),
       regNumber: regNumberUnknown ? "Не знаю" : regNumber,
       orderType,
-      phone,
+      phone
     };
 
     const res = await fetch("/api/save-form", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     setSending(false);
@@ -183,6 +275,7 @@ export function ParticipantForm({
       setOrderType("");
       setPhone("");
       setSelectedItems([]);
+      setOpenAccordion(null);
     }
   };
 
@@ -245,15 +338,18 @@ export function ParticipantForm({
 
                   return (
                     <li key={key} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.includes(key)}
-                        onChange={(e) =>
-                          handleItemToggle(key, e.target.checked)
-                        }
-                      />
-                      <label className="text-gray-900">
-                        {removeLastBracket(r.category)} / {r.program} / {r.time}
+                      <label className="text-gray-900 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(key)}
+                          onChange={(e) =>
+                            handleItemToggle(key, e.target.checked)
+                          }
+                        />
+                        <span className="ml-2">
+                          {removeLastBracket(r.category)} / {r.program} /{" "}
+                          {r.time}
+                        </span>
                       </label>
                     </li>
                   );
@@ -276,27 +372,28 @@ export function ParticipantForm({
                     loadingNumber
                       ? "Шукаю номер..."
                       : regNumberUnknown
-                      ? "Не знаю"
-                      : ""
+                        ? "Не знаю"
+                        : ""
                   }
                   onChange={(e) =>
                     setRegNumber(e.target.value.replace(/\D/g, ""))
                   }
                   className="w-2/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
                 />
-
-                <label className="flex items-center gap-1 text-gray-900 w-1/3">
-                  <input
-                    type="checkbox"
-                    checked={regNumberUnknown}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setRegNumberUnknown(checked);
-                      if (checked) setRegNumber("");
-                    }}
-                  />
-                  Не знаю
-                </label>
+                <div className="flex items-center gap-1 text-gray-900 w-1/3">
+                  <label className="cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={regNumberUnknown}
+                      onChange={(e) => {
+                        setRegNumberUnknown(e.target.checked);
+                        if (e.target.checked) setRegNumber("Не знаю");
+                        else setRegNumber("");
+                      }}
+                    />
+                    <span className="ml-2">Не знаю</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -304,18 +401,49 @@ export function ParticipantForm({
               <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Вид замовлення
               </label>
+              <div className="border rounded-md overflow-hidden bg-white">
+                {orderOptions.map((option) => (
+                  <div key={option.id} className="border-b last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenAccordion(
+                          openAccordion === option.id ? null : option.id
+                        )
+                      }
+                      className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      <span
+                        className={`text-sm sm:text-base leading-tight tracking-tight ${orderType === option.id ? "text-green-700 font-bold" : "text-gray-900 font-medium"}`}
+                      >
+                        {option.title} {orderType === option.id && "✓"}
+                      </span>
+                      <span className="text-xl text-gray-400 flex-shrink-0 w-5 text-center">
+                        {openAccordion === option.id ? "−" : "+"}
+                      </span>
+                    </button>
 
-              <div className="flex flex-col gap-2 text-lg text-gray-900">
-                {["Одне-три фото", "Чотири-сім фото", "Ексклюзив"].map((t) => (
-                  <label key={t} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="orderType"
-                      checked={orderType === t}
-                      onChange={() => setOrderType(t)}
-                    />
-                    {t}
-                  </label>
+                    <div
+                      className={`transition-all duration-500 ease-in-out overflow-hidden ${openAccordion === option.id ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
+                    >
+                      <div className="p-4 pt-2 bg-gray-50">
+                        <div className="text-gray-700 text-sm mb-4 leading-normal">
+                          {option.description}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setOrderType(option.id)}
+                          className={`w-full py-2 rounded border transition-all cursor-pointer ${
+                            orderType === option.id
+                              ? "bg-green-500 text-white border-green-500"
+                              : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
+                          }`}
+                        >
+                          {orderType === option.id ? "Обрано" : "Обрати"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -339,7 +467,7 @@ export function ParticipantForm({
                 sending
                   ? "bg-yellow-600 hover:bg-yellow-700"
                   : "bg-blue-600 hover:bg-blue-700"
-              } disabled:bg-gray-400`}
+              } disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed`}
             >
               {sending ? "Відправляю..." : "Відправити"}
             </button>

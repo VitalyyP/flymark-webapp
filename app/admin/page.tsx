@@ -9,7 +9,7 @@ import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import {
   Competition,
   normalizeCompetition,
-  RawCompetition,
+  RawCompetition
 } from "@/utils/normalizeCompetition";
 
 type VisibleEventsResponse = {
@@ -68,8 +68,8 @@ export default function HomePage() {
               from: "",
               to: "",
               page: 1,
-              type: "Opened",
-            }),
+              type: "Opened"
+            })
           });
 
           if (!res.ok) continue;
@@ -130,8 +130,8 @@ export default function HomePage() {
               typeof x === "string"
                 ? x.trim()
                 : typeof x === "number"
-                ? String(x)
-                : ""
+                  ? String(x)
+                  : ""
             )
             .filter(Boolean)
         : [];
@@ -170,7 +170,7 @@ export default function HomePage() {
       const res = await fetch("/api/visible-events", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(next) }),
+        body: JSON.stringify({ ids: Array.from(next) })
       });
 
       if (res.status === 401) {
@@ -328,7 +328,7 @@ export default function HomePage() {
                               const payload = encodeEvent({
                                 id,
                                 name: c.CompetitionName,
-                                coverUrl: c.CoverPhoto,
+                                coverUrl: c.CoverPhoto
                               });
                               router.push(`/select?event=${payload}`);
                             }}
@@ -357,7 +357,7 @@ export default function HomePage() {
                               const payload = encodeEvent({
                                 id,
                                 name: c.CompetitionName,
-                                coverUrl: c.CoverPhoto,
+                                coverUrl: c.CoverPhoto
                               });
                               router.push(`/parts?event=${payload}`);
                             }}

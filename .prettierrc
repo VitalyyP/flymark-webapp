@@ -1,4 +1,5 @@
 {
   "singleQuote": false,
-  "quoteProps": "preserve"
+  "quoteProps": "preserve",
+  "trailingComma": "none"
 }
