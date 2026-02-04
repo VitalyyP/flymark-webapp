@@ -16,6 +16,22 @@ type VisibleEventsResponse = {
   ids?: unknown;
 };
 
+type ResolveRegnumbersOk = {
+  ok: true;
+  updated: number;
+  tried: number;
+  checked: number;
+  errors?: Array<{ name: string; reason: string }>;
+};
+
+type ResolveRegnumbersErr = {
+  ok: false;
+  error: string;
+  details?: unknown;
+};
+
+type ResolveRegnumbersResponse = ResolveRegnumbersOk | ResolveRegnumbersErr;
+
 const CITIES_IDS: number[] =
   process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
     .map((id) => Number(id.trim()))
@@ -47,6 +63,21 @@ export default function HomePage() {
   const [visibleLoading, setVisibleLoading] = useState(true);
 
   const [savingCount, setSavingCount] = useState(0);
+
+  // 🔒 Один глобальний "поточний пошук"
+  const [findingId, setFindingId] = useState<string | null>(null);
+
+  // 🧾 Результати/статуси привʼязані до конкретного eventId
+  const [findUi, setFindUi] = useState<
+    Record<
+      string,
+      {
+        statusText: string | null;
+        foundCount: number | null;
+        findError: string | null;
+      }
+    >
+  >({});
 
   const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
     btoa(unescape(encodeURIComponent(JSON.stringify(event))));
@@ -213,6 +244,104 @@ export default function HomePage() {
     }
   };
 
+  const handleFindNumbers = async (competitionId: string) => {
+    // 🔒 блокуємо запуск, якщо вже йде інший пошук
+    if (findingId) return;
+
+    // 🧾 скидаємо UI тільки для цього eventId
+    setFindUi((prev) => ({
+      ...prev,
+      [competitionId]: {
+        statusText: "Шукаю рядки з «Не знаю»…",
+        foundCount: null,
+        findError: null,
+      },
+    }));
+
+    setFindingId(competitionId);
+
+    try {
+      setFindUi((prev) => ({
+        ...prev,
+        [competitionId]: {
+          ...(prev[competitionId] ?? {
+            statusText: null,
+            foundCount: null,
+            findError: null,
+          }),
+          statusText: "Зчитую Google таблицю…",
+        },
+      }));
+
+      const res = await fetch(
+        `/api/google/resolve-regnumbers?eventId=${encodeURIComponent(
+          competitionId
+        )}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        }
+      );
+
+      setFindUi((prev) => ({
+        ...prev,
+        [competitionId]: {
+          ...(prev[competitionId] ?? {
+            statusText: null,
+            foundCount: null,
+            findError: null,
+          }),
+          statusText: "Обробляю учасників…",
+        },
+      }));
+
+      const data = (await res.json()) as ResolveRegnumbersResponse;
+
+      if (!data.ok) {
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null,
+            }),
+            statusText: null,
+            findError: data.error || "Помилка запиту",
+          },
+        }));
+        return;
+      }
+
+      setFindUi((prev) => ({
+        ...prev,
+        [competitionId]: {
+          statusText: "Готово",
+          foundCount: data.updated,
+          findError: data.errors?.length
+            ? `Не вдалося знайти номер для ${data.errors.length} учасників`
+            : null,
+        },
+      }));
+    } catch (e) {
+      setFindUi((prev) => ({
+        ...prev,
+        [competitionId]: {
+          ...(prev[competitionId] ?? {
+            statusText: null,
+            foundCount: null,
+            findError: null,
+          }),
+          statusText: null,
+          findError: e instanceof Error ? e.message : "Невідома помилка",
+        },
+      }));
+    } finally {
+      setFindingId(null);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-5xl bg-white p-8 rounded-xl shadow flex flex-col gap-6">
@@ -260,6 +389,8 @@ export default function HomePage() {
                 )
                 .map((c) => {
                   const id = String(c.CompetitionId).trim();
+                  const ui = findUi[id];
+                  const isFindingThis = findingId === id;
 
                   return (
                     <li
@@ -309,6 +440,7 @@ export default function HomePage() {
                         </span>
                         <span className="text-gray-500">{c.CityName}</span>
                       </div>
+
                       <div>
                         <a
                           href={`/api/sheet-link?id=${encodeURIComponent(id)}`}
@@ -321,64 +453,95 @@ export default function HomePage() {
                         </a>
                       </div>
 
-                      <div className="flex flex-col md:flex-row gap-2">
-                        <div className="relative flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              const payload = encodeEvent({
-                                id,
-                                name: c.CompetitionName,
-                                coverUrl: c.CoverPhoto,
-                              });
-                              router.push(`/select?event=${payload}`);
-                            }}
-                            className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
-                          >
-                            Замовити
-                          </button>
+                      <div className="flex flex-col gap-2 w-fit">
+                        <div className="flex flex-col md:flex-row gap-2">
+                          <div className="relative flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const payload = encodeEvent({
+                                  id,
+                                  name: c.CompetitionName,
+                                  coverUrl: c.CoverPhoto,
+                                });
+                                router.push(`/select?event=${payload}`);
+                              }}
+                              className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
+                            >
+                              Замовити
+                            </button>
 
-                          <Copy
-                            className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                            onClick={() =>
-                              copyLink(`/select?event=${id}`, `${id}-select`)
-                            }
-                          />
+                            <Copy
+                              className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                              onClick={() =>
+                                copyLink(`/select?event=${id}`, `${id}-select`)
+                              }
+                            />
 
-                          {tooltipVisible === `${id}-select` && (
-                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                              Скопійовано!
-                            </span>
-                          )}
+                            {tooltipVisible === `${id}-select` && (
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                Скопійовано!
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="relative flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const payload = encodeEvent({
+                                  id,
+                                  name: c.CompetitionName,
+                                  coverUrl: c.CoverPhoto,
+                                });
+                                router.push(`/parts?event=${payload}`);
+                              }}
+                              className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
+                            >
+                              Виконати
+                            </button>
+
+                            <Copy
+                              className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
+                              onClick={() =>
+                                copyLink(`/parts?event=${id}`, `${id}-parts`)
+                              }
+                            />
+
+                            {tooltipVisible === `${id}-parts` && (
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                Скопійовано!
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="relative flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              const payload = encodeEvent({
-                                id,
-                                name: c.CompetitionName,
-                                coverUrl: c.CoverPhoto,
-                              });
-                              router.push(`/parts?event=${payload}`);
-                            }}
-                            className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
-                          >
-                            Виконати
-                          </button>
+                        <button
+                          onClick={() => handleFindNumbers(id)}
+                          // 🔒 блокуємо ВСІ кнопки, поки йде пошук по одному
+                          disabled={Boolean(findingId)}
+                          className="bg-green-600 hover:bg-green-500 disabled:bg-gray-400 text-white py-1.5 text-sm rounded-md w-full"
+                        >
+                          {isFindingThis ? "Шукаю..." : "Знайти номери"}
+                        </button>
 
-                          <Copy
-                            className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
-                            onClick={() =>
-                              copyLink(`/parts?event=${id}`, `${id}-parts`)
-                            }
-                          />
+                        {/* показуємо статус/результати ЛИШЕ біля поточного або останнього, для якого є ui */}
+                        {/* {ui?.statusText && (
+                          <div className="text-sm text-gray-600 mt-1 animate-pulse">
+                            {ui.statusText}
+                          </div>
+                        )} */}
 
-                          {tooltipVisible === `${id}-parts` && (
-                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                              Скопійовано!
-                            </span>
+                        {ui?.foundCount !== null &&
+                          ui?.foundCount !== undefined && (
+                            <div className="text-sm text-green-700 mt-1">
+                              Оновлено номерів: {ui.foundCount}
+                            </div>
                           )}
-                        </div>
+
+                        {ui?.findError && (
+                          <div className="text-sm text-red-600 mt-1">
+                            {ui.findError}
+                          </div>
+                        )}
                       </div>
                     </li>
                   );
