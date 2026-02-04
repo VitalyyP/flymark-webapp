@@ -148,7 +148,7 @@ function CrossTable({
                               crossed ? "line-through opacity-60" : ""
                             } ${
                               participant?.orderType === "premium"
-                                ? "text-green-600"
+                                ? "text-red-600"
                                 : ""
                             }`}
                           >
