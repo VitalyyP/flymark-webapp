@@ -173,7 +173,7 @@ export function ParticipantForm({
       )
     },
     {
-      id: "exclusive",
+      id: "premium",
       title: `🏆 Premium ПАКЕТ: ВСІ ФОТО вже ЗАВТРА`,
       description: (
         <div className="space-y-3">

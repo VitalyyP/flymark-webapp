@@ -9,7 +9,7 @@ import { decodeEvent } from "@/utils/eventPayload";
 import {
   makeCrossedStorageKey,
   makeCrossKey,
-  readCrossedFromStorage,
+  readCrossedFromStorage
 } from "@/utils/crossedStorage";
 
 type Participant = {
@@ -27,7 +27,7 @@ function CrossTable({
   part,
   time,
   coverUrl,
-  eventName,
+  eventName
 }: {
   storageKey: string;
   eventParam: string;
@@ -147,7 +147,7 @@ function CrossTable({
                             className={`${
                               crossed ? "line-through opacity-60" : ""
                             } ${
-                              participant?.orderType === "Ексклюзив"
+                              participant?.orderType === "premium"
                                 ? "text-green-600"
                                 : ""
                             }`}

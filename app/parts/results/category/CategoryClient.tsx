@@ -9,7 +9,7 @@ import {
   makeCrossedStorageKey,
   makeCrossKey,
   readCrossedFromStorage,
-  toggleCrossedKey,
+  toggleCrossedKey
 } from "@/utils/crossedStorage";
 
 type Participant = {
@@ -22,7 +22,7 @@ type Participant = {
 function CrossTable({
   storageKey,
   categoryParam,
-  participants,
+  participants
 }: {
   storageKey: string;
   categoryParam: string;
@@ -86,7 +86,7 @@ function CrossTable({
                         className={`cursor-pointer ${
                           crossed ? "line-through opacity-60" : ""
                         } ${
-                          participant?.orderType === "Ексклюзив"
+                          participant?.orderType === "premium"
                             ? "text-green-600"
                             : ""
                         }`}
