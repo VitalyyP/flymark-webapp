@@ -11,6 +11,7 @@ import {
   normalizeCompetition,
   RawCompetition
 } from "@/utils/normalizeCompetition";
+import { encodeEvent } from "@/utils/eventPayload";
 
 type VisibleEventsResponse = {
   ids?: unknown;
@@ -76,9 +77,6 @@ export default function HomePage() {
       }
     >
   >({});
-
-  const encodeEvent = (event: { id: string; name: string; coverUrl: string }) =>
-    btoa(unescape(encodeURIComponent(JSON.stringify(event))));
 
   useEffect(() => {
     const load = async () => {
@@ -177,11 +175,36 @@ export default function HomePage() {
     void loadVisibleEvents();
   }, []);
 
-  const copyLink = (path: string, id: string) => {
-    const link = `${window.location.origin}${path}`;
-    navigator.clipboard.writeText(link);
-    setTooltipVisible(id);
-    setTimeout(() => setTooltipVisible(null), 1500);
+  const copyToClipboard = async (text: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  };
+
+  const copyLink = async (absoluteUrlOrPath: string, tooltipId: string) => {
+    const url = absoluteUrlOrPath.startsWith("http")
+      ? absoluteUrlOrPath
+      : `${window.location.origin}${absoluteUrlOrPath}`;
+
+    try {
+      await copyToClipboard(url);
+      setTooltipVisible(tooltipId);
+      setTimeout(() => setTooltipVisible(null), 1500);
+    } catch {
+      setTooltipVisible(null);
+    }
   };
 
   const toggleHidden = (competitionId: string) => {
@@ -325,13 +348,9 @@ export default function HomePage() {
         setFindUi((prev) => {
           const cur = prev[competitionId];
           if (!cur) return prev;
-
           return {
             ...prev,
-            [competitionId]: {
-              ...cur,
-              foundCount: null
-            }
+            [competitionId]: { ...cur, foundCount: null }
           };
         });
       }, 10000);
@@ -409,6 +428,15 @@ export default function HomePage() {
                     ? `Оновлено номерів: ${ui.foundCount}`
                     : "Оновити номери";
 
+                  const eventPayload = encodeEvent({
+                    id,
+                    name: c.CompetitionName,
+                    coverUrl: c.CoverPhoto
+                  });
+
+                  const selectPath = `/select?event=${eventPayload}`;
+                  const partsPath = `/parts?event=${eventPayload}`;
+
                   return (
                     <li
                       key={`${id}-${c.DateTo}-${c.CityName}`}
@@ -474,14 +502,7 @@ export default function HomePage() {
                         <div className="flex flex-col md:flex-row gap-2">
                           <div className="relative flex items-center gap-2">
                             <button
-                              onClick={() => {
-                                const payload = encodeEvent({
-                                  id,
-                                  name: c.CompetitionName,
-                                  coverUrl: c.CoverPhoto
-                                });
-                                router.push(`/select?event=${payload}`);
-                              }}
+                              onClick={() => router.push(selectPath)}
                               className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                             >
                               Замовити
@@ -490,7 +511,7 @@ export default function HomePage() {
                             <Copy
                               className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
                               onClick={() =>
-                                copyLink(`/select?event=${id}`, `${id}-select`)
+                                void copyLink(selectPath, `${id}-select`)
                               }
                             />
 
@@ -503,14 +524,7 @@ export default function HomePage() {
 
                           <div className="relative flex items-center gap-2">
                             <button
-                              onClick={() => {
-                                const payload = encodeEvent({
-                                  id,
-                                  name: c.CompetitionName,
-                                  coverUrl: c.CoverPhoto
-                                });
-                                router.push(`/parts?event=${payload}`);
-                              }}
+                              onClick={() => router.push(partsPath)}
                               className="bg-green-600 hover:bg-green-500 text-white py-1.5 px-3 text-sm rounded-md"
                             >
                               Виконати
@@ -519,7 +533,7 @@ export default function HomePage() {
                             <Copy
                               className="w-5 h-5 text-gray-500 hover:text-black cursor-pointer"
                               onClick={() =>
-                                copyLink(`/parts?event=${id}`, `${id}-parts`)
+                                void copyLink(partsPath, `${id}-parts`)
                               }
                             />
 
