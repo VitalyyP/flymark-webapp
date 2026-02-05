@@ -173,7 +173,7 @@ export function ParticipantForm({
       )
     },
     {
-      id: "exclusive",
+      id: "premium",
       title: `🏆 Premium ПАКЕТ: ВСІ ФОТО вже ЗАВТРА`,
       description: (
         <div className="space-y-3">
@@ -364,8 +364,9 @@ export function ParticipantForm({
 
               <div className="flex items-center gap-3">
                 <input
-                  type="number"
+                  type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
                   value={regNumberUnknown ? "" : regNumber}
                   disabled={regNumberUnknown || loadingNumber}
                   placeholder={
@@ -375,12 +376,13 @@ export function ParticipantForm({
                         ? "Не знаю"
                         : ""
                   }
-                  onChange={(e) =>
-                    setRegNumber(e.target.value.replace(/\D/g, ""))
-                  }
-                  className="w-2/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900"
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/\D/g, "");
+                    setRegNumber(onlyDigits);
+                  }}
+                  className="w-1/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900 focus:outline-none"
                 />
-                <div className="flex items-center gap-1 text-gray-900 w-1/3">
+                <div className="flex items-center gap-1 text-gray-900 w-2/3">
                   <label className="cursor-pointer">
                     <input
                       type="checkbox"
