@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 import { decodeEvent } from "@/utils/eventPayload";
 import {
@@ -186,7 +187,7 @@ export default function CategoryClient() {
             </div>
           )}
 
-          <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
+          <h1 className="text-2xl font-semibold text-gray-900 text-center wrap-break-word">
             {eventName}
           </h1>
 
@@ -207,6 +208,15 @@ export default function CategoryClient() {
           categoryParam={categoryParam}
           participants={participants}
         />
+
+        <div className="mt-4 mb-4 flex justify-center">
+          <Link
+            href={`/parts/results?event=${eventParam}`}
+            className="inline-flex items-center justify-center px-8 py-3 bg-[#a9a9a9] text-white font-bold rounded-[15px] hover:bg-[#969696] transition-colors min-w-[180px]"
+          >
+            ← Назад
+          </Link>
+        </div>
       </div>
     </div>
   );
