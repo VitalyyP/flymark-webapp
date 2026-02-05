@@ -128,8 +128,8 @@ export default function SelectParticipantPage() {
       coverUrl: event.coverUrl,
       participant: {
         id: selectedParticipant.id,
-        name: selectedParticipant.name,
-      },
+        name: selectedParticipant.name
+      }
     });
 
     router.push(`/form?event=${encodeURIComponent(encoded)}`);
@@ -157,7 +157,7 @@ export default function SelectParticipantPage() {
               priority
             />
           </div>
-          <span className="text-3xl tracking-wider text-gray-900 text-center break-words line-clamp-2 max-w-full">
+          <span className="text-3xl tracking-wider text-gray-900 text-center wrap-break-word line-clamp-2 max-w-full">
             {eventName}
           </span>
         </div>
@@ -210,7 +210,7 @@ export default function SelectParticipantPage() {
             <button
               onClick={handleSubmit}
               disabled={!selectedParticipant || loadingParticipants}
-              className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400"
+              className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400 cursor-pointer"
             >
               Далі
             </button>

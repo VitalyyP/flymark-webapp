@@ -9,7 +9,7 @@ import { decodeEvent } from "@/utils/eventPayload";
 import {
   makeCrossedStorageKey,
   makeCrossKey,
-  readCrossedFromStorage,
+  readCrossedFromStorage
 } from "@/utils/crossedStorage";
 
 type Participant = {
@@ -27,7 +27,7 @@ function CrossTable({
   part,
   time,
   coverUrl,
-  eventName,
+  eventName
 }: {
   storageKey: string;
   eventParam: string;
@@ -79,7 +79,7 @@ function CrossTable({
             </div>
           </div>
         )}
-        <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
+        <h1 className="text-2xl font-semibold text-gray-900 text-center wrap-break-word">
           {eventName}
         </h1>
       </div>
@@ -88,6 +88,15 @@ function CrossTable({
         <span className="text-xl font-semibold text-black text-center">
           {part} відділення / {time}
         </span>
+      </div>
+
+      <div className="mb-4 flex justify-center">
+        <Link
+          href={`/parts?event=${eventParam}`}
+          className="inline-flex items-center justify-center px-8 py-3 bg-[#A9A9A9] text-white font-bold rounded-[15px] hover:bg-[#969696] transition-colors min-w-[180px]"
+        >
+          ← Назад
+        </Link>
       </div>
 
       <div className="w-full overflow-x-auto">
@@ -147,8 +156,8 @@ function CrossTable({
                             className={`${
                               crossed ? "line-through opacity-60" : ""
                             } ${
-                              participant?.orderType === "Ексклюзив"
-                                ? "text-green-600"
+                              participant?.orderType === "premium"
+                                ? "text-red-600"
                                 : ""
                             }`}
                           >
@@ -167,6 +176,15 @@ function CrossTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-4 mb-4 flex justify-center">
+        <Link
+          href={`/parts?event=${eventParam}`}
+          className="inline-flex items-center justify-center px-8 py-3 bg-[#A9A9A9] text-white font-bold rounded-[15px] hover:bg-[#969696] transition-colors min-w-[180px]"
+        >
+          ← Назад
+        </Link>
       </div>
     </div>
   );

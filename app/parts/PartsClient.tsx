@@ -53,7 +53,7 @@ export default function PartsClient() {
       try {
         const [sheetRes, flymarkRes] = await Promise.all([
           fetch(`/api/get-participants?event=${eventId}`),
-          fetch(`/api/event-times?event=${eventId}`),
+          fetch(`/api/event-times?event=${eventId}`)
         ]);
 
         const sheetData: ApiResponse = await sheetRes.json();
@@ -70,7 +70,7 @@ export default function PartsClient() {
         const merged: TimeItem[] = allTimes.map((time, index) => ({
           part: index + 1,
           time,
-          enabled: sheetTimes.has(time),
+          enabled: sheetTimes.has(time)
         }));
 
         setTimes(merged);
@@ -92,7 +92,7 @@ export default function PartsClient() {
       name: eventName,
       coverUrl,
       time: item.time,
-      part: item.part.toString(),
+      part: item.part.toString()
     });
 
     router.push(`/parts/results?event=${encodeURIComponent(encoded)}`);
@@ -114,7 +114,7 @@ export default function PartsClient() {
               />
             </div>
           )}
-          <h1 className="text-2xl font-semibold text-gray-900 text-center break-words">
+          <h1 className="text-2xl font-semibold text-gray-900 text-center wrap-break-word">
             {eventName}
           </h1>
         </div>

@@ -9,7 +9,7 @@ import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import {
   Competition,
   normalizeCompetition,
-  RawCompetition,
+  RawCompetition
 } from "@/utils/normalizeCompetition";
 
 type VisibleEventsResponse = {
@@ -97,8 +97,8 @@ export default function HomePage() {
               from: "",
               to: "",
               page: 1,
-              type: "Opened",
-            }),
+              type: "Opened"
+            })
           });
 
           if (!res.ok) continue;
@@ -199,7 +199,7 @@ export default function HomePage() {
       const res = await fetch("/api/visible-events", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(next) }),
+        body: JSON.stringify({ ids: Array.from(next) })
       });
 
       if (res.status === 401) {
@@ -250,8 +250,8 @@ export default function HomePage() {
       [competitionId]: {
         statusText: "Шукаю рядки з «Не знаю»…",
         foundCount: null,
-        findError: null,
-      },
+        findError: null
+      }
     }));
 
     setFindingId(competitionId);
@@ -263,10 +263,10 @@ export default function HomePage() {
           ...(prev[competitionId] ?? {
             statusText: null,
             foundCount: null,
-            findError: null,
+            findError: null
           }),
-          statusText: "Зчитую Google таблицю…",
-        },
+          statusText: "Зчитую Google таблицю…"
+        }
       }));
 
       const res = await fetch(
@@ -276,7 +276,7 @@ export default function HomePage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          cache: "no-store",
+          cache: "no-store"
         }
       );
 
@@ -286,10 +286,10 @@ export default function HomePage() {
           ...(prev[competitionId] ?? {
             statusText: null,
             foundCount: null,
-            findError: null,
+            findError: null
           }),
-          statusText: "Обробляю учасників…",
-        },
+          statusText: "Обробляю учасників…"
+        }
       }));
 
       const data = (await res.json()) as ResolveRegnumbersResponse;
@@ -301,11 +301,11 @@ export default function HomePage() {
             ...(prev[competitionId] ?? {
               statusText: null,
               foundCount: null,
-              findError: null,
+              findError: null
             }),
             statusText: null,
-            findError: data.error || "Помилка запиту",
-          },
+            findError: data.error || "Помилка запиту"
+          }
         }));
         return;
       }
@@ -317,8 +317,8 @@ export default function HomePage() {
           foundCount: data.updated,
           findError: data.errors?.length
             ? `Не вдалося знайти номер для ${data.errors.length} учасників`
-            : null,
-        },
+            : null
+        }
       }));
 
       setTimeout(() => {
@@ -330,8 +330,8 @@ export default function HomePage() {
             ...prev,
             [competitionId]: {
               ...cur,
-              foundCount: null,
-            },
+              foundCount: null
+            }
           };
         });
       }, 10000);
@@ -342,11 +342,11 @@ export default function HomePage() {
           ...(prev[competitionId] ?? {
             statusText: null,
             foundCount: null,
-            findError: null,
+            findError: null
           }),
           statusText: null,
-          findError: e instanceof Error ? e.message : "Невідома помилка",
-        },
+          findError: e instanceof Error ? e.message : "Невідома помилка"
+        }
       }));
     } finally {
       setFindingId(null);
@@ -478,7 +478,7 @@ export default function HomePage() {
                                 const payload = encodeEvent({
                                   id,
                                   name: c.CompetitionName,
-                                  coverUrl: c.CoverPhoto,
+                                  coverUrl: c.CoverPhoto
                                 });
                                 router.push(`/select?event=${payload}`);
                               }}
@@ -507,7 +507,7 @@ export default function HomePage() {
                                 const payload = encodeEvent({
                                   id,
                                   name: c.CompetitionName,
-                                  coverUrl: c.CoverPhoto,
+                                  coverUrl: c.CoverPhoto
                                 });
                                 router.push(`/parts?event=${payload}`);
                               }}
