@@ -64,10 +64,8 @@ export default function HomePage() {
 
   const [savingCount, setSavingCount] = useState(0);
 
-  // 🔒 Один глобальний "поточний пошук"
   const [findingId, setFindingId] = useState<string | null>(null);
 
-  // 🧾 Результати/статуси привʼязані до конкретного eventId
   const [findUi, setFindUi] = useState<
     Record<
       string,
@@ -245,10 +243,8 @@ export default function HomePage() {
   };
 
   const handleFindNumbers = async (competitionId: string) => {
-    // 🔒 блокуємо запуск, якщо вже йде інший пошук
     if (findingId) return;
 
-    // 🧾 скидаємо UI тільки для цього eventId
     setFindUi((prev) => ({
       ...prev,
       [competitionId]: {
@@ -317,13 +313,28 @@ export default function HomePage() {
       setFindUi((prev) => ({
         ...prev,
         [competitionId]: {
-          statusText: "Готово",
+          statusText: null,
           foundCount: data.updated,
           findError: data.errors?.length
             ? `Не вдалося знайти номер для ${data.errors.length} учасників`
             : null,
         },
       }));
+
+      setTimeout(() => {
+        setFindUi((prev) => {
+          const cur = prev[competitionId];
+          if (!cur) return prev;
+
+          return {
+            ...prev,
+            [competitionId]: {
+              ...cur,
+              foundCount: null,
+            },
+          };
+        });
+      }, 10000);
     } catch (e) {
       setFindUi((prev) => ({
         ...prev,
@@ -391,6 +402,12 @@ export default function HomePage() {
                   const id = String(c.CompetitionId).trim();
                   const ui = findUi[id];
                   const isFindingThis = findingId === id;
+
+                  const buttonLabel = isFindingThis
+                    ? ui?.statusText || "Шукаю..."
+                    : ui?.foundCount !== null && ui?.foundCount !== undefined
+                    ? `Оновлено номерів: ${ui.foundCount}`
+                    : "Оновити номери";
 
                   return (
                     <li
@@ -516,26 +533,11 @@ export default function HomePage() {
 
                         <button
                           onClick={() => handleFindNumbers(id)}
-                          // 🔒 блокуємо ВСІ кнопки, поки йде пошук по одному
                           disabled={Boolean(findingId)}
-                          className="bg-green-600 hover:bg-green-500 disabled:bg-gray-400 text-white py-1.5 text-sm rounded-md w-full"
+                          className="bg-green-600 hover:bg-green-500 disabled:bg-gray-400 text-white py-1.5 text-sm rounded-md w-full whitespace-nowrap"
                         >
-                          {isFindingThis ? "Шукаю..." : "Знайти номери"}
+                          {buttonLabel}
                         </button>
-
-                        {/* показуємо статус/результати ЛИШЕ біля поточного або останнього, для якого є ui */}
-                        {/* {ui?.statusText && (
-                          <div className="text-sm text-gray-600 mt-1 animate-pulse">
-                            {ui.statusText}
-                          </div>
-                        )} */}
-
-                        {ui?.foundCount !== null &&
-                          ui?.foundCount !== undefined && (
-                            <div className="text-sm text-green-700 mt-1">
-                              Оновлено номерів: {ui.foundCount}
-                            </div>
-                          )}
 
                         {ui?.findError && (
                           <div className="text-sm text-red-600 mt-1">
