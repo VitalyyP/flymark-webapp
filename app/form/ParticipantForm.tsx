@@ -437,8 +437,8 @@ export function ParticipantForm({
                           onClick={() => setOrderType(option.id)}
                           className={`w-full py-2 rounded border transition-all cursor-pointer ${
                             orderType === option.id
-                              ? "bg-green-500 text-white border-green-500"
-                              : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
+                              ? "bg-green-600 text-white border-green-600"
+                              : "bg-green-50 text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
                           }`}
                         >
                           {orderType === option.id ? "Обрано" : "Обрати"}
