@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { CustomCheckbox } from "@/components/CustomCheckbox";
 
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
@@ -116,7 +117,7 @@ export function ParticipantForm({
     };
   }, [participant.id, eventId]);
 
-  const { name, id } = participant;
+  const { name } = participant;
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
   const getItemKey = (r: ResultItem) =>
@@ -126,6 +127,15 @@ export function ParticipantForm({
     setSelectedItems((prev) =>
       checked ? [...prev, key] : prev.filter((k) => k !== key)
     );
+  };
+
+  const toggleRegNumberUnknown = () => {
+    setRegNumberUnknown((prev) => {
+      const next = !prev;
+      if (next) setRegNumber("Не знаю");
+      else setRegNumber("");
+      return next;
+    });
   };
 
   const isPhoneValid = phone.replace(/\D/g, "").length === 12;
@@ -335,22 +345,21 @@ export function ParticipantForm({
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
                 {results.map((r) => {
                   const key = getItemKey(r);
+                  const checked = selectedItems.includes(key);
 
                   return (
                     <li key={key} className="flex items-center gap-2">
-                      <label className="text-gray-900 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(key)}
-                          onChange={(e) =>
-                            handleItemToggle(key, e.target.checked)
-                          }
-                        />
-                        <span className="ml-2">
-                          {removeLastBracket(r.category)} / {r.program} /{" "}
-                          {r.time}
-                        </span>
-                      </label>
+                      <CustomCheckbox
+                        checked={checked}
+                        onChange={() => handleItemToggle(key, !checked)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleItemToggle(key, !checked)}
+                        className="text-gray-900 text-left cursor-pointer"
+                      >
+                        {removeLastBracket(r.category)} / {r.program} / {r.time}
+                      </button>
                     </li>
                   );
                 })}
@@ -383,18 +392,19 @@ export function ParticipantForm({
                   className="w-1/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900 focus:outline-none"
                 />
                 <div className="flex items-center gap-1 text-gray-900 w-2/3">
-                  <label className="cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <div className="flex items-center gap-2">
+                    <CustomCheckbox
                       checked={regNumberUnknown}
-                      onChange={(e) => {
-                        setRegNumberUnknown(e.target.checked);
-                        if (e.target.checked) setRegNumber("Не знаю");
-                        else setRegNumber("");
-                      }}
+                      onChange={toggleRegNumberUnknown}
                     />
-                    <span className="ml-2">Не знаю</span>
-                  </label>
+                    <button
+                      type="button"
+                      onClick={toggleRegNumberUnknown}
+                      className="text-gray-900 cursor-pointer"
+                    >
+                      Не знаю
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -420,7 +430,7 @@ export function ParticipantForm({
                       >
                         {option.title} {orderType === option.id && "✓"}
                       </span>
-                      <span className="text-xl text-gray-400 flex-shrink-0 w-5 text-center">
+                      <span className="text-xl text-gray-400 shrink-0 w-5 text-center">
                         {openAccordion === option.id ? "−" : "+"}
                       </span>
                     </button>
@@ -467,8 +477,8 @@ export function ParticipantForm({
               disabled={!canSubmit}
               className={`w-full text-white text-lg py-3 rounded-md ${
                 sending
-                  ? "bg-yellow-600 hover:bg-yellow-700"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  ? "bg-gray-400 hover:bg-gray-400"
+                  : "bg-green-600 hover:bg-green-500"
               } disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed`}
             >
               {sending ? "Відправляю..." : "Відправити"}
