@@ -430,21 +430,29 @@ export function ParticipantForm({
 
             <h1 className="text-2xl text-center text-black">Дані учасника</h1>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <label className="text-gray-700 text-lg w-[52px]">Імʼя:</label>
+                <div className="text-gray-700 text-lg w-[52px]">Імʼя:</div>
                 <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
                   {name}
                 </div>
               </div>
 
               {secondName && (
-                <div className="flex items-center gap-3">
-                  <div className="w-[52px]" />
-                  <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
-                    {secondName}
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="w-[52px]"></div>
+                    <p className="flex-1 text-gray-500 text-lg text-center">
+                      танцює у парі з
+                    </p>
                   </div>
-                </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-[52px]"></div>
+                    <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
+                      {secondName}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 
