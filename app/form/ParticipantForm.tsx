@@ -451,6 +451,9 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Категорія / Програма / Час:
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
 
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
@@ -492,6 +495,9 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Реєстраційний номер
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
 
               <div className="flex items-center gap-3">
@@ -540,6 +546,9 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Вид замовлення
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
               <div className="border rounded-md overflow-hidden bg-white">
                 {orderOptions.map((option) => (
@@ -591,13 +600,19 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Номер телефону
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
 
               <CustomPhoneInput value={phone} onChange={setPhone} />
             </div>
 
-            <p className="text-sm text-gray-500 mb-2">
-              *Всі поля обовʼязкові для заповнення
+            <p className="text-base italic text-gray-500 mb-2">
+              <span className="text-red-500 ml-0.5" aria-hidden="true">
+                *
+              </span>{" "}
+              Всі поля обовʼязкові для заповнення
             </p>
 
             <button
