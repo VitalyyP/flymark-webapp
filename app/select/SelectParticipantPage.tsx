@@ -51,6 +51,33 @@ function rowToOptions(row: unknown): ParticipantOption[] {
   return out;
 }
 
+type ParticipantsFastOk = {
+  ok: true;
+  count: number;
+  dancers: Array<{
+    FirstName: string;
+    LastName: string;
+    City: string;
+    Id: number;
+  }>;
+};
+
+function isParticipantsFastOk(v: unknown): v is ParticipantsFastOk {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+  if (!Array.isArray(v.dancers)) return false;
+
+  return v.dancers.every((d) => {
+    if (!isRecord(d)) return false;
+    return (
+      typeof d.FirstName === "string" &&
+      typeof d.LastName === "string" &&
+      typeof d.City === "string" &&
+      typeof d.Id === "number"
+    );
+  });
+}
+
 export default function SelectParticipantPage() {
   const router = useRouter();
   const event = useEventFromQuery();
@@ -65,29 +92,63 @@ export default function SelectParticipantPage() {
   const eventName = event?.name ?? "";
   const coverUrl = event?.coverUrl ?? "";
 
+  const finalizeParticipants = (options: ParticipantOption[]) => {
+    const uniq = new Map<string, ParticipantOption>();
+    for (const opt of options) {
+      if (!uniq.has(opt.id)) uniq.set(opt.id, opt);
+    }
+
+    const cleaned = Array.from(uniq.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "uk", { numeric: true })
+    );
+
+    setParticipants(cleaned);
+  };
+
   useEffect(() => {
     if (!eventId) return;
+
+    const ac = new AbortController();
 
     const loadParticipants = async () => {
       setLoadingParticipants(true);
       try {
-        const res = await fetch(`/api/participants?event=${eventId}`);
-        const data: unknown = await res.json();
-
-        const rows: unknown[] = Array.isArray(data) ? data : [];
-        const options = rows.flatMap(rowToOptions);
-
-        const uniq = new Map<string, ParticipantOption>();
-        for (const opt of options) {
-          if (!uniq.has(opt.id)) uniq.set(opt.id, opt);
-        }
-
-        const cleaned = Array.from(uniq.values()).sort((a, b) =>
-          a.name.localeCompare(b.name, "uk", { numeric: true })
+        const r1 = await fetch(
+          `/api/participants-fast?eventId=${encodeURIComponent(eventId)}`,
+          { cache: "no-store", signal: ac.signal }
         );
 
-        setParticipants(cleaned);
+        const j1: unknown = await r1.json();
+
+        if (isParticipantsFastOk(j1) && j1.dancers.length > 0) {
+          const options: ParticipantOption[] = j1.dancers
+            .map((d) => {
+              const id = String(d.Id);
+              const name = `${d.LastName.trim()} ${d.FirstName.trim()}`.trim();
+              return id && name ? { id, name } : null;
+            })
+            .filter((x): x is ParticipantOption => x !== null);
+
+          finalizeParticipants(options);
+          return;
+        }
+
+        const r2 = await fetch(
+          `/api/participants?event=${encodeURIComponent(eventId)}`,
+          { cache: "no-store", signal: ac.signal }
+        );
+
+        const j2: unknown = await r2.json();
+
+        const rows: unknown[] = Array.isArray(j2) ? j2 : [];
+        const options = rows.flatMap(rowToOptions);
+
+        finalizeParticipants(options);
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+
         console.error("Failed to load participants", err);
         setParticipants([]);
       } finally {
@@ -96,6 +157,7 @@ export default function SelectParticipantPage() {
     };
 
     loadParticipants();
+    return () => ac.abort();
   }, [eventId]);
 
   const filtered = useMemo(() => {
@@ -217,36 +279,6 @@ export default function SelectParticipantPage() {
           </div>
         </div>
       </main>
-
-      <style jsx>{`
-        @keyframes loadingDot {
-          0% {
-            opacity: 0.25;
-            transform: scale(0.55);
-          }
-          35% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          70% {
-            opacity: 0.25;
-            transform: scale(0.55);
-          }
-          100% {
-            opacity: 0.25;
-            transform: scale(0.55);
-          }
-        }
-        .animate-loadingDot {
-          animation: loadingDot 0.9s infinite ease-in-out;
-        }
-        .animation-delay-150 {
-          animation-delay: 0.15s;
-        }
-        .animation-delay-300 {
-          animation-delay: 0.3s;
-        }
-      `}</style>
     </div>
   );
 }
