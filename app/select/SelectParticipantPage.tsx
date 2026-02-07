@@ -192,7 +192,7 @@ export default function SelectParticipantPage() {
               )}
 
               {query && filtered.length > 0 && !loadingParticipants && (
-                <ul className="absolute top-full left-0 z-20 mt-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
+                <ul className="absolute bottom-full left-0 z-20 mb-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
                   {filtered.map((p) => (
                     <li
                       key={p.id}
