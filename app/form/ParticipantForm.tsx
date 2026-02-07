@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CustomCheckbox } from "@/components/CustomCheckbox";
 
 import PhoneInput from "react-phone-number-input";
@@ -74,6 +75,9 @@ export function ParticipantForm({
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [lastSubmittedOrderType, setLastSubmittedOrderType] = useState<
+    "basic" | "premium" | ""
+  >("");
   const [loadingNumber, setLoadingNumber] = useState(true);
 
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
@@ -279,6 +283,7 @@ export function ParticipantForm({
     setSending(false);
 
     if (res.ok) {
+      setLastSubmittedOrderType(orderType as "basic" | "premium");
       setSuccess(true);
       setRegNumber("");
       setRegNumberUnknown(false);
@@ -293,11 +298,114 @@ export function ParticipantForm({
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col gap-6">
         {success ? (
-          <div className="text-blue-700 text-center py-20">
-            <p className="text-2xl font-semibold">Дякуємо!</p>
-            <p className="text-2xl font-semibold mt-4">
-              Ваше замовлення прийнято.
+          <div className="text-gray-800 py-6 space-y-5">
+            <p className="text-2xl font-semibold text-green-700 text-center">
+              Дякуємо! Ваше замовлення прийнято.
             </p>
+            {lastSubmittedOrderType === "basic" && (
+              <div className="space-y-4 text-base leading-relaxed">
+                <p>
+                  ✅ Ви внесли всі дані –{" "}
+                  <strong className="text-gray-900">ЗАПИС ВИКОНАНО.</strong> Ви
+                  обрали пакет{" "}
+                  <strong className="text-gray-900">
+                    {
+                      orderOptions.find((o) => o.id === lastSubmittedOrderType)
+                        ?.title
+                    }
+                  </strong>
+                  . Очікуйте зразки!
+                </p>
+                <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
+                  <p className="font-medium text-amber-900">
+                    ⚠️ Якщо не всі дані були введені – виконано попередній
+                    запис. Для підтвердження запису повідомте номер участі та
+                    уточніть категорію асистенту біля зеленого банера «А фото».
+                  </p>
+                </div>
+                <p>
+                  📝 Зразки фото ви отримаєте протягом 3–7 днів після турніру на
+                  вказаний вами номер у Viber або Telegram.
+                </p>
+                <div className="space-y-2">
+                  <p className="font-semibold text-gray-900">💳 Оплата:</p>
+                  <p>
+                    послуги для пакету{" "}
+                    <strong className="text-gray-900">
+                      {
+                        orderOptions.find(
+                          (o) => o.id === lastSubmittedOrderType
+                        )?.title
+                      }
+                    </strong>{" "}
+                    здійснюється на картку після вибору фото.
+                  </p>
+                </div>
+                <p>
+                  🔗 Ознайомитися з роботами можна на нашій сторінці в Instagram
+                  «А фото»:{" "}
+                  <a
+                    href="https://www.instagram.com/aphoto2010/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    https://www.instagram.com/aphoto2010/
+                  </a>
+                </p>
+              </div>
+            )}
+            {lastSubmittedOrderType === "premium" && (
+              <div className="space-y-4 text-base leading-relaxed">
+                <p>
+                  ✅ Ви внесли всі дані у формі – попередній запис виконано. Ви
+                  обрали пакет{" "}
+                  <strong className="text-gray-900">
+                    {
+                      orderOptions.find((o) => o.id === lastSubmittedOrderType)
+                        ?.title
+                    }
+                  </strong>
+                </p>
+                <div className="space-y-2">
+                  <p className="font-semibold text-gray-900">💳 Оплата:</p>
+                  <p>
+                    📸 Фотозйомка для пакету{" "}
+                    <strong className="text-gray-900">
+                      {
+                        orderOptions.find(
+                          (o) => o.id === lastSubmittedOrderType
+                        )?.title
+                      }
+                    </strong>{" "}
+                    здійснюється лише після 100% оплати у день турніру, після
+                    реєстрації та повідомлення номера участі асистенту фотографа
+                    біля зеленого рекламного банера «А Фото».
+                  </p>
+                </div>
+
+                <p>
+                  🔗 Ознайомитися з нашими роботами можна на Instagram-сторінці
+                  «А фото»:{" "}
+                  <a
+                    href="https://www.instagram.com/aphoto2010/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    https://www.instagram.com/aphoto2010/
+                  </a>
+                </p>
+              </div>
+            )}
+            <div className="pt-4 flex justify-center">
+              <Link
+                href="/"
+                className="inline-block w-full sm:w-auto text-center text-white text-lg py-3 px-6 rounded-md bg-green-600 hover:bg-green-500 transition-colors"
+              >
+                На головну
+              </Link>
+            </div>
           </div>
         ) : (
           <>
