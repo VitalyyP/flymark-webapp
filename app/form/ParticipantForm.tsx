@@ -121,6 +121,12 @@ export function ParticipantForm({
     };
   }, [participant.id, eventId]);
 
+  useEffect(() => {
+    if (success) {
+      window.scrollTo(0, 0);
+    }
+  }, [success]);
+
   const { name } = participant;
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
