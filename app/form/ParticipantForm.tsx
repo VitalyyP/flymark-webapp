@@ -158,20 +158,23 @@ export function ParticipantForm({
       title: "📸 ВИБІР фото ЗА ЗРАЗКАМИ",
       description: (
         <div className="space-y-2">
-          <ul className="list-disc ml-4 space-y-1">
-            <li>
-              Одне-три фото —{" "}
-              <strong className="text-gray-900">100.00 грн.</strong> за штуку
-            </li>
-            <li>
-              Чотири і більше —{" "}
-              <strong className="text-gray-900">90.00 грн.</strong> за штуку
-            </li>
-            <li>
-              Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
-              до <strong className="text-gray-900">1000.00 грн.</strong>
-            </li>
-          </ul>
+          <div className=" bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
+            <p className="text-blue-900 font-bold pb-2">Вартість:</p>
+            <ul className="list-disc ml-4 space-y-1">
+              <li>
+                Одне-три фото —{" "}
+                <strong className="text-gray-900">100.00 грн.</strong> за штуку
+              </li>
+              <li>
+                Чотири і більше —{" "}
+                <strong className="text-gray-900">90.00 грн.</strong> за штуку
+              </li>
+              <li>
+                Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
+                до <strong className="text-gray-900">1000.00 грн.</strong>
+              </li>
+            </ul>
+          </div>
           <p className="mt-3">
             😇{" "}
             <span className="font-semibold text-green-700">
@@ -179,7 +182,7 @@ export function ParticipantForm({
             </span>{" "}
             — оплата після вибору фото!
           </p>
-          <p className="text-xs text-gray-500 italic">
+          <p className="text-sm text-gray-500 italic">
             Посилання на хмару надійде на Viber/Telegram протягом 3–7 днів після
             турніру.
           </p>
@@ -222,7 +225,7 @@ export function ParticipantForm({
             </li>
           </ul>
 
-          <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-xs border border-yellow-200">
+          <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-sm border border-yellow-200">
             <p className="font-bold mb-1 underline">УМОВИ ОПЛАТИ:</p>
             <p>
               100% оплата здійснюється у день турніру після реєстрації та
@@ -234,7 +237,7 @@ export function ParticipantForm({
             </p>
           </div>
 
-          <p className="text-[10px] uppercase font-bold text-red-600 ">
+          <p className="text-sm uppercase font-bold text-red-600 ">
             ⚠️ Важливо чітко вказати категорію згідно з програмою!
           </p>
         </div>
@@ -467,9 +470,14 @@ export function ParticipantForm({
                             handleItemToggle(key, !checked);
                           }
                         }}
-                        className="flex items-center gap-2 cursor-pointer select-none"
+                        className="flex items-start gap-2 cursor-pointer select-none"
                       >
-                        <CustomCheckbox checked={checked} onChange={() => {}} />
+                        <span className="shrink-0 mt-[2px]">
+                          <CustomCheckbox
+                            checked={checked}
+                            onChange={() => {}}
+                          />
+                        </span>
                         <span className="text-gray-900">
                           {removeLastBracket(r.category)} / {r.program} /{" "}
                           {r.time}
@@ -559,7 +567,7 @@ export function ParticipantForm({
                       className={`transition-all duration-500 ease-in-out overflow-hidden ${openAccordion === option.id ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
                     >
                       <div className="p-4 pt-2 bg-gray-50">
-                        <div className="text-gray-700 text-sm mb-4 leading-normal">
+                        <div className="text-gray-700 text-base mb-4 leading-normal">
                           {option.description}
                         </div>
                         <button
