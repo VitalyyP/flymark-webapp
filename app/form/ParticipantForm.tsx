@@ -348,18 +348,25 @@ export function ParticipantForm({
                   const checked = selectedItems.includes(key);
 
                   return (
-                    <li key={key} className="flex items-center gap-2">
-                      <CustomCheckbox
-                        checked={checked}
-                        onChange={() => handleItemToggle(key, !checked)}
-                      />
-                      <button
-                        type="button"
+                    <li key={key}>
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleItemToggle(key, !checked)}
-                        className="text-gray-900 text-left cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === " " || e.key === "Enter") {
+                            e.preventDefault();
+                            handleItemToggle(key, !checked);
+                          }
+                        }}
+                        className="flex items-center gap-2 cursor-pointer select-none"
                       >
-                        {removeLastBracket(r.category)} / {r.program} / {r.time}
-                      </button>
+                        <CustomCheckbox checked={checked} onChange={() => {}} />
+                        <span className="text-gray-900">
+                          {removeLastBracket(r.category)} / {r.program} /{" "}
+                          {r.time}
+                        </span>
+                      </div>
                     </li>
                   );
                 })}
@@ -392,18 +399,23 @@ export function ParticipantForm({
                   className="w-1/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900 focus:outline-none"
                 />
                 <div className="flex items-center gap-1 text-gray-900 w-2/3">
-                  <div className="flex items-center gap-2">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={toggleRegNumberUnknown}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault();
+                        toggleRegNumberUnknown();
+                      }
+                    }}
+                    className="flex items-center gap-2 cursor-pointer select-none"
+                  >
                     <CustomCheckbox
                       checked={regNumberUnknown}
-                      onChange={toggleRegNumberUnknown}
+                      onChange={() => {}}
                     />
-                    <button
-                      type="button"
-                      onClick={toggleRegNumberUnknown}
-                      className="text-gray-900 cursor-pointer"
-                    >
-                      Не знаю
-                    </button>
+                    <span className="text-gray-900">Не знаю</span>
                   </div>
                 </div>
               </div>
