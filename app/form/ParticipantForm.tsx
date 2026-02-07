@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { CustomCheckbox } from "@/components/CustomCheckbox";
 
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
@@ -116,7 +117,7 @@ export function ParticipantForm({
     };
   }, [participant.id, eventId]);
 
-  const { name, id } = participant;
+  const { name } = participant;
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
   const getItemKey = (r: ResultItem) =>
@@ -126,6 +127,15 @@ export function ParticipantForm({
     setSelectedItems((prev) =>
       checked ? [...prev, key] : prev.filter((k) => k !== key)
     );
+  };
+
+  const toggleRegNumberUnknown = () => {
+    setRegNumberUnknown((prev) => {
+      const next = !prev;
+      if (next) setRegNumber("Не знаю");
+      else setRegNumber("");
+      return next;
+    });
   };
 
   const isPhoneValid = phone.replace(/\D/g, "").length === 12;
@@ -335,22 +345,28 @@ export function ParticipantForm({
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
                 {results.map((r) => {
                   const key = getItemKey(r);
+                  const checked = selectedItems.includes(key);
 
                   return (
-                    <li key={key} className="flex items-center gap-2">
-                      <label className="text-gray-900 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(key)}
-                          onChange={(e) =>
-                            handleItemToggle(key, e.target.checked)
+                    <li key={key}>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleItemToggle(key, !checked)}
+                        onKeyDown={(e) => {
+                          if (e.key === " " || e.key === "Enter") {
+                            e.preventDefault();
+                            handleItemToggle(key, !checked);
                           }
-                        />
-                        <span className="ml-2">
+                        }}
+                        className="flex items-center gap-2 cursor-pointer select-none"
+                      >
+                        <CustomCheckbox checked={checked} onChange={() => {}} />
+                        <span className="text-gray-900">
                           {removeLastBracket(r.category)} / {r.program} /{" "}
                           {r.time}
                         </span>
-                      </label>
+                      </div>
                     </li>
                   );
                 })}
@@ -383,18 +399,24 @@ export function ParticipantForm({
                   className="w-1/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900 focus:outline-none"
                 />
                 <div className="flex items-center gap-1 text-gray-900 w-2/3">
-                  <label className="cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={toggleRegNumberUnknown}
+                    onKeyDown={(e) => {
+                      if (e.key === " " || e.key === "Enter") {
+                        e.preventDefault();
+                        toggleRegNumberUnknown();
+                      }
+                    }}
+                    className="flex items-center gap-2 cursor-pointer select-none"
+                  >
+                    <CustomCheckbox
                       checked={regNumberUnknown}
-                      onChange={(e) => {
-                        setRegNumberUnknown(e.target.checked);
-                        if (e.target.checked) setRegNumber("Не знаю");
-                        else setRegNumber("");
-                      }}
+                      onChange={() => {}}
                     />
-                    <span className="ml-2">Не знаю</span>
-                  </label>
+                    <span className="text-gray-900">Не знаю</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -420,7 +442,7 @@ export function ParticipantForm({
                       >
                         {option.title} {orderType === option.id && "✓"}
                       </span>
-                      <span className="text-xl text-gray-400 flex-shrink-0 w-5 text-center">
+                      <span className="text-xl text-gray-400 shrink-0 w-5 text-center">
                         {openAccordion === option.id ? "−" : "+"}
                       </span>
                     </button>
@@ -437,8 +459,8 @@ export function ParticipantForm({
                           onClick={() => setOrderType(option.id)}
                           className={`w-full py-2 rounded border transition-all cursor-pointer ${
                             orderType === option.id
-                              ? "bg-green-500 text-white border-green-500"
-                              : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
+                              ? "bg-green-600 text-white border-green-600"
+                              : "bg-green-50 text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
                           }`}
                         >
                           {orderType === option.id ? "Обрано" : "Обрати"}
@@ -467,8 +489,8 @@ export function ParticipantForm({
               disabled={!canSubmit}
               className={`w-full text-white text-lg py-3 rounded-md ${
                 sending
-                  ? "bg-yellow-600 hover:bg-yellow-700"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  ? "bg-gray-400 hover:bg-gray-400"
+                  : "bg-green-600 hover:bg-green-500"
               } disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed`}
             >
               {sending ? "Відправляю..." : "Відправити"}
