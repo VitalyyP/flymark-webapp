@@ -30,10 +30,10 @@ function CustomPhoneInput({ value, onChange }: CustomPhoneInputProps) {
       defaultCountry="UA"
       value={value}
       onChange={handleChange}
-      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+      onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
         const digits = value.replace(/\D/g, "");
-        if (digits.length >= MAX_DIGITS && /\d/.test(e.key)) {
-          e.preventDefault();
+        if (digits.length >= MAX_DIGITS && /\d/.test(event.key)) {
+          event.preventDefault();
         }
       }}
       className="phone-wrapper"
@@ -76,7 +76,6 @@ export function ParticipantForm({
   const [loadingNumber, setLoadingNumber] = useState(true);
 
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   useEffect(() => {
@@ -92,11 +91,11 @@ export function ParticipantForm({
 
     (async () => {
       try {
-        const res = await fetch(
+        const response = await fetch(
           `/api/flymark/find-number?competitionId=${competitionId}&dancerId=${dancerId}`,
           { cache: "no-store" }
         );
-        const data = (await res.json()) as { number: number | null };
+        const data = (await response.json()) as { number: number | null };
 
         if (cancelled) return;
 
@@ -116,26 +115,24 @@ export function ParticipantForm({
     };
   }, [participant.id, eventId]);
 
-  const { name, id } = participant;
-  const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
+  const participantName = participant.name;
 
-  const getItemKey = (r: ResultItem) =>
-    `${r.category}__${r.program}__${r.time}`;
+  const removeLastBracket = (text: string) =>
+    text.replace(/\s*\([^()]*\)$/, "");
+
+  const getItemKey = (item: ResultItem, index: number) =>
+    `${item.category}__${item.program}__${item.time}__${index}`;
 
   const handleItemToggle = (key: string, checked: boolean) => {
-    setSelectedItems((prev) =>
-      checked ? [...prev, key] : prev.filter((k) => k !== key)
+    setSelectedItems((previous) =>
+      checked ? [...previous, key] : previous.filter((k) => k !== key)
     );
   };
 
   const isPhoneValid = phone.replace(/\D/g, "").length === 12;
-
   const hasRegNumber = regNumberUnknown || !!regNumber.trim();
-
   const hasRequiredFields = hasRegNumber && !!orderType && isPhoneValid;
-
   const hasItems = selectedItems.length > 0;
-
   const canSubmit = hasRequiredFields && hasItems && !sending;
 
   const orderOptions = [
@@ -229,12 +226,21 @@ export function ParticipantForm({
   ];
 
   const secondName: string = (() => {
-    const r = results[0];
-    if (!r) return "";
+    const firstResult = results[0];
+    if (!firstResult) return "";
 
-    if (r.dancer1Name && r.dancer1Name !== name) return r.dancer1Name;
-    if (r.dancer2Name && r.dancer2Name !== name) return r.dancer2Name;
-
+    if (
+      firstResult.dancer1Name &&
+      firstResult.dancer1Name !== participantName
+    ) {
+      return firstResult.dancer1Name;
+    }
+    if (
+      firstResult.dancer2Name &&
+      firstResult.dancer2Name !== participantName
+    ) {
+      return firstResult.dancer2Name;
+    }
     return "";
   })();
 
@@ -244,23 +250,30 @@ export function ParticipantForm({
     setSending(true);
     setSuccess(false);
 
+    const selected = results
+      .map((item, index) => ({
+        item,
+        index,
+        key: getItemKey(item, index)
+      }))
+      .filter(({ key }) => selectedItems.includes(key))
+      .map(({ item }) => ({
+        category: removeLastBracket(item.category),
+        program: item.program,
+        time: item.time
+      }));
+
     const payload = {
       eventId: Number(eventId),
-      name,
+      name: participantName,
       secondName,
-      items: results
-        .filter((r) => selectedItems.includes(getItemKey(r)))
-        .map((r) => ({
-          category: removeLastBracket(r.category),
-          program: r.program,
-          time: r.time
-        })),
+      items: selected,
       regNumber: regNumberUnknown ? "Не знаю" : regNumber,
       orderType,
       phone
     };
 
-    const res = await fetch("/api/save-form", {
+    const response = await fetch("/api/save-form", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -268,7 +281,7 @@ export function ParticipantForm({
 
     setSending(false);
 
-    if (res.ok) {
+    if (response.ok) {
       setSuccess(true);
       setRegNumber("");
       setRegNumberUnknown(false);
@@ -313,7 +326,7 @@ export function ParticipantForm({
               <div className="flex items-center gap-3">
                 <label className="text-gray-700 text-lg w-[52px]">Імʼя:</label>
                 <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
-                  {name}
+                  {participantName}
                 </div>
               </div>
 
@@ -333,8 +346,8 @@ export function ParticipantForm({
               </label>
 
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
-                {results.map((r) => {
-                  const key = getItemKey(r);
+                {results.map((item, index) => {
+                  const key = getItemKey(item, index);
 
                   return (
                     <li key={key} className="flex items-center gap-2">
@@ -342,13 +355,13 @@ export function ParticipantForm({
                         <input
                           type="checkbox"
                           checked={selectedItems.includes(key)}
-                          onChange={(e) =>
-                            handleItemToggle(key, e.target.checked)
+                          onChange={(event) =>
+                            handleItemToggle(key, event.target.checked)
                           }
                         />
                         <span className="ml-2">
-                          {removeLastBracket(r.category)} / {r.program} /{" "}
-                          {r.time}
+                          {removeLastBracket(item.category)} / {item.program} /{" "}
+                          {item.time}
                         </span>
                       </label>
                     </li>
@@ -373,11 +386,11 @@ export function ParticipantForm({
                     loadingNumber
                       ? "Шукаю номер..."
                       : regNumberUnknown
-                        ? "Не знаю"
-                        : ""
+                      ? "Не знаю"
+                      : ""
                   }
-                  onChange={(e) => {
-                    const onlyDigits = e.target.value.replace(/\D/g, "");
+                  onChange={(event) => {
+                    const onlyDigits = event.target.value.replace(/\D/g, "");
                     setRegNumber(onlyDigits);
                   }}
                   className="w-1/3 rounded-md px-4 py-3 text-lg border border-gray-300 bg-gray-100 text-gray-900 focus:outline-none"
@@ -387,9 +400,9 @@ export function ParticipantForm({
                     <input
                       type="checkbox"
                       checked={regNumberUnknown}
-                      onChange={(e) => {
-                        setRegNumberUnknown(e.target.checked);
-                        if (e.target.checked) setRegNumber("Не знаю");
+                      onChange={(event) => {
+                        setRegNumberUnknown(event.target.checked);
+                        if (event.target.checked) setRegNumber("Не знаю");
                         else setRegNumber("");
                       }}
                     />
@@ -416,7 +429,11 @@ export function ParticipantForm({
                       className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       <span
-                        className={`text-sm sm:text-base leading-tight tracking-tight ${orderType === option.id ? "text-green-700 font-bold" : "text-gray-900 font-medium"}`}
+                        className={`text-sm sm:text-base leading-tight tracking-tight ${
+                          orderType === option.id
+                            ? "text-green-700 font-bold"
+                            : "text-gray-900 font-medium"
+                        }`}
                       >
                         {option.title} {orderType === option.id && "✓"}
                       </span>
@@ -426,7 +443,11 @@ export function ParticipantForm({
                     </button>
 
                     <div
-                      className={`transition-all duration-500 ease-in-out overflow-hidden ${openAccordion === option.id ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
+                      className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                        openAccordion === option.id
+                          ? "max-h-[1000px] opacity-100"
+                          : "max-h-0 opacity-0"
+                      }`}
                     >
                       <div className="p-4 pt-2 bg-gray-50">
                         <div className="text-gray-700 text-sm mb-4 leading-normal">
