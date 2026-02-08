@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CustomCheckbox } from "@/components/CustomCheckbox";
 
 import PhoneInput from "react-phone-number-input";
@@ -74,6 +75,9 @@ export function ParticipantForm({
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [lastSubmittedOrderType, setLastSubmittedOrderType] = useState<
+    "basic" | "premium" | ""
+  >("");
   const [loadingNumber, setLoadingNumber] = useState(true);
 
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
@@ -117,6 +121,12 @@ export function ParticipantForm({
     };
   }, [participant.id, eventId]);
 
+  useEffect(() => {
+    if (success) {
+      window.scrollTo(0, 0);
+    }
+  }, [success]);
+
   const { name } = participant;
   const removeLastBracket = (str: string) => str.replace(/\s*\([^()]*\)$/, "");
 
@@ -154,20 +164,23 @@ export function ParticipantForm({
       title: "📸 ВИБІР фото ЗА ЗРАЗКАМИ",
       description: (
         <div className="space-y-2">
-          <ul className="list-disc ml-4 space-y-1">
-            <li>
-              Одне-три фото —{" "}
-              <strong className="text-gray-900">100.00 грн.</strong> за штуку
-            </li>
-            <li>
-              Чотири і більше —{" "}
-              <strong className="text-gray-900">90.00 грн.</strong> за штуку
-            </li>
-            <li>
-              Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
-              до <strong className="text-gray-900">1000.00 грн.</strong>
-            </li>
-          </ul>
+          <div className=" bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
+            <p className="text-blue-900 font-bold pb-2">Вартість:</p>
+            <ul className="list-disc ml-4 space-y-1">
+              <li>
+                Одне-три фото —{" "}
+                <strong className="text-gray-900">100.00 грн.</strong> за штуку
+              </li>
+              <li>
+                Чотири і більше —{" "}
+                <strong className="text-gray-900">90.00 грн.</strong> за штуку
+              </li>
+              <li>
+                Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
+                до <strong className="text-gray-900">1000.00 грн.</strong>
+              </li>
+            </ul>
+          </div>
           <p className="mt-3">
             😇{" "}
             <span className="font-semibold text-green-700">
@@ -175,7 +188,7 @@ export function ParticipantForm({
             </span>{" "}
             — оплата після вибору фото!
           </p>
-          <p className="text-xs text-gray-500 italic">
+          <p className="text-sm text-gray-500 italic">
             Посилання на хмару надійде на Viber/Telegram протягом 3–7 днів після
             турніру.
           </p>
@@ -218,7 +231,7 @@ export function ParticipantForm({
             </li>
           </ul>
 
-          <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-xs border border-yellow-200">
+          <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-sm border border-yellow-200">
             <p className="font-bold mb-1 underline">УМОВИ ОПЛАТИ:</p>
             <p>
               100% оплата здійснюється у день турніру після реєстрації та
@@ -230,7 +243,7 @@ export function ParticipantForm({
             </p>
           </div>
 
-          <p className="text-[10px] uppercase font-bold text-red-600 ">
+          <p className="text-sm uppercase font-bold text-red-600 ">
             ⚠️ Важливо чітко вказати категорію згідно з програмою!
           </p>
         </div>
@@ -279,6 +292,7 @@ export function ParticipantForm({
     setSending(false);
 
     if (res.ok) {
+      setLastSubmittedOrderType(orderType as "basic" | "premium");
       setSuccess(true);
       setRegNumber("");
       setRegNumberUnknown(false);
@@ -293,11 +307,114 @@ export function ParticipantForm({
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
       <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col gap-6">
         {success ? (
-          <div className="text-blue-700 text-center py-20">
-            <p className="text-2xl font-semibold">Дякуємо!</p>
-            <p className="text-2xl font-semibold mt-4">
-              Ваше замовлення прийнято.
+          <div className="text-gray-800 py-6 space-y-5">
+            <p className="text-2xl font-semibold text-green-700 text-center">
+              Дякуємо! Ваше замовлення прийнято.
             </p>
+            {lastSubmittedOrderType === "basic" && (
+              <div className="space-y-4 text-base leading-relaxed">
+                <p>
+                  ✅ Ви внесли всі дані –{" "}
+                  <strong className="text-gray-900">ЗАПИС ВИКОНАНО.</strong> Ви
+                  обрали пакет{" "}
+                  <strong className="text-gray-900">
+                    {
+                      orderOptions.find((o) => o.id === lastSubmittedOrderType)
+                        ?.title
+                    }
+                  </strong>
+                  . Очікуйте зразки!
+                </p>
+                <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
+                  <p className="font-medium text-amber-900">
+                    ⚠️ Якщо не всі дані були введені – виконано попередній
+                    запис. Для підтвердження запису повідомте номер участі та
+                    уточніть категорію асистенту біля зеленого банера «А фото».
+                  </p>
+                </div>
+                <p>
+                  📝 Зразки фото ви отримаєте протягом 3–7 днів після турніру на
+                  вказаний вами номер у Viber або Telegram.
+                </p>
+                <div className="space-y-2">
+                  <p className="font-semibold text-gray-900">💳 Оплата:</p>
+                  <p>
+                    послуги для пакету{" "}
+                    <strong className="text-gray-900">
+                      {
+                        orderOptions.find(
+                          (o) => o.id === lastSubmittedOrderType
+                        )?.title
+                      }
+                    </strong>{" "}
+                    здійснюється на картку після вибору фото.
+                  </p>
+                </div>
+                <p>
+                  🔗 Ознайомитися з роботами можна на нашій сторінці в Instagram
+                  «А фото»:{" "}
+                  <a
+                    href="https://www.instagram.com/aphoto2010/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    https://www.instagram.com/aphoto2010/
+                  </a>
+                </p>
+              </div>
+            )}
+            {lastSubmittedOrderType === "premium" && (
+              <div className="space-y-4 text-base leading-relaxed">
+                <p>
+                  ✅ Ви внесли всі дані у формі – попередній запис виконано. Ви
+                  обрали пакет{" "}
+                  <strong className="text-gray-900">
+                    {
+                      orderOptions.find((o) => o.id === lastSubmittedOrderType)
+                        ?.title
+                    }
+                  </strong>
+                </p>
+                <div className="space-y-2">
+                  <p className="font-semibold text-gray-900">💳 Оплата:</p>
+                  <p>
+                    📸 Фотозйомка для пакету{" "}
+                    <strong className="text-gray-900">
+                      {
+                        orderOptions.find(
+                          (o) => o.id === lastSubmittedOrderType
+                        )?.title
+                      }
+                    </strong>{" "}
+                    здійснюється лише після 100% оплати у день турніру, після
+                    реєстрації та повідомлення номера участі асистенту фотографа
+                    біля зеленого рекламного банера «А Фото».
+                  </p>
+                </div>
+
+                <p>
+                  🔗 Ознайомитися з нашими роботами можна на Instagram-сторінці
+                  «А фото»:{" "}
+                  <a
+                    href="https://www.instagram.com/aphoto2010/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    https://www.instagram.com/aphoto2010/
+                  </a>
+                </p>
+              </div>
+            )}
+            <div className="pt-4 flex justify-center">
+              <Link
+                href="/"
+                className="inline-block w-full sm:w-auto text-center text-white text-lg py-3 px-6 rounded-md bg-green-600 hover:bg-green-500 transition-colors"
+              >
+                На головну
+              </Link>
+            </div>
           </div>
         ) : (
           <>
@@ -319,27 +436,38 @@ export function ParticipantForm({
 
             <h1 className="text-2xl text-center text-black">Дані учасника</h1>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <label className="text-gray-700 text-lg w-[52px]">Імʼя:</label>
+                <div className="text-gray-700 text-lg w-[52px]">Імʼя:</div>
                 <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
                   {name}
                 </div>
               </div>
 
               {secondName && (
-                <div className="flex items-center gap-3">
-                  <div className="w-[52px]" />
-                  <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
-                    {secondName}
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="w-[52px]"></div>
+                    <p className="flex-1 text-gray-500 text-lg text-center">
+                      танцює у парі з
+                    </p>
                   </div>
-                </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-[52px]"></div>
+                    <div className="flex-1 rounded-md border px-4 py-3 bg-gray-100 text-gray-900 text-lg text-center">
+                      {secondName}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 
             <div>
               <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Категорія / Програма / Час:
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
 
               <ul className="list-none p-4 bg-gray-100 border rounded-md flex flex-col gap-2">
@@ -359,9 +487,14 @@ export function ParticipantForm({
                             handleItemToggle(key, !checked);
                           }
                         }}
-                        className="flex items-center gap-2 cursor-pointer select-none"
+                        className="flex items-start gap-2 cursor-pointer select-none"
                       >
-                        <CustomCheckbox checked={checked} onChange={() => {}} />
+                        <span className="shrink-0 mt-[2px]">
+                          <CustomCheckbox
+                            checked={checked}
+                            onChange={() => {}}
+                          />
+                        </span>
                         <span className="text-gray-900">
                           {removeLastBracket(r.category)} / {r.program} /{" "}
                           {r.time}
@@ -376,6 +509,9 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Реєстраційний номер
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
 
               <div className="flex items-center gap-3">
@@ -424,6 +560,9 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-2 font-medium">
                 Вид замовлення
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
               <div className="border rounded-md overflow-hidden bg-white">
                 {orderOptions.map((option) => (
@@ -451,7 +590,7 @@ export function ParticipantForm({
                       className={`transition-all duration-500 ease-in-out overflow-hidden ${openAccordion === option.id ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
                     >
                       <div className="p-4 pt-2 bg-gray-50">
-                        <div className="text-gray-700 text-sm mb-4 leading-normal">
+                        <div className="text-gray-700 text-base mb-4 leading-normal">
                           {option.description}
                         </div>
                         <button
@@ -475,13 +614,19 @@ export function ParticipantForm({
             <div>
               <label className="block text-gray-700 text-lg mb-1 font-medium">
                 Номер телефону
+                <span className="text-red-500 ml-0.5" aria-hidden="true">
+                  *
+                </span>
               </label>
 
               <CustomPhoneInput value={phone} onChange={setPhone} />
             </div>
 
-            <p className="text-sm text-gray-500 mb-2">
-              *Всі поля обовʼязкові для заповнення
+            <p className="text-base italic text-gray-500 mb-2">
+              <span className="text-red-500 ml-0.5" aria-hidden="true">
+                *
+              </span>{" "}
+              Всі поля обовʼязкові для заповнення
             </p>
 
             <button
