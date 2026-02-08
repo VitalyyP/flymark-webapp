@@ -1,39 +1,87 @@
 import { NextResponse } from "next/server";
 import { getFlymarkCookieHeader } from "@/utils/flymarkAuth";
 
-type SectionsResponse = {
-  Sections?: { Id: number }[];
-};
+export const runtime = "nodejs";
 
-type StreamResponse = {
-  Categories?: { Id: number }[];
-};
-
-type DetailsResponse = {
-  Couples?: {
-    Number?: number;
-    Dancers?: { DancerId?: number }[];
-  }[];
-};
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { ...init, cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `Fetch failed ${res.status} for ${url}. ${text.slice(0, 200)}`
-    );
-  }
-  return (await res.json()) as T;
+function toNumber(value: string | null): number | null {
+  if (!value) return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
 }
 
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const competitionId = Number(searchParams.get("competitionId"));
-    const dancerId = Number(searchParams.get("dancerId"));
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
-    if (!Number.isFinite(competitionId) || !Number.isFinite(dancerId)) {
+async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
+  const response = await fetch(url, { ...init, cache: "no-store" });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Fetch failed ${response.status} for ${url}. ${text.slice(0, 200)}`
+    );
+  }
+
+  return response.json();
+}
+
+function extractIds(list: unknown, key: string): number[] {
+  if (!Array.isArray(list)) return [];
+
+  const result: number[] = [];
+
+  for (const item of list) {
+    if (!isRecord(item)) continue;
+
+    const value = item[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      result.push(value);
+    }
+  }
+
+  return result;
+}
+
+function findCoupleNumber(
+  detailsJson: unknown,
+  dancerId: number
+): number | null {
+  if (!isRecord(detailsJson)) return null;
+
+  const couples = detailsJson["Couples"];
+  if (!Array.isArray(couples)) return null;
+
+  for (const couple of couples) {
+    if (!isRecord(couple)) continue;
+
+    const numberValue = couple["Number"];
+    if (typeof numberValue !== "number") continue;
+
+    const dancers = couple["Dancers"];
+    if (!Array.isArray(dancers)) continue;
+
+    const match = dancers.some((dancer) => {
+      if (!isRecord(dancer)) return false;
+
+      const dancerValue = dancer["Id"]; // саме 1120xxx
+      return typeof dancerValue === "number" && dancerValue === dancerId;
+    });
+
+    if (match) return numberValue;
+  }
+
+  return null;
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+
+    const competitionId = toNumber(searchParams.get("competitionId"));
+    const dancerId = toNumber(searchParams.get("dancerId"));
+
+    if (competitionId === null || dancerId === null) {
       return NextResponse.json(
         { error: "Invalid competitionId or dancerId" },
         { status: 400 }
@@ -41,66 +89,66 @@ export async function GET(req: Request) {
     }
 
     const baseUrl = `https://flymark.dance/api/competitionStream/${competitionId}/0`;
-    const baseJson = await fetchJson<SectionsResponse>(baseUrl);
+    const baseJson = await fetchJson(baseUrl);
 
-    const sectionIds = (baseJson.Sections ?? [])
-      .map((s) => Number(s.Id))
-      .filter(Number.isFinite);
+    const sectionIds = extractIds(
+      isRecord(baseJson) ? baseJson["Sections"] : null,
+      "Id"
+    );
 
     if (sectionIds.length === 0) {
       return NextResponse.json({ number: null }, { status: 200 });
     }
-    const catIds: number[] = [];
+
+    const categoryIds: number[] = [];
 
     for (const sectionId of sectionIds) {
       const sectionUrl = `https://flymark.dance/api/competitionStream/${competitionId}/${sectionId}`;
+      const sectionJson = await fetchJson(sectionUrl);
 
-      const sectionJson = await fetchJson<StreamResponse>(sectionUrl);
-
-      const ids = (sectionJson.Categories ?? [])
-        .map((c) => Number(c.Id))
-        .filter(Number.isFinite);
-
-      catIds.push(...ids);
+      categoryIds.push(
+        ...extractIds(
+          isRecord(sectionJson) ? sectionJson["Categories"] : null,
+          "Id"
+        )
+      );
     }
 
-    const uniqueCatIds = Array.from(new Set(catIds));
+    const uniqueCategoryIds = Array.from(new Set(categoryIds));
 
-    if (uniqueCatIds.length === 0) {
+    if (uniqueCategoryIds.length === 0) {
       return NextResponse.json({ number: null }, { status: 200 });
     }
 
     const cookieHeader = await getFlymarkCookieHeader();
 
-    for (const catId of uniqueCatIds) {
-      const detailsUrl = `https://flymark.dance/api/v2/competition-stream/${catId}/details`;
+    for (const categoryId of uniqueCategoryIds) {
+      const detailsUrl = `https://flymark.dance/api/v2/competition-stream/${categoryId}/details`;
 
-      let details: DetailsResponse;
+      let detailsJson: unknown;
+
       try {
-        details = await fetchJson<DetailsResponse>(detailsUrl, {
+        detailsJson = await fetchJson(detailsUrl, {
           headers: {
             accept: "application/json",
             "x-client": "Web",
-            cookie: cookieHeader,
-          },
+            cookie: cookieHeader
+          }
         });
       } catch {
         continue;
       }
 
-      const couples = details.Couples ?? [];
-      for (const c of couples) {
-        const dancers = c.Dancers ?? [];
-        const match = dancers.some((d) => Number(d.DancerId) === dancerId);
-        if (match && typeof c.Number === "number") {
-          return NextResponse.json({ number: c.Number }, { status: 200 });
-        }
+      const number = findCoupleNumber(detailsJson, dancerId);
+
+      if (number !== null) {
+        return NextResponse.json({ number }, { status: 200 });
       }
     }
 
     return NextResponse.json({ number: null }, { status: 200 });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
