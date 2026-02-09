@@ -52,3 +52,28 @@ body {
   color: #374151;
   outline: none;
 }
+
+@keyframes loadingDot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.loading-dot {
+  animation: loadingDot 1s infinite ease-in-out;
+}
+
+.loading-dot.delay-150 {
+  animation-delay: 150ms;
+}
+
+.loading-dot.delay-300 {
+  animation-delay: 300ms;
+}

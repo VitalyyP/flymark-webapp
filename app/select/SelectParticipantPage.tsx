@@ -246,9 +246,9 @@ export default function SelectParticipantPage() {
               {loadingParticipants && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="flex gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 animate-loadingDot" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 animate-loadingDot animation-delay-150" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 animate-loadingDot animation-delay-300" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 loading-dot" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 loading-dot delay-150" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 loading-dot delay-300" />
                   </div>
                 </div>
               )}
