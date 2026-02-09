@@ -50,12 +50,12 @@ async function getSheetsClient() {
 
   const auth = new google.auth.GoogleAuth({
     credentials: { client_email: clientEmail, private_key: privateKey },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"]
   });
 
   return {
     sheets: google.sheets({ version: "v4", auth }),
-    spreadsheetId,
+    spreadsheetId
   };
 }
 
@@ -73,10 +73,25 @@ export async function POST(req: Request) {
 
     const { sheets, spreadsheetId } = await getSheetsClient();
 
-    const resp = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${sheetName}!A:Z`,
-    });
+    let resp;
+    try {
+      resp = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${sheetName}!A:Z`
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (message.includes("Unable to parse range")) {
+        const body: ApiErr = {
+          ok: false,
+          error: `Аркуш ${sheetName} не існує`
+        };
+        return NextResponse.json(body, { status: 404 });
+      }
+
+      throw error;
+    }
 
     const rows = (resp.data.values ?? []) as SheetRow[];
     if (rows.length < 2) {
@@ -94,7 +109,7 @@ export async function POST(req: Request) {
       const body: ApiErr = {
         ok: false,
         error: "Required columns not found",
-        details: { idxName, idxReg },
+        details: { idxName, idxReg }
       };
       return NextResponse.json(body, { status: 500 });
     }
@@ -119,7 +134,7 @@ export async function POST(req: Request) {
         ok: true,
         updated: 0,
         checked: dataRows.length,
-        tried: 0,
+        tried: 0
       };
       return NextResponse.json(body, { status: 200 });
     }
@@ -145,7 +160,7 @@ export async function POST(req: Request) {
         if (!r.ok) {
           errors.push({
             name: t.name,
-            reason: j.error ?? "Flymark request failed",
+            reason: j.error ?? "Flymark request failed"
           });
           continue;
         }
@@ -153,7 +168,7 @@ export async function POST(req: Request) {
         if (typeof j.number === "number") {
           updates.push({
             range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
-            values: [[String(j.number)]],
+            values: [[String(j.number)]]
           });
         }
       } catch (e) {
@@ -168,7 +183,7 @@ export async function POST(req: Request) {
         updated: 0,
         checked: dataRows.length,
         tried: tasks.length,
-        errors,
+        errors
       };
       return NextResponse.json(body, { status: 200 });
     }
@@ -177,8 +192,8 @@ export async function POST(req: Request) {
       spreadsheetId,
       requestBody: {
         valueInputOption: "RAW",
-        data: updates,
-      },
+        data: updates
+      }
     });
 
     const body: ApiOk = {
@@ -186,7 +201,7 @@ export async function POST(req: Request) {
       updated: updates.length,
       checked: dataRows.length,
       tried: tasks.length,
-      errors,
+      errors
     };
     return NextResponse.json(body, { status: 200 });
   } catch (e) {
