@@ -288,6 +288,7 @@ export function ParticipantForm({
 
     const payload = {
       eventId: Number(eventId),
+      eventName,
       name: participantName,
       secondName,
       items: selected,
