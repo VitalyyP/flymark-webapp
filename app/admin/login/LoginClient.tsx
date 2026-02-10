@@ -39,7 +39,7 @@ export default function LoginClient() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
-      <main className="w-full max-w-sm bg-white p-8 rounded-xl shadow flex flex-col gap-4">
+      <main className="relative w-full max-w-sm bg-white p-8 pb-12 rounded-xl shadow flex flex-col gap-4 min-h-[320px]">
         <h1 className="text-2xl text-black text-center">Admin login</h1>
 
         <label className="text-gray-700 text-sm">
@@ -66,7 +66,11 @@ export default function LoginClient() {
           />
         </label>
 
-        {err && <div className="text-sm text-red-600">{err}</div>}
+        {err && (
+          <div className="absolute left-8 right-8 bottom-3 text-sm text-red-600 text-center">
+            {err}
+          </div>
+        )}
 
         <button
           onClick={() => void submit()}
