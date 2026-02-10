@@ -28,6 +28,7 @@ async function hmacSha256(
   data: Uint8Array
 ): Promise<Uint8Array> {
   const enc = new TextEncoder();
+
   const key = await crypto.subtle.importKey(
     "raw",
     enc.encode(secret),
@@ -35,7 +36,11 @@ async function hmacSha256(
     false,
     ["sign"]
   );
-  const sig = await crypto.subtle.sign("HMAC", key, data);
+
+  const safeData = data.slice();
+
+  const sig = await crypto.subtle.sign("HMAC", key, safeData);
+
   return new Uint8Array(sig);
 }
 
@@ -81,8 +86,10 @@ export async function verifyAdminSessionCookie(
     const payload = JSON.parse(
       new TextDecoder().decode(payloadBytes)
     ) as SessionPayload;
+
     if (!payload?.exp || typeof payload.exp !== "number") return false;
     if (Date.now() > payload.exp) return false;
+
     return true;
   } catch {
     return false;
