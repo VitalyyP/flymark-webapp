@@ -1,50 +1,26 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifyAdminSessionCookie } from "./utils/adminSession";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname === "/admin/logout") {
-    return new NextResponse("Logged out", {
-      status: 401,
-      headers: {
-        "WWW-Authenticate": 'Basic realm="Secure Area", charset="UTF-8"',
-        "Cache-Control": "no-store",
-      },
-    });
-  }
+  if (!pathname.startsWith("/admin")) return NextResponse.next();
 
-  if (pathname.startsWith("/admin")) {
-    const basicAuth = req.headers.get("authorization");
+  if (pathname === "/admin/login") return NextResponse.next();
+  if (pathname.startsWith("/admin/login/")) return NextResponse.next();
 
-    if (!basicAuth) {
-      return new NextResponse("Auth required", {
-        status: 401,
-        headers: {
-          "WWW-Authenticate": 'Basic realm="Secure Area", charset="UTF-8"',
-          "Cache-Control": "no-store",
-        },
-      });
-    }
+  const cookie = req.cookies.get("admin_session")?.value ?? "";
+  const ok = await verifyAdminSessionCookie(cookie);
 
-    const auth = basicAuth.split(" ")[1] ?? "";
-    const [user, pass] = atob(auth).split(":");
+  if (ok) return NextResponse.next();
 
-    if (
-      user === process.env.ADMIN_USER &&
-      pass === process.env.ADMIN_PASSWORD
-    ) {
-      return NextResponse.next();
-    }
-
-    return new NextResponse("Unauthorized", {
-      status: 401,
-      headers: {
-        "WWW-Authenticate": 'Basic realm="Secure Area", charset="UTF-8"',
-        "Cache-Control": "no-store",
-      },
-    });
-  }
-
-  return NextResponse.next();
+  const loginUrl = req.nextUrl.clone();
+  loginUrl.pathname = "/admin/login";
+  loginUrl.searchParams.set("next", pathname + (req.nextUrl.search || ""));
+  return NextResponse.redirect(loginUrl);
 }
+
+export const config = {
+  matcher: ["/admin/:path*"]
+};
