@@ -274,12 +274,8 @@ export default function HomePage() {
     });
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/admin/logout", { cache: "no-store" });
-    } finally {
-      window.location.href = "/admin";
-    }
+  const handleLogout = () => {
+    window.location.href = "/admin/logout?next=/admin/login";
   };
 
   const handleFindNumbers = async (competitionId: string) => {

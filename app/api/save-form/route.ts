@@ -7,22 +7,22 @@ type FormItem = {
   time: string;
 };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-function toTrimmedString(v: unknown): string {
-  if (typeof v === "string") return v.trim();
-  if (typeof v === "number") return String(v);
+function toTrimmedString(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number") return String(value);
   return "";
 }
 
-function parseFormItem(v: unknown): FormItem | null {
-  if (!isRecord(v)) return null;
+function parseFormItem(value: unknown): FormItem | null {
+  if (!isRecord(value)) return null;
 
-  const category = toTrimmedString(v.category ?? v.Category);
-  const program = toTrimmedString(v.program ?? v.Program);
-  const time = toTrimmedString(v.time ?? v.Time);
+  const category = toTrimmedString(value.category ?? value.Category);
+  const program = toTrimmedString(value.program ?? value.Program);
+  const time = toTrimmedString(value.time ?? value.Time);
 
   if (!category || !program || !time) return null;
 
@@ -40,21 +40,22 @@ export async function POST(req: Request) {
     const eventId = toTrimmedString(
       body.eventId ?? body.eventID ?? body.EventId
     );
-    const name = toTrimmedString(
+    const eventName = toTrimmedString(body.eventName ?? body.EventName);
+    const dancerName = toTrimmedString(
       body.name ?? body.DancerName ?? body.dancerName
     );
 
     const itemsRaw = body.items ?? body.Items;
 
-    if (!eventId || !name || !Array.isArray(itemsRaw)) {
+    if (!eventId || !dancerName || !Array.isArray(itemsRaw)) {
       return NextResponse.json(
         {
           error: "Invalid payload",
           details: {
             hasEventId: Boolean(eventId),
-            hasName: Boolean(name),
-            itemsIsArray: Array.isArray(itemsRaw),
-          },
+            hasName: Boolean(dancerName),
+            itemsIsArray: Array.isArray(itemsRaw)
+          }
         },
         { status: 400 }
       );
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
 
     const items: FormItem[] = itemsRaw
       .map(parseFormItem)
-      .filter((x): x is FormItem => x !== null);
+      .filter((item): item is FormItem => item !== null);
 
     if (items.length === 0) {
       return NextResponse.json(
@@ -76,26 +77,27 @@ export async function POST(req: Request) {
     const phone = toTrimmedString(body.phone ?? body.Phone);
 
     const rows: RowData[] = items.map((item) => ({
-      DancerName: name,
+      DancerName: dancerName,
       Category: item.category,
       Program: item.program,
       Time: item.time,
       RegNumber: regNumber,
       OrderType: orderType,
-      Phone: phone,
+      Phone: phone
     }));
 
     await saveRowsToSheet(rows, {
       sheetName: `${eventId}/B`,
       clearBeforeWrite: false,
+      title: eventName || undefined
     });
 
     return NextResponse.json({ success: true, written: rows.length });
-  } catch (err: unknown) {
-    console.error("SAVE_FORM_ERROR:", err);
+  } catch (error: unknown) {
+    console.error("SAVE_FORM_ERROR:", error);
 
     const message =
-      err instanceof Error ? err.message : "Internal Server Error";
+      error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
