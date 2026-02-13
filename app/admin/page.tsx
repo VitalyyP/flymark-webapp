@@ -168,8 +168,8 @@ export default function HomePage() {
               typeof x === "string"
                 ? x.trim()
                 : typeof x === "number"
-                  ? String(x)
-                  : ""
+                ? String(x)
+                : ""
             )
             .filter(Boolean)
         : [];
@@ -315,6 +315,15 @@ export default function HomePage() {
           cache: "no-store"
         }
       );
+      await fetch(
+        `/api/google/refresh-participant-data?eventId=${encodeURIComponent(
+          competitionId
+        )}`,
+        {
+          method: "POST",
+          cache: "no-store"
+        }
+      );
 
       setFindUi((prev) => ({
         ...prev,
@@ -454,7 +463,8 @@ export default function HomePage() {
                   const isHiddenFromAdmin = hiddenEvents.has(id);
 
                   const eventPayload = encodeEvent({
-                    id,
+                    // id,
+                    id: "5905",
                     name: c.CompetitionName,
                     coverUrl: c.CoverPhoto
                   });
@@ -474,10 +484,16 @@ export default function HomePage() {
                       <div className="flex justify-between items-center mb-5 pb-3 border-b border-zinc-200">
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-2.5 h-2.5 rounded-full ${isVisible ? "bg-green-500 animate-pulse" : "bg-zinc-300"}`}
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              isVisible
+                                ? "bg-green-500 animate-pulse"
+                                : "bg-zinc-300"
+                            }`}
                           />
                           <span
-                            className={`text-[10px] font-black uppercase tracking-widest ${isVisible ? "text-green-600" : "text-zinc-400"}`}
+                            className={`text-[10px] font-black uppercase tracking-widest ${
+                              isVisible ? "text-green-600" : "text-zinc-400"
+                            }`}
                           >
                             {isVisible ? "Видно клієнтам" : "Приховано"}
                           </span>
@@ -529,7 +545,8 @@ export default function HomePage() {
                             </a>
 
                             <button
-                              onClick={() => handleFindNumbers(id)}
+                              // onClick={() => handleFindNumbers(id)}
+                              onClick={() => handleFindNumbers("5905")}
                               disabled={Boolean(findingId)}
                               className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-green-50 text-[11px] font-black text-green-700 hover:bg-green-100 disabled:bg-zinc-50 disabled:text-zinc-400 transition-all border border-green-100 cursor-pointer"
                             >
@@ -543,9 +560,9 @@ export default function HomePage() {
                                 {findingId === id
                                   ? ui?.statusText
                                   : ui?.foundCount !== null &&
-                                      ui?.foundCount !== undefined
-                                    ? `Оновлено: ${ui.foundCount}`
-                                    : "Оновити Google"}
+                                    ui?.foundCount !== undefined
+                                  ? `Оновлено: ${ui.foundCount}`
+                                  : "Оновити Google"}
                               </span>
                             </button>
                           </div>
