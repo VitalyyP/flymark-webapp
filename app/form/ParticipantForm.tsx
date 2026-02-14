@@ -354,110 +354,156 @@ export function ParticipantForm({
     <div className="flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans items-center px-4 py-8 md:py-12">
       <main className="w-full max-w-[440px] flex flex-col items-center gap-12 md:gap-14">
         {success ? (
-          <div className="text-gray-800 py-6 space-y-5">
-            <p className="text-2xl font-semibold text-green-700 text-center">
-              Дякуємо! Ваше замовлення прийнято.
-            </p>
+          <div className="flex flex-col gap-6 py-4">
+            <div className="flex justify-center">
+              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
+                <div className="w-12 h-12 bg-[#00a63e] rounded-full flex items-center justify-center shadow-md shadow-green-900/20">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="w-8 h-8 text-white"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <h2 className="text-[26px] md:text-[30px] font-semibold text-zinc-900 tracking-tight text-center leading-tight">
+              Дякуємо! <br />
+              <span className="text-[#00a63e]">Ваше замовлення прийнято.</span>
+            </h2>
+
             {lastSubmittedOrderType === "basic" && (
-              <div className="space-y-4 text-base leading-relaxed">
-                <p>
-                  ✅ Ви внесли всі дані –{" "}
-                  <strong className="text-gray-900">ЗАПИС ВИКОНАНО.</strong> Ви
-                  обрали пакет{" "}
-                  <strong className="text-gray-900">
-                    {
-                      orderOptions.find((o) => o.id === lastSubmittedOrderType)
-                        ?.title
-                    }
-                  </strong>
-                  . Очікуйте зразки!
-                </p>
-                <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
-                  <p className="font-medium text-amber-900">
+              <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
+                <div className="bg-white border-2 border-zinc-100 rounded-[22px] p-5 shadow-sm">
+                  <p>
+                    ✅ Ви внесли всі дані –{" "}
+                    <strong className="text-zinc-900 font-extrabold">
+                      ЗАПИС ВИКОНАНО.
+                    </strong>{" "}
+                    Ви обрали пакет{" "}
+                    <span className="text-[#00a63e] font-black uppercase tracking-tight">
+                      {
+                        orderOptions.find(
+                          (o) => o.id === lastSubmittedOrderType
+                        )?.title
+                      }
+                    </span>
+                    . Очікуйте зразки!
+                  </p>
+                </div>
+
+                <div className="bg-[#ffefd3] p-5 rounded-[22px] border-2 border-[#ffefd3] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-400"></div>
+                  <p className="font-bold text-amber-900 text-[14px]">
                     ⚠️ Якщо не всі дані були введені – виконано попередній
                     запис. Для підтвердження запису повідомте номер участі та
                     уточніть категорію асистенту біля зеленого банера «А фото».
                   </p>
                 </div>
-                <p>
-                  📝 Зразки фото ви отримаєте протягом 3–7 днів після турніру на
-                  вказаний вами номер у Viber або Telegram.
-                </p>
-                <div className="space-y-2">
-                  <p className="font-semibold text-gray-900">💳 Оплата:</p>
-                  <p>
-                    послуги для пакету{" "}
-                    <strong className="text-gray-900">
-                      {
-                        orderOptions.find(
-                          (o) => o.id === lastSubmittedOrderType
-                        )?.title
-                      }
-                    </strong>{" "}
-                    здійснюється на картку після вибору фото.
+
+                <div className="space-y-4 px-1">
+                  <p className="flex gap-3">
+                    <span className="shrink-0">📝</span>
+                    <span>
+                      Зразки фото ви отримаєте протягом{" "}
+                      <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
+                        3–7 днів
+                      </span>{" "}
+                      після турніру на вказаний вами номер у Viber або Telegram.
+                    </span>
                   </p>
+
+                  <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+                    <p className="font-black text-zinc-900 uppercase text-[11px] tracking-widest mb-1">
+                      💳 Оплата:
+                    </p>
+                    <p>
+                      послуги для пакету{" "}
+                      <strong className="text-zinc-900">
+                        {
+                          orderOptions.find(
+                            (o) => o.id === lastSubmittedOrderType
+                          )?.title
+                        }
+                      </strong>{" "}
+                      здійснюється на картку після вибору фото.
+                    </p>
+                  </div>
                 </div>
-                <p>
-                  🔗 Ознайомитися з роботами можна на нашій сторінці в Instagram
-                  «А фото»:{" "}
-                  <a
-                    href="https://www.instagram.com/aphoto2010/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline hover:text-blue-800"
-                  >
-                    https://www.instagram.com/aphoto2010/
-                  </a>
-                </p>
               </div>
             )}
+
             {lastSubmittedOrderType === "premium" && (
-              <div className="space-y-4 text-base leading-relaxed">
-                <p>
-                  ✅ Ви внесли всі дані у формі – попередній запис виконано. Ви
-                  обрали пакет{" "}
-                  <strong className="text-gray-900">
-                    {
-                      orderOptions.find((o) => o.id === lastSubmittedOrderType)
-                        ?.title
-                    }
-                  </strong>
-                </p>
-                <div className="space-y-2">
-                  <p className="font-semibold text-gray-900">💳 Оплата:</p>
+              <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
+                <div className="bg-white border-2 border-zinc-100 rounded-[22px] p-5 shadow-sm">
                   <p>
-                    📸 Фотозйомка для пакету{" "}
-                    <strong className="text-gray-900">
+                    ✅ Ви внесли всі дані у формі –{" "}
+                    <span className="text-zinc-900 font-bold">
+                      попередній запис виконано.
+                    </span>{" "}
+                    Ви обрали пакет{" "}
+                    <span className="text-[#00a63e] font-black uppercase tracking-tight">
                       {
                         orderOptions.find(
                           (o) => o.id === lastSubmittedOrderType
                         )?.title
                       }
-                    </strong>{" "}
-                    здійснюється лише після 100% оплати у день турніру, після
-                    реєстрації та повідомлення номера участі асистенту фотографа
-                    біля зеленого рекламного банера «А Фото».
+                    </span>
                   </p>
                 </div>
 
-                <p>
-                  🔗 Ознайомитися з нашими роботами можна на Instagram-сторінці
-                  «А фото»:{" "}
-                  <a
-                    href="https://www.instagram.com/aphoto2010/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline hover:text-blue-800"
-                  >
-                    https://www.instagram.com/aphoto2010/
-                  </a>
-                </p>
+                <div className="bg-zinc-50 rounded-2xl p-5 border border-zinc-100">
+                  <p className="font-black text-zinc-900 uppercase text-[11px] tracking-widest mb-2 flex items-center gap-2">
+                    <span className="text-lg">💳</span> Оплата:
+                  </p>
+                  <p className="text-zinc-700 font-medium">
+                    📸 Фотозйомка для пакету{" "}
+                    <strong className="text-zinc-900">
+                      {
+                        orderOptions.find(
+                          (o) => o.id === lastSubmittedOrderType
+                        )?.title
+                      }
+                    </strong>{" "}
+                    здійснюється лише після{" "}
+                    <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
+                      100% оплати
+                    </span>{" "}
+                    у день турніру.
+                  </p>
+                  <div className="mt-3 p-3 bg-[#00a63e]/5 rounded-xl border-l-4 border-[#00a63e] text-[13px] italic">
+                    Після реєстрації повідомте номер участі асистенту біля
+                    зеленого банера «А Фото».
+                  </div>
+                </div>
               </div>
             )}
-            <div className="pt-4 flex justify-center">
+
+            <div className="py-2 text-center">
+              <p className="text-zinc-400 text-[13px] mb-2 uppercase font-black tracking-widest">
+                Ми в Instagram
+              </p>
+              <a
+                href="https://www.instagram.com/aphoto2010/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 rounded-full text-zinc-900 font-bold hover:bg-zinc-200 transition-all text-[14px]"
+              >
+                <span className="text-[#00a63e]">@aphoto2010</span>
+              </a>
+            </div>
+
+            <div className="pt-2">
               <Link
                 href="/"
-                className="inline-block w-full sm:w-auto text-center text-white text-lg py-3 px-6 rounded-md bg-green-600 hover:bg-green-500 transition-colors"
+                className="w-full py-4 rounded-2xl font-semibold text-[17px] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.98]
+              bg-green-600 text-white active:scale-95 cursor-pointer shadow-green-900/10"
               >
                 На головну
               </Link>
@@ -873,7 +919,7 @@ export function ParticipantForm({
             </div>
 
             <div
-              className="w-full"
+              className="w-full -mt-6"
               onClickCapture={!canSubmit ? scrollToError : undefined}
             >
               <button
