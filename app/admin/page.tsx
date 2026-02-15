@@ -278,6 +278,24 @@ export default function HomePage() {
     window.location.href = "/admin/logout?next=/admin/login";
   };
 
+  const safeReadJson = async <T,>(res: Response): Promise<T | null> => {
+    try {
+      const text = await res.text();
+      if (!text) return null;
+      return JSON.parse(text) as T;
+    } catch {
+      return null;
+    }
+  };
+
+  const safeReadText = async (res: Response): Promise<string> => {
+    try {
+      return await res.text();
+    } catch {
+      return "";
+    }
+  };
+
   const handleFindNumbers = async (competitionId: string) => {
     if (findingId) return;
 
@@ -305,7 +323,7 @@ export default function HomePage() {
         }
       }));
 
-      const res = await fetch(
+      const resolveRes = await fetch(
         `/api/google/resolve-regnumbers?eventId=${encodeURIComponent(
           competitionId
         )}`,
@@ -315,31 +333,8 @@ export default function HomePage() {
           cache: "no-store"
         }
       );
-      await fetch(
-        `/api/google/refresh-participant-data?eventId=${encodeURIComponent(
-          competitionId
-        )}`,
-        {
-          method: "POST",
-          cache: "no-store"
-        }
-      );
 
-      setFindUi((prev) => ({
-        ...prev,
-        [competitionId]: {
-          ...(prev[competitionId] ?? {
-            statusText: null,
-            foundCount: null,
-            findError: null
-          }),
-          statusText: "Обробляю учасників..."
-        }
-      }));
-
-      const data = (await res.json()) as ResolveRegnumbersResponse;
-
-      if (!data.ok) {
+      if (resolveRes.status === 401) {
         setFindUi((prev) => ({
           ...prev,
           [competitionId]: {
@@ -349,7 +344,94 @@ export default function HomePage() {
               findError: null
             }),
             statusText: null,
-            findError: data.error || "Помилка запиту"
+            findError:
+              "Сесія адміністратора закінчилась. Онови сторінку і введи пароль."
+          }
+        }));
+        return;
+      }
+
+      const resolveData =
+        (await safeReadJson<ResolveRegnumbersResponse>(resolveRes)) ??
+        ({
+          ok: false,
+          error: "Сервер повернув некоректну відповідь"
+        } as ResolveRegnumbersErr);
+
+      if (!resolveRes.ok) {
+        const fallbackText = await safeReadText(resolveRes);
+        const msg =
+          (resolveData as ResolveRegnumbersErr)?.error ||
+          fallbackText ||
+          `Помилка запиту (${resolveRes.status})`;
+
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null
+            }),
+            statusText: null,
+            findError: msg
+          }
+        }));
+        return;
+      }
+
+      if (!resolveData.ok) {
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null
+            }),
+            statusText: null,
+            findError: resolveData.error || "Помилка запиту"
+          }
+        }));
+        return;
+      }
+
+      setFindUi((prev) => ({
+        ...prev,
+        [competitionId]: {
+          ...(prev[competitionId] ?? {
+            statusText: null,
+            foundCount: null,
+            findError: null
+          }),
+          statusText: "Оновлюю кеш учасників…"
+        }
+      }));
+
+      const refreshRes = await fetch(
+        `/api/google/refresh-participant-data?eventId=${encodeURIComponent(
+          competitionId
+        )}`,
+        {
+          method: "POST",
+          cache: "no-store"
+        }
+      );
+
+      if (!refreshRes.ok) {
+        const refreshText = await safeReadText(refreshRes);
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null
+            }),
+            statusText: null,
+            findError:
+              refreshText ||
+              `Resolve ок, але refresh впав (${refreshRes.status})`
           }
         }));
         return;
@@ -359,9 +441,9 @@ export default function HomePage() {
         ...prev,
         [competitionId]: {
           statusText: null,
-          foundCount: data.updated,
-          findError: data.errors?.length
-            ? `Не вдалося знайти номер для ${data.errors.length} учасників`
+          foundCount: resolveData.updated,
+          findError: resolveData.errors?.length
+            ? `Не вдалося знайти номер для ${resolveData.errors.length} учасників`
             : null
         }
       }));
@@ -463,8 +545,7 @@ export default function HomePage() {
                   const isHiddenFromAdmin = hiddenEvents.has(id);
 
                   const eventPayload = encodeEvent({
-                    // id,
-                    id: "5905",
+                    id,
                     name: c.CompetitionName,
                     coverUrl: c.CoverPhoto
                   });
@@ -545,8 +626,7 @@ export default function HomePage() {
                             </a>
 
                             <button
-                              // onClick={() => handleFindNumbers(id)}
-                              onClick={() => handleFindNumbers("5905")}
+                              onClick={() => handleFindNumbers(id)}
                               disabled={Boolean(findingId)}
                               className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-green-50 text-[11px] font-black text-green-700 hover:bg-green-100 disabled:bg-zinc-50 disabled:text-zinc-400 transition-all border border-green-100 cursor-pointer"
                             >

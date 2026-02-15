@@ -73,8 +73,6 @@ function readNumber(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
-/** ---------- Flymark ---------- */
-
 type FlyCat = {
   CategoryName: string;
   SectionId: number | null;
@@ -137,8 +135,6 @@ async function fetchJson(url: string) {
   return { ok: res.ok, status: res.status, data };
 }
 
-/** ---------- participants-fast index ---------- */
-
 type DancerIndexItem = { id: string; key: string; fullName: string };
 
 async function buildDancerIndex(eventId: string): Promise<DancerIndexItem[]> {
@@ -163,7 +159,6 @@ async function buildDancerIndex(eventId: string): Promise<DancerIndexItem[]> {
     }
   }
 
-  // uniq by key (якщо дублікати — беремо перший)
   const uniq = new Map<string, DancerIndexItem>();
   for (const x of out) if (!uniq.has(x.key)) uniq.set(x.key, x);
   return Array.from(uniq.values());
@@ -187,8 +182,6 @@ function findDancerId(
   return { error: `ambiguous dancer name (${matches.length})` };
 }
 
-/** ---------- matching row <-> flycat ---------- */
-
 function normLoose(s: string) {
   return normKey(s)
     .replace(/[()[\],.;:!?'"“”«»]/g, " ")
@@ -197,7 +190,6 @@ function normLoose(s: string) {
 }
 
 function scoreMatch(rowCat: string, rowProg: string, fly: FlyCat) {
-  // Пріоритет: program, бо він зазвичай стабільніший
   const rP = normLoose(rowProg);
   const fP = normLoose(fly.ResultProgramName);
 
@@ -227,12 +219,9 @@ function pickBestFlyCat(rowCat: string, rowProg: string, cats: FlyCat[]) {
     }
   }
 
-  // мінімальний поріг, щоб не оновити “не те”
-  if (!best || bestScore < 6) return null; // 6 = хоча б частковий збіг program
+  if (!best || bestScore < 6) return null;
   return best;
 }
-
-/** ---------- route ---------- */
 
 export async function POST(req: Request) {
   try {
@@ -254,12 +243,14 @@ export async function POST(req: Request) {
     });
 
     const rows = (resp.data.values ?? []) as SheetRow[];
-    if (rows.length < 2) {
+    if (rows.length < 3) {
       const body: ApiOk = { ok: true, updated: 0, tried: 0, checked: 0 };
       return NextResponse.json(body, { status: 200 });
     }
 
-    const headers = rows[0].map((h) => (typeof h === "string" ? h.trim() : ""));
+    const headers = (rows[2] ?? []).map((h) =>
+      typeof h === "string" ? h.trim() : ""
+    );
 
     const idxName = headers.indexOf("DancerName");
     const idxCat = headers.indexOf("Category");
@@ -277,10 +268,7 @@ export async function POST(req: Request) {
 
     const dancerIndex = await buildDancerIndex(eventId);
 
-    // кеш: dancerId -> cats
     const catsByDancer = new Map<string, FlyCat[]>();
-
-    // кеш: sectionListId -> map(sectionId -> timeName)
     const sectionNameByIdCache = new Map<string, Map<number, string>>();
 
     async function getCats(dancerId: string) {
@@ -318,8 +306,7 @@ export async function POST(req: Request) {
     const errors: Array<{ row: number; name: string; reason: string }> = [];
     let tried = 0;
 
-    // rows[1...] data
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = 3; i < rows.length; i++) {
       const row = rows[i];
       const sheetRow = i + 1;
 
@@ -352,10 +339,9 @@ export async function POST(req: Request) {
         continue;
       }
 
-      // time from sections via SectionId
       let newTime = "";
       if (best.SectionId !== null) {
-        const sectionListId = String(best.SectionId); // як у твоєму get-participant-fast (inferredSectionListId)
+        const sectionListId = String(best.SectionId);
         const map = await getSectionNameById(sectionListId);
         newTime = map.get(best.SectionId) ?? "";
       }
@@ -406,7 +392,7 @@ export async function POST(req: Request) {
       ok: true,
       updated: updates.length,
       tried,
-      checked: rows.length - 1,
+      checked: rows.length - 3,
       errors: errors.length ? errors : undefined
     };
 
