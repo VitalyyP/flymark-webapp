@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { decodeEvent } from "@/utils/eventPayload";
+import { groupRegNumbersByProgram } from "@/utils/groupParticipantsByProgram";
 import {
   makeCrossedStorageKey,
   makeCrossKey,
@@ -35,11 +36,10 @@ function CrossTable({
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
-  const grouped: Record<string, string[]> = {};
-  participants.forEach((p) => {
-    if (!grouped[p.program]) grouped[p.program] = [];
-    grouped[p.program].push(p.regNumber);
-  });
+  const grouped = useMemo(
+    () => groupRegNumbersByProgram(participants, "Не знаю"),
+    [participants]
+  );
 
   Object.keys(grouped).forEach((prog) =>
     grouped[prog].sort((a, b) => a.localeCompare(b, "uk", { numeric: true }))
