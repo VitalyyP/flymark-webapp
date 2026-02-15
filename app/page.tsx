@@ -140,6 +140,7 @@ export default function HomePage() {
                 src="/aphoto-logo.jpg"
                 alt="A-Photo Logo"
                 fill
+                sizes="(max-width: 768px) 96px, 128px"
                 className="object-cover"
                 priority
               />
@@ -216,6 +217,7 @@ export default function HomePage() {
                           src={c.CoverPhoto}
                           alt={c.CompetitionName}
                           fill
+                          sizes="(max-width: 768px) 160px, 176px"
                           className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                         />
                       </div>
