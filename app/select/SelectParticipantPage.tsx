@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Search, User, ArrowRight, RefreshCw } from "lucide-react";
 import { useEventFromQuery } from "@/hooks/useEventFromQuery";
 import { encodeEvent } from "@/utils/eventPayload";
 
@@ -83,9 +84,11 @@ export default function SelectParticipantPage() {
   const event = useEventFromQuery();
 
   const [participants, setParticipants] = useState<ParticipantOption[]>([]);
+
   const [query, setQuery] = useState("");
   const [selectedParticipant, setSelectedParticipant] =
     useState<ParticipantOption | null>(null);
+
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const eventId = event?.id ?? "";
@@ -181,6 +184,8 @@ export default function SelectParticipantPage() {
     setQuery(p.name);
   };
 
+  const [isFocused, setIsFocused] = useState(false);
+
   const handleSubmit = () => {
     if (!selectedParticipant || !event) return;
 
@@ -206,63 +211,106 @@ export default function SelectParticipantPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
-      <main className="w-full max-w-lg bg-white p-8 rounded-xl shadow flex flex-col items-center gap-12">
-        <div className="flex flex-col items-center gap-31">
-          <div className="w-55 h-55 rounded-full overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans items-center px-4 py-8 md:py-12">
+      <main className="w-full max-w-[440px] flex flex-col items-center gap-8 md:gap-10">
+        <div className="flex flex-col items-center text-center w-full gap-8">
+          <div className="flex flex-col items-center gap-2 w-full">
+            <span className="px-3 py-1 bg-zinc-100 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">
+              Турнір
+            </span>
+
+            <h2 className="text-xl md:text-2xl font-bold text-zinc-800 leading-snug max-w-[260px] pt-1">
+              {eventName}
+            </h2>
+          </div>
+
+          <div className="relative w-40 h-40 md:w-40 md:h-40 rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
             <Image
               src={coverUrl}
               alt={eventName}
-              width={220}
-              height={220}
-              className="object-cover w-full h-full"
+              fill
+              className="object-cover"
               priority
             />
           </div>
-          <span className="text-3xl tracking-wider text-gray-900 text-center wrap-break-word line-clamp-2 max-w-full">
-            {eventName}
-          </span>
         </div>
 
-        <div className="flex flex-col gap-8 w-full">
-          <h1 className="text-2xl tracking-wider text-black text-center">
-            Запис на фото
-          </h1>
-          <span className="text-xl tracking-wider text-black">
-            Введіть прізвище/імʼя спортсмена (-ів)
-          </span>
+        <div className="w-full flex flex-col gap-8">
+          <div className="space-y-1 text-center">
+            <h1 className="text-[28px] md:text-[32px] font-bold text-zinc-900 tracking-tight">
+              Запис на фото
+            </h1>
+            <p className="text-zinc-500 font-medium text-[15px]">
+              Введіть прізвище/імʼя спортсмена
+            </p>
+          </div>
 
-          <div className="flex flex-col gap-6 w-full">
-            <div className="relative w-full">
+          <div className="flex flex-col gap-6 w-full relative">
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 flex flex-row items-center gap-3 z-10 pointer-events-none">
+                {loadingParticipants ? (
+                  <>
+                    <RefreshCw
+                      size={18}
+                      className="animate-spin text-green-600 shrink-0"
+                    />
+                    <span className="text-sm font-medium text-green-600 animate-pulse whitespace-nowrap">
+                      Зачекайте, підтягуємо дані...
+                    </span>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <Search
+                      size={18}
+                      className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-green-600" : "text-zinc-400"}`}
+                    />
+
+                    {isFocused && !query && (
+                      <span className="text-sm font-bold text-green-600 animate-in slide-in-from-left-2 fade-in duration-300 whitespace-nowrap">
+                        Почніть вводити прізвище або імʼя
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
               <input
+                id="participant-search"
+                name="participantName"
                 type="text"
+                autoComplete="off"
                 value={query}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder={loadingParticipants ? "" : "Оберіть учасника"}
-                className="w-full rounded-md border px-4 py-3 text-xl tracking-wider text-gray-900"
+                placeholder={
+                  !isFocused && !loadingParticipants ? "Оберіть учасника" : ""
+                }
                 disabled={loadingParticipants}
+                className={`w-full bg-white border rounded-2xl py-4 pl-11 pr-5 text-[16px] font-medium text-zinc-800 transition-all shadow-sm outline-none
+                ${
+                  isFocused
+                    ? "border-green-600/50 ring-4 ring-green-600/5"
+                    : "border-zinc-200"
+                }
+                disabled:bg-zinc-100 disabled:cursor-not-allowed`}
               />
 
-              {loadingParticipants && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="flex gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 loading-dot" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 loading-dot delay-150" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400 loading-dot delay-300" />
-                  </div>
-                </div>
-              )}
-
               {query && filtered.length > 0 && !loadingParticipants && (
-                <ul className="absolute bottom-full left-0 z-20 mb-1 w-full bg-white border rounded-md shadow max-h-64 overflow-y-auto">
+                <ul className="absolute bottom-full left-0 right-0 mb-3 z-50 bg-white border border-zinc-100 rounded-2xl shadow-[0_-15px_40px_-10px_rgba(0,0,0,0.15)] p-1.5 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-200">
                   {filtered.map((p) => (
                     <li
                       key={p.id}
                       onClick={() => handlePick(p)}
-                      className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-gray-100"
                       title={p.id}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer rounded-xl hover:bg-green-50 transition-all group"
                     >
-                      {p.name}
+                      <User
+                        size={16}
+                        className="text-zinc-300 group-hover:text-green-600"
+                      />
+                      <span className="font-semibold text-sm text-zinc-700 group-hover:text-green-900">
+                        {p.name}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -272,9 +320,19 @@ export default function SelectParticipantPage() {
             <button
               onClick={handleSubmit}
               disabled={!selectedParticipant || loadingParticipants}
-              className="w-full rounded-md bg-green-600 py-3 tracking-wider text-white text-xl hover:bg-green-500 disabled:bg-gray-400 cursor-pointer"
+              className={`w-full py-4 rounded-2xl font-semibold text-[17px] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.98]
+              ${
+                selectedParticipant
+                  ? "bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer"
+                  : "bg-zinc-300 text-white cursor-not-allowed shadow-none"
+              }`}
             >
-              Далі
+              <span>Продовжити</span>
+              <div
+                className={`transition-transform duration-300 ${selectedParticipant ? "translate-x-1" : ""}`}
+              >
+                <ArrowRight size={20} className="text-white" />
+              </div>
             </button>
           </div>
         </div>
