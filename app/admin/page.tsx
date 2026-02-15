@@ -168,8 +168,8 @@ export default function HomePage() {
               typeof x === "string"
                 ? x.trim()
                 : typeof x === "number"
-                  ? String(x)
-                  : ""
+                ? String(x)
+                : ""
             )
             .filter(Boolean)
         : [];
@@ -278,6 +278,24 @@ export default function HomePage() {
     window.location.href = "/admin/logout?next=/admin/login";
   };
 
+  const safeReadJson = async <T,>(res: Response): Promise<T | null> => {
+    try {
+      const text = await res.text();
+      if (!text) return null;
+      return JSON.parse(text) as T;
+    } catch {
+      return null;
+    }
+  };
+
+  const safeReadText = async (res: Response): Promise<string> => {
+    try {
+      return await res.text();
+    } catch {
+      return "";
+    }
+  };
+
   const handleFindNumbers = async (competitionId: string) => {
     if (findingId) return;
 
@@ -305,7 +323,7 @@ export default function HomePage() {
         }
       }));
 
-      const res = await fetch(
+      const resolveRes = await fetch(
         `/api/google/resolve-regnumbers?eventId=${encodeURIComponent(
           competitionId
         )}`,
@@ -316,21 +334,7 @@ export default function HomePage() {
         }
       );
 
-      setFindUi((prev) => ({
-        ...prev,
-        [competitionId]: {
-          ...(prev[competitionId] ?? {
-            statusText: null,
-            foundCount: null,
-            findError: null
-          }),
-          statusText: "Обробляю учасників..."
-        }
-      }));
-
-      const data = (await res.json()) as ResolveRegnumbersResponse;
-
-      if (!data.ok) {
+      if (resolveRes.status === 401) {
         setFindUi((prev) => ({
           ...prev,
           [competitionId]: {
@@ -340,7 +344,94 @@ export default function HomePage() {
               findError: null
             }),
             statusText: null,
-            findError: data.error || "Помилка запиту"
+            findError:
+              "Сесія адміністратора закінчилась. Онови сторінку і введи пароль."
+          }
+        }));
+        return;
+      }
+
+      const resolveData =
+        (await safeReadJson<ResolveRegnumbersResponse>(resolveRes)) ??
+        ({
+          ok: false,
+          error: "Сервер повернув некоректну відповідь"
+        } as ResolveRegnumbersErr);
+
+      if (!resolveRes.ok) {
+        const fallbackText = await safeReadText(resolveRes);
+        const msg =
+          (resolveData as ResolveRegnumbersErr)?.error ||
+          fallbackText ||
+          `Помилка запиту (${resolveRes.status})`;
+
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null
+            }),
+            statusText: null,
+            findError: msg
+          }
+        }));
+        return;
+      }
+
+      if (!resolveData.ok) {
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null
+            }),
+            statusText: null,
+            findError: resolveData.error || "Помилка запиту"
+          }
+        }));
+        return;
+      }
+
+      setFindUi((prev) => ({
+        ...prev,
+        [competitionId]: {
+          ...(prev[competitionId] ?? {
+            statusText: null,
+            foundCount: null,
+            findError: null
+          }),
+          statusText: "Оновлюю кеш учасників…"
+        }
+      }));
+
+      const refreshRes = await fetch(
+        `/api/google/refresh-participant-data?eventId=${encodeURIComponent(
+          competitionId
+        )}`,
+        {
+          method: "POST",
+          cache: "no-store"
+        }
+      );
+
+      if (!refreshRes.ok) {
+        const refreshText = await safeReadText(refreshRes);
+        setFindUi((prev) => ({
+          ...prev,
+          [competitionId]: {
+            ...(prev[competitionId] ?? {
+              statusText: null,
+              foundCount: null,
+              findError: null
+            }),
+            statusText: null,
+            findError:
+              refreshText ||
+              `Resolve ок, але refresh впав (${refreshRes.status})`
           }
         }));
         return;
@@ -350,9 +441,9 @@ export default function HomePage() {
         ...prev,
         [competitionId]: {
           statusText: null,
-          foundCount: data.updated,
-          findError: data.errors?.length
-            ? `Не вдалося знайти номер для ${data.errors.length} учасників`
+          foundCount: resolveData.updated,
+          findError: resolveData.errors?.length
+            ? `Не вдалося знайти номер для ${resolveData.errors.length} учасників`
             : null
         }
       }));
@@ -474,10 +565,16 @@ export default function HomePage() {
                       <div className="flex justify-between items-center mb-5 pb-3 border-b border-zinc-200">
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-2.5 h-2.5 rounded-full ${isVisible ? "bg-green-500 animate-pulse" : "bg-zinc-300"}`}
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              isVisible
+                                ? "bg-green-500 animate-pulse"
+                                : "bg-zinc-300"
+                            }`}
                           />
                           <span
-                            className={`text-[10px] font-black uppercase tracking-widest ${isVisible ? "text-green-600" : "text-zinc-400"}`}
+                            className={`text-[10px] font-black uppercase tracking-widest ${
+                              isVisible ? "text-green-600" : "text-zinc-400"
+                            }`}
                           >
                             {isVisible ? "Видно клієнтам" : "Приховано"}
                           </span>
@@ -543,9 +640,9 @@ export default function HomePage() {
                                 {findingId === id
                                   ? ui?.statusText
                                   : ui?.foundCount !== null &&
-                                      ui?.foundCount !== undefined
-                                    ? `Оновлено: ${ui.foundCount}`
-                                    : "Оновити Google"}
+                                    ui?.foundCount !== undefined
+                                  ? `Оновлено: ${ui.foundCount}`
+                                  : "Оновити Google"}
                               </span>
                             </button>
                           </div>

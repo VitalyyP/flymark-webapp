@@ -1,5 +1,6 @@
 import { ParticipantForm, ResultItem } from "./ParticipantForm";
 import { decodeEvent } from "@/utils/eventPayload";
+import { headers } from "next/headers";
 
 type SearchParams = {
   event?: string;
@@ -9,34 +10,28 @@ type PageProps = {
   searchParams: Promise<SearchParams>;
 };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
+async function getBaseUrl(): Promise<string> {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  return host ? `${proto}://${host}` : "";
 }
 
-function isResultItem(v: unknown): v is ResultItem {
-  if (!isRecord(v)) return false;
-
-  return (
-    typeof v.category === "string" &&
-    typeof v.time === "string" &&
-    typeof v.dancer1Name === "string" &&
-    typeof v.dancer2Name === "string" &&
-    typeof v.program === "string"
-  );
+async function fetchJson<T>(
+  url: string
+): Promise<{ ok: boolean; data: T | null }> {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return { ok: false, data: null };
+    const data = (await res.json()) as T;
+    return { ok: true, data };
+  } catch {
+    return { ok: false, data: null };
+  }
 }
 
-function isResultItemArray(v: unknown): v is ResultItem[] {
-  return Array.isArray(v) && v.every(isResultItem);
-}
-
-function isSufficient(results: ResultItem[]): boolean {
-  return results.length > 0;
-}
-
-async function fetchJson(url: string): Promise<{ ok: boolean; data: unknown }> {
-  const res = await fetch(url, { cache: "no-store" });
-  const data: unknown = await res.json();
-  return { ok: res.ok, data };
+function isSufficient(results: ResultItem[] | null): results is ResultItem[] {
+  return Array.isArray(results) && results.length > 0;
 }
 
 export default async function Page({ searchParams }: PageProps) {
@@ -50,7 +45,8 @@ export default async function Page({ searchParams }: PageProps) {
     return <div>Некоректні параметри</div>;
   }
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL?.trim() ?? "";
+  const base = await getBaseUrl();
+  if (!base) return <div>Помилка завантаження</div>;
 
   const fastUrl = `${base}/api/get-participant-fast?event=${encodeURIComponent(
     event.id
@@ -60,26 +56,27 @@ export default async function Page({ searchParams }: PageProps) {
 
   const slowUrl = `${base}/api/get-participant?event=${encodeURIComponent(
     event.id
-  )}&id=${encodeURIComponent(participant.id)}`;
+  )}&id=${encodeURIComponent(participant.id)}&name=${encodeURIComponent(
+    participant.name
+  )}`;
 
-  let results: ResultItem[] = [];
+  let results: ResultItem[] | null = null;
 
   try {
-    const fast = await fetchJson(fastUrl);
-
-    if (fast.ok && isResultItemArray(fast.data) && isSufficient(fast.data)) {
+    const fast = await fetchJson<ResultItem[]>(fastUrl);
+    if (fast.ok && isSufficient(fast.data)) {
       results = fast.data;
     } else {
-      const slow = await fetchJson(slowUrl);
-      if (!slow.ok || !isResultItemArray(slow.data)) {
-        throw new Error("Invalid slow response");
+      const slow = await fetchJson<ResultItem[]>(slowUrl);
+      if (slow.ok && Array.isArray(slow.data)) {
+        results = slow.data;
       }
-      results = slow.data;
     }
-  } catch (err) {
-    console.error("Помилка завантаження учасника:", err);
-    return <div>Помилка завантаження</div>;
+  } catch (e) {
+    console.error("Failed to load participant", e);
   }
+
+  if (!results) return <div>Помилка завантаження</div>;
 
   return (
     <ParticipantForm

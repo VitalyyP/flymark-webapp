@@ -94,13 +94,15 @@ export async function POST(req: Request) {
     }
 
     const rows = (resp.data.values ?? []) as SheetRow[];
-    if (rows.length < 2) {
+    if (rows.length < 3) {
       const body: ApiOk = { ok: true, updated: 0, checked: 0, tried: 0 };
       return NextResponse.json(body, { status: 200 });
     }
 
-    const headers = rows[0].map((h) => (typeof h === "string" ? h.trim() : ""));
-    const dataRows = rows.slice(1);
+    const headers = (rows[2] ?? []).map((h) =>
+      typeof h === "string" ? h.trim() : ""
+    );
+    const dataRows = rows.slice(3);
 
     const idxName = headers.indexOf("DancerName");
     const idxReg = headers.indexOf("RegNumber");
@@ -118,7 +120,7 @@ export async function POST(req: Request) {
 
     const tasks = dataRows
       .map((row, i) => {
-        const rowNumberInSheet = i + 2;
+        const rowNumberInSheet = i + 4;
         const name = (row[idxName] ?? "").toString().trim();
         const reg = (row[idxReg] ?? "").toString().trim();
 

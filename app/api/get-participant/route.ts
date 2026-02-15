@@ -21,6 +21,7 @@ function normalizeText(s: string): string {
 }
 
 function safeCell(row: SheetRow, idx: number): string {
+  if (idx < 0) return "";
   const v = row[idx];
   return typeof v === "string" ? v : "";
 }
@@ -65,26 +66,26 @@ export async function GET(request: Request) {
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: clientEmail,
-        private_key: privateKey,
+        private_key: privateKey
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     });
 
     const sheets = google.sheets({ version: "v4", auth });
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${eventId}/A!A:Z`,
+      range: `${eventId}/A!A:Z`
     });
 
     const rows = (response.data.values ?? []) as SheetRow[];
 
-    if (rows.length < 2) {
+    if (rows.length < 3) {
       return NextResponse.json([], { status: 200 });
     }
 
-    const headers = rows[0].map((h) => (typeof h === "string" ? h.trim() : ""));
-    const dataRows = rows.slice(1);
+    const headers = rows[2].map((h) => (typeof h === "string" ? h.trim() : ""));
+    const dataRows = rows.slice(3);
 
     const dancer1NameIdx = headers.indexOf("Dancer1Name");
     const dancer2NameIdx = headers.indexOf("Dancer2Name");
@@ -95,13 +96,8 @@ export async function GET(request: Request) {
     const dancer1IdIdx = headers.indexOf("Dancer1Id");
     const dancer2IdIdx = headers.indexOf("Dancer2Id");
 
-    const required = [
-      dancer1NameIdx,
-      dancer2NameIdx,
-      categoryIdx,
-      timeIdx,
-      programIdx,
-    ];
+    const required = [dancer1NameIdx, categoryIdx, timeIdx, programIdx];
+
     if (required.some((x) => x === -1)) {
       return NextResponse.json(
         { error: "Required columns not found" },
@@ -124,8 +120,8 @@ export async function GET(request: Request) {
         if (!category) return null;
 
         if (dancerId) {
-          const d1id = dancer1IdIdx >= 0 ? safeCell(row, dancer1IdIdx) : "";
-          const d2id = dancer2IdIdx >= 0 ? safeCell(row, dancer2IdIdx) : "";
+          const d1id = safeCell(row, dancer1IdIdx);
+          const d2id = safeCell(row, dancer2IdIdx);
 
           const matchesById =
             normalizeText(d1id) === dancerId ||
@@ -133,13 +129,7 @@ export async function GET(request: Request) {
 
           if (!matchesById) return null;
 
-          return {
-            category,
-            time,
-            dancer1Name,
-            dancer2Name,
-            program,
-          };
+          return { category, time, dancer1Name, dancer2Name, program };
         }
 
         const matchesByName = [dancer1Name, dancer2Name].some((d) => {
@@ -149,13 +139,7 @@ export async function GET(request: Request) {
 
         if (!matchesByName) return null;
 
-        return {
-          category,
-          time,
-          dancer1Name,
-          dancer2Name,
-          program,
-        };
+        return { category, time, dancer1Name, dancer2Name, program };
       })
       .filter((x): x is ResultItem => x !== null);
 
