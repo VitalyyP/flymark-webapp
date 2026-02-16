@@ -20,6 +20,31 @@ type TimeItem = {
   enabled: boolean;
 };
 
+function normalizeTime(raw: unknown): string {
+  if (raw === null || raw === undefined) return "";
+
+  let s = String(raw).trim();
+  if (!s) return "";
+
+  // 09.00 -> 09:00
+  s = s.replace(".", ":");
+
+  // 9:0, 09:0, 9:00, 09:00 -> 09:00
+  const m = s.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!m) return s;
+
+  const hh = m[1].padStart(2, "0");
+  const mm = m[2].padStart(2, "0");
+
+  return `${hh}:${mm}`;
+}
+
+function timeToMinutes(t: string): number {
+  const m = t.match(/^(\d{2}):(\d{2})$/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
 export default function PartsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -52,25 +77,31 @@ export default function PartsClient() {
 
       try {
         const [sheetRes, flymarkRes] = await Promise.all([
-          fetch(`/api/get-participants?event=${eventId}`),
-          fetch(`/api/event-times?event=${eventId}`)
+          fetch(`/api/get-participants?event=${encodeURIComponent(eventId)}`),
+          fetch(`/api/event-times?event=${encodeURIComponent(eventId)}`),
         ]);
 
         const sheetData: ApiResponse = await sheetRes.json();
         const flymarkData: { times: string[] } = await flymarkRes.json();
 
         const sheetTimes = new Set(
-          sheetData.rows.map((r) => r.Time).filter(Boolean)
+          (sheetData.rows ?? [])
+            .map((r) => normalizeTime(r.Time))
+            .filter(Boolean)
         );
 
-        const allTimes = Array.from(
-          new Set([...flymarkData.times, ...sheetTimes])
-        ).sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
+        const flyTimes = (flymarkData.times ?? [])
+          .map((t) => normalizeTime(t))
+          .filter(Boolean);
+
+        const allTimes = Array.from(new Set([...flyTimes, ...sheetTimes])).sort(
+          (a, b) => timeToMinutes(a) - timeToMinutes(b)
+        );
 
         const merged: TimeItem[] = allTimes.map((time, index) => ({
           part: index + 1,
           time,
-          enabled: sheetTimes.has(time)
+          enabled: sheetTimes.has(time),
         }));
 
         setTimes(merged);
@@ -92,7 +123,7 @@ export default function PartsClient() {
       name: eventName,
       coverUrl,
       time: item.time,
-      part: item.part.toString()
+      part: item.part.toString(),
     });
 
     router.push(`/parts/results?event=${encodeURIComponent(encoded)}`);
