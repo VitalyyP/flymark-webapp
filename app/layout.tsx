@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "А-фото - репортажна зйомка",
-  description: "Команда А-фото здійснює репортажну зйомку",
+  title: "А-фото – Фотозйомка бальних танців",
+  description:
+    "Команда А фото здійснює репортажну ФОТО зйомку під час виступу на танцювальному майданчику",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" }
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" }
     ],
     apple: "/apple-touch-icon.png"
   }
