@@ -6,7 +6,71 @@ function normalizePrivateKey(key?: string): string | undefined {
   return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
 }
 
-async function getSectionTimes(eventId: string): Promise<string[]> {
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function toStr(v: unknown): string {
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number") return String(v);
+  return "";
+}
+
+function uniqNonEmptySorted(items: string[]) {
+  return Array.from(new Set(items.map((x) => x.trim()).filter(Boolean))).sort(
+    (a, b) => a.localeCompare(b, "uk", { numeric: true })
+  );
+}
+
+async function getSectionTimesFast(eventId: string): Promise<string[]> {
+  try {
+    const url = `https://flymark.dance/api/competition/${encodeURIComponent(
+      eventId
+    )}?mode=table`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        "accept-language": "uk-UA,uk;q=0.9,en;q=0.8",
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return [];
+
+    const data: unknown = await res.json().catch(() => ({}));
+    if (!isRecord(data)) return [];
+
+    const cats = data["Categories"];
+    if (!isRecord(cats)) return [];
+
+    const dateGroups = cats["DateGroups"];
+    if (!Array.isArray(dateGroups)) return [];
+
+    const times: string[] = [];
+
+    for (const g of dateGroups) {
+      if (!isRecord(g)) continue;
+
+      const sections = g["Sections"];
+      if (!Array.isArray(sections)) continue;
+
+      for (const s of sections) {
+        if (!isRecord(s)) continue;
+
+        const name = typeof s["Name"] === "string" ? s["Name"].trim() : "";
+        if (name) times.push(name);
+      }
+    }
+
+    return uniqNonEmptySorted(times);
+  } catch {
+    return [];
+  }
+}
+
+async function getSectionTimesFromSheets(eventId: string): Promise<string[]> {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_CLIENT_EMAIL,
@@ -25,25 +89,26 @@ async function getSectionTimes(eventId: string): Promise<string[]> {
   });
 
   const values = response.data.values ?? [];
-  if (values.length < 2) return [];
+  if (values.length < 3) return [];
 
-  const headers = values[0];
-  const sectionTimeIndex = headers.findIndex(
-    (h) => (h || "").trim() === "SectionTime"
-  );
+  const headers = values[2] ?? [];
+  const sectionTimeIndex = headers.findIndex((h) => toStr(h) === "SectionTime");
 
   if (sectionTimeIndex === -1) return [];
 
-  const times = Array.from(
-    new Set(
-      values
-        .slice(1)
-        .map((row) => row[sectionTimeIndex])
-        .filter(Boolean)
-    )
-  ).sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
+  const timesRaw = values
+    .slice(3)
+    .map((row) => toStr(row?.[sectionTimeIndex]))
+    .filter(Boolean);
 
-  return times as string[];
+  return uniqNonEmptySorted(timesRaw);
+}
+
+async function getSectionTimes(eventId: string): Promise<string[]> {
+  const fast = await getSectionTimesFast(eventId);
+  if (fast.length) return fast;
+
+  return await getSectionTimesFromSheets(eventId);
 }
 
 export async function GET(req: Request) {
