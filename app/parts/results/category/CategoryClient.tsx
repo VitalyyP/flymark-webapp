@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
 import { groupRegNumbersByProgram } from "@/utils/groupParticipantsByProgram";
@@ -21,14 +21,29 @@ type Participant = {
   program: string;
 };
 
-function CrossTable({
+const renderBackButton = (eventParam: string) => (
+  <Link
+    href={`/parts/results?event=${eventParam}`}
+    className="inline-flex items-center justify-center px-10 py-3 bg-[#A9A9A9] text-white font-bold rounded-[18px] hover:bg-[#969696] active:scale-95 transition-all min-w-[180px] text-sm"
+  >
+    <ChevronLeft size={18} className="mr-1" /> Назад
+  </Link>
+);
+
+function CategoryTable({
   storageKey,
   categoryParam,
-  participants
+  participants,
+  eventParam,
+  part,
+  time
 }: {
   storageKey: string;
   categoryParam: string;
   participants: Participant[];
+  eventParam: string;
+  part: string;
+  time: string;
 }) {
   const [crossedKeys, setCrossedKeys] = useState<string[]>(() =>
     readCrossedFromStorage(storageKey)
@@ -46,66 +61,91 @@ function CrossTable({
   );
 
   return (
-    <div className="w-full overflow-x-auto mt-6">
-      <table className="w-full border-collapse border border-gray-200">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-200 px-4 py-2 text-left text-black">
-              Програма
-            </th>
-            <th className="border border-gray-200 px-4 py-2 text-left text-black">
-              Номери учасників
-            </th>
-          </tr>
-        </thead>
+    <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-sm border border-zinc-100 p-3 sm:p-8 flex flex-col">
+      <div className="text-center py-6 mb-4">
+        <h1 className="text-[22px] font-black uppercase tracking-tight text-green-600 leading-tight">
+          Відділення {part} <span className="text-zinc-300 mx-1">/</span>{" "}
+          <span className="text-zinc-900">{time}</span>
+        </h1>
+        <div className="text-[17px] font-bold text-zinc-500 uppercase mt-2 px-4 leading-snug">
+          {categoryParam}
+        </div>
+      </div>
 
-        <tbody>
-          {Object.keys(grouped).map((prog, i) => (
-            <tr key={prog} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-              <td className="border border-gray-200 px-4 py-2 text-black">
-                {prog}
-              </td>
-
-              <td className="border border-gray-200 px-4 py-2 text-black">
-                {grouped[prog]
-                  .map((num, idx) => {
-                    const key = makeCrossKey(categoryParam, prog, num, idx);
-                    const crossed = crossedSet.has(key);
-
-                    const participant = participants.find(
-                      (p) => p.regNumber === num && p.program === prog
-                    );
-
-                    return (
-                      <span
-                        key={key}
-                        onClick={() =>
-                          setCrossedKeys((prev) =>
-                            toggleCrossedKey(prev, key, storageKey)
-                          )
-                        }
-                        className={`cursor-pointer ${
-                          crossed ? "line-through opacity-60" : ""
-                        } ${
-                          participant?.orderType === "premium"
-                            ? "text-red-600"
-                            : ""
-                        }`}
-                      >
-                        {num}
-                      </span>
-                    );
-                  })
-                  .reduce(
-                    (prev: React.ReactNode[], curr) =>
-                      prev.length === 0 ? [curr] : [...prev, ", ", curr],
-                    [] as React.ReactNode[]
-                  )}
-              </td>
+      <div className="w-full overflow-hidden mt-4">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b-2 border-zinc-100">
+              <th className="py-3 px-3 text-left align-top w-1/3">
+                <span className="text-[13px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
+                  Програма
+                </span>
+              </th>
+              <th className="py-3 px-3 text-left align-top">
+                <span className="text-[13px] font-bold uppercase text-zinc-400 tracking-widest leading-none">
+                  Номери учасників
+                </span>
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {Object.keys(grouped).map((prog) => (
+              <tr key={prog} className="border-b border-zinc-50 last:border-0">
+                <td className="py-6 px-3 align-top">
+                  <span className="text-[15px] font-bold text-zinc-900 leading-tight block mt-1.5">
+                    {prog}
+                  </span>
+                </td>
+                <td className="py-6 px-3 align-top">
+                  <div className="flex flex-wrap gap-x-3 gap-y-4">
+                    {grouped[prog].map((num, idx) => {
+                      const key = makeCrossKey(categoryParam, prog, num, idx);
+                      const crossed = crossedSet.has(key);
+                      const participant = participants.find(
+                        (p) => p.regNumber === num && p.program === prog
+                      );
+
+                      return (
+                        <span
+                          key={key}
+                          className="text-[22px] font-semibold cursor-pointer select-none transition-all active:scale-90"
+                          onClick={() =>
+                            setCrossedKeys((prev) =>
+                              toggleCrossedKey(prev, key, storageKey)
+                            )
+                          }
+                        >
+                          <span
+                            className={`
+                              ${crossed ? "line-through opacity-30" : "opacity-100"}
+                              ${
+                                participant?.orderType === "premium"
+                                  ? "text-red-600"
+                                  : "text-zinc-800"
+                              }
+                            `}
+                          >
+                            {num}
+                          </span>
+                          {idx < grouped[prog].length - 1 && (
+                            <span className="text-zinc-400 ml-1 font-light">
+                              ,
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-12 mb-4 flex justify-center border-t border-zinc-50 pt-8">
+        {renderBackButton(eventParam)}
+      </div>
     </div>
   );
 }
@@ -122,8 +162,6 @@ export default function CategoryClient() {
   );
 
   const eventId = decoded?.id ?? "";
-  const eventName = decoded?.name ?? "";
-  const coverUrl = decoded?.coverUrl ?? "";
   const time = decoded?.time ?? "";
   const part = decoded?.part ?? "";
 
@@ -152,72 +190,48 @@ export default function CategoryClient() {
 
   if (!decoded || !eventId || !time || !eventParam || !categoryParam) {
     return (
-      <p className="p-6 text-center text-red-600">Помилка: некоректні дані</p>
+      <div className="flex justify-center p-6 bg-zinc-100 min-h-screen">
+        <p className="p-6 text-center text-red-600 bg-white rounded-2xl shadow-sm h-fit">
+          Помилка: некоректні дані турніру
+        </p>
+      </div>
     );
   }
 
   if (participants === null) {
-    return <p className="p-6 text-center text-gray-500">Завантаження…</p>;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-zinc-50">
+        <div className="w-8 h-8 border-4 border-zinc-200 border-t-green-600 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (participants.length === 0) {
     return (
-      <p className="p-6 text-center text-gray-500">
-        Немає учасників у цій категорії
-      </p>
+      <div className="flex justify-center bg-zinc-100 min-h-screen p-3 sm:p-6 font-sans">
+        <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-sm border border-zinc-100 p-8 flex flex-col items-center">
+          <h1 className="text-[22px] font-black uppercase text-green-600 mb-2">
+            Відділення {part} / {time}
+          </h1>
+          <p className="text-zinc-500 my-10 font-medium">
+            Учасників у цій категорії не знайдено
+          </p>
+          {renderBackButton(eventParam)}
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex justify-center bg-zinc-100 min-h-screen p-6">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow p-0 sm:p-6 overflow-hidden">
-        <div className="flex flex-col items-center gap-6">
-          {coverUrl && (
-            <div className="flex flex-col items-center">
-              <div className="w-55 h-55 rounded-full overflow-hidden">
-                <Image
-                  src={coverUrl}
-                  alt={eventName}
-                  width={220}
-                  height={220}
-                  className="object-cover w-full h-full"
-                  priority
-                />
-              </div>
-            </div>
-          )}
-
-          <h1 className="text-2xl font-semibold text-gray-900 text-center wrap-break-word">
-            {eventName}
-          </h1>
-
-          <div className="flex justify-center my-6">
-            <span className="text-xl font-semibold text-black text-center">
-              {part} відділення / {time}
-            </span>
-          </div>
-
-          <div className="text-xl font-bold text-black text-center">
-            {categoryParam}
-          </div>
-        </div>
-
-        <CrossTable
-          key={storageKey}
-          storageKey={storageKey}
-          categoryParam={categoryParam}
-          participants={participants}
-        />
-
-        <div className="mt-4 mb-4 flex justify-center">
-          <Link
-            href={`/parts/results?event=${eventParam}`}
-            className="inline-flex items-center justify-center px-8 py-3 bg-[#a9a9a9] text-white font-bold rounded-[15px] hover:bg-[#969696] transition-colors min-w-[180px]"
-          >
-            ← Назад
-          </Link>
-        </div>
-      </div>
+    <div className="flex justify-center bg-zinc-100 min-h-screen p-3 sm:p-6 font-sans">
+      <CategoryTable
+        storageKey={storageKey}
+        categoryParam={categoryParam}
+        participants={participants}
+        eventParam={eventParam}
+        part={part}
+        time={time}
+      />
     </div>
   );
 }
