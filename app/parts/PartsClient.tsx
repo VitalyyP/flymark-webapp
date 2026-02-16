@@ -143,11 +143,11 @@ export default function PartsClient() {
                   onClick={() => handleTimeSelect(item)}
                   disabled={!item.enabled}
                   className={`group relative flex items-center justify-between py-3 px-4 transition-all duration-200 rounded-[18px] border-2 text-left
-          ${
-            item.enabled
-              ? "bg-white border-zinc-100 hover:border-green-600 shadow-sm active:scale-[0.98]"
-              : "bg-zinc-100 border-zinc-200 opacity-60 cursor-not-allowed"
-          }`}
+                  ${
+                    item.enabled
+                      ? "bg-white border-zinc-100 hover:border-green-600 shadow-sm active:scale-[0.98] cursor-pointer"
+                      : "bg-zinc-100 border-zinc-200 opacity-60 cursor-not-allowed"
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     <span
