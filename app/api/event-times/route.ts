@@ -27,7 +27,7 @@ async function getSectionTimes(eventId: string): Promise<string[]> {
   const values = response.data.values ?? [];
   if (values.length < 2) return [];
 
-  const headers = values[0];
+  const headers = values[2];
   const sectionTimeIndex = headers.findIndex(
     (h) => (h || "").trim() === "SectionTime"
   );
@@ -37,7 +37,7 @@ async function getSectionTimes(eventId: string): Promise<string[]> {
   const times = Array.from(
     new Set(
       values
-        .slice(1)
+        .slice(3)
         .map((row) => row[sectionTimeIndex])
         .filter(Boolean)
     )
