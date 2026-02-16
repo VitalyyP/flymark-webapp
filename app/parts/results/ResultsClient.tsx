@@ -117,25 +117,29 @@ function CrossTable({
               Object.keys(grouped[cat]).map((prog) => (
                 <tr
                   key={`${cat}-${prog}`}
-                  className={`border-b border-zinc-50 last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-zinc-50/30"}`}
+                  className={`border-b border-zinc-100 last:border-0 ${
+                    i % 2 === 0 ? "bg-white" : "bg-zinc-50/30"
+                  }`}
                 >
-                  <td className="py-4 px-3 align-top max-w-40">
+                  <td className="py-5 px-3 align-top max-w-[170px]">
                     <Link
                       href={`/parts/results/category?event=${eventParam}&category=${encodeURIComponent(cat)}`}
-                      className="group flex flex-col mt-1"
+                      className="group flex flex-col decoration-zinc-300 underline-offset-[6px] hover:decoration-green-500 transition-all"
                     >
-                      <span className="text-[14px] font-bold text-zinc-900 group-hover:text-green-600 transition-colors leading-tight">
+                      <span className="text-[14px] font-bold text-zinc-800 group-hover:text-green-600 transition-colors leading-snug underline decoration-dotted decoration-1">
                         {cat}
                       </span>
+
                       {prog !== "Невідома" && (
-                        <span className="text-[13px] font-medium text-zinc-400 uppercase mt-1">
+                        <span className="text-[12px] font-medium text-zinc-400 uppercase mt-1.5 tracking-tight">
                           {prog}
                         </span>
                       )}
                     </Link>
                   </td>
-                  <td className="py-4 px-3 align-top">
-                    <div className="flex flex-wrap gap-x-1 gap-y-1">
+
+                  <td className="py-5 px-3 align-top">
+                    <div className="flex flex-wrap gap-x-1 gap-y-1.5">
                       {grouped[cat][prog].map((num, idx) => {
                         const key = makeCrossKey(cat, prog, num, idx);
                         const crossed = crossedSet.has(key);
@@ -149,13 +153,11 @@ function CrossTable({
                         return (
                           <span key={key} className="text-[16px] font-semibold">
                             <span
-                              className={
-                                crossed
-                                  ? "line-through opacity-30 text-zinc-400"
-                                  : isPremium
-                                    ? "text-red-600"
-                                    : "text-zinc-800"
-                              }
+                              className={`
+                                ${crossed ? "line-through opacity-50" : "opacity-100"}
+                                ${isPremium ? "text-red-600" : "text-zinc-800"}
+                                transition-opacity
+                              `}
                             >
                               {num}
                             </span>
