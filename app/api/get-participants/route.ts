@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { normalizeTime } from "@/utils/normalizeTime";
 
 function normalizePrivateKey(key?: string): string | undefined {
   if (!key) return key;
@@ -25,9 +26,9 @@ async function getParticipantsFromSheet(eventId: string): Promise<SheetResult> {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY)
+      private_key: normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY),
     },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
 
   const sheets = google.sheets({ version: "v4", auth });
@@ -36,7 +37,7 @@ async function getParticipantsFromSheet(eventId: string): Promise<SheetResult> {
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A:Z`
+    range: `${sheetName}!A:Z`,
   });
 
   const values = response.data.values ?? [];
@@ -64,7 +65,7 @@ async function getParticipantsFromSheet(eventId: string): Promise<SheetResult> {
     Time: getValue(row, "Time"),
     RegNumber: getValue(row, "RegNumber"),
     OrderType: getValue(row, "OrderType"),
-    Phone: getValue(row, "Phone")
+    Phone: getValue(row, "Phone"),
   }));
 
   return { headers, rows };
@@ -74,7 +75,8 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = (searchParams.get("event") ?? "").trim();
-    const timeParam = (searchParams.get("time") ?? "").trim();
+    const timeParamRaw = (searchParams.get("time") ?? "").trim();
+    const timeParam = normalizeTime(timeParamRaw);
 
     if (!eventId) {
       return NextResponse.json(
@@ -89,14 +91,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ headers, rows });
     }
 
-    const filtered = rows.filter((r) => (r.Time ?? "").trim() === timeParam);
+    const filtered = rows.filter((r) => normalizeTime(r.Time) === timeParam);
 
     const participants = filtered.map((p) => ({
       regNumber: p.RegNumber,
       orderType: p.OrderType,
       category: p.Category,
       program: p.Program,
-      name: p.DancerName
+      name: p.DancerName,
     }));
 
     return NextResponse.json({ participants });
