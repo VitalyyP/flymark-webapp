@@ -6,11 +6,12 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
+import { normalizeTime } from "@/utils/normalizeTime";
 import { groupRegNumbersByProgram } from "@/utils/groupParticipantsByProgram";
 import {
   makeCrossedStorageKey,
   makeCrossKey,
-  readCrossedFromStorage
+  readCrossedFromStorage,
 } from "@/utils/crossedStorage";
 
 type Participant = {
@@ -37,7 +38,7 @@ function CrossTable({
   eventParam,
   participants,
   part,
-  time
+  time,
 }: {
   storageKey: string;
   eventParam: string;
@@ -123,7 +124,9 @@ function CrossTable({
                 >
                   <td className="py-5 px-3 align-top max-w-[170px]">
                     <Link
-                      href={`/parts/results/category?event=${eventParam}&category=${encodeURIComponent(cat)}`}
+                      href={`/parts/results/category?event=${eventParam}&category=${encodeURIComponent(
+                        cat
+                      )}`}
                       className="group flex flex-col decoration-zinc-300 underline-offset-[6px] hover:decoration-green-500 transition-all"
                     >
                       <span className="text-[14px] font-bold text-zinc-800 group-hover:text-green-600 transition-colors leading-snug underline decoration-dotted decoration-1">
@@ -154,7 +157,11 @@ function CrossTable({
                           <span key={key} className="text-[16px] font-semibold">
                             <span
                               className={`
-                                ${crossed ? "line-through opacity-50" : "opacity-100"}
+                                ${
+                                  crossed
+                                    ? "line-through opacity-50"
+                                    : "opacity-100"
+                                }
                                 ${isPremium ? "text-red-600" : "text-zinc-800"}
                                 transition-opacity
                               `}
@@ -191,8 +198,10 @@ export default function ResultsClient() {
   );
 
   const eventId = decoded?.id ?? "";
-  const time = decoded?.time ?? "";
+  const timeRaw = decoded?.time ?? "";
   const part = decoded?.part ?? "";
+
+  const time = useMemo(() => normalizeTime(timeRaw), [timeRaw]);
 
   const storageKey = useMemo(() => {
     if (!eventId || !time) return "";
@@ -208,7 +217,9 @@ export default function ResultsClient() {
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/get-participants?event=${eventId}&time=${encodeURIComponent(time)}`
+          `/api/get-participants?event=${encodeURIComponent(
+            eventId
+          )}&time=${encodeURIComponent(time)}`
         );
         const data: { participants?: Participant[] } = await res.json();
         setParticipants(
@@ -220,6 +231,7 @@ export default function ResultsClient() {
         setLoading(false);
       }
     };
+
     fetchParticipants();
   }, [eventId, time]);
 
