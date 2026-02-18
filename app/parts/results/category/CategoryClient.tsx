@@ -11,7 +11,7 @@ import {
   makeCrossedStorageKey,
   makeCrossKey,
   readCrossedFromStorage,
-  toggleCrossedKey
+  toggleCrossedKey,
 } from "@/utils/crossedStorage";
 
 type Participant = {
@@ -20,6 +20,8 @@ type Participant = {
   category: string;
   program: string;
 };
+
+const KEEP_DUPLICATES_VALUE = "Не знаю";
 
 const renderBackButton = (eventParam: string) => (
   <Link
@@ -30,13 +32,34 @@ const renderBackButton = (eventParam: string) => (
   </Link>
 );
 
+function getParticipantAtIndex(
+  participants: Participant[],
+  category: string,
+  program: string,
+  regNumber: string,
+  idx: number
+): Participant | null {
+  let count = -1;
+
+  for (const p of participants) {
+    if ((p.category ?? "").trim() !== category) continue;
+    if ((p.program ?? "").trim() !== program) continue;
+    if ((p.regNumber ?? "").trim() !== regNumber) continue;
+
+    count++;
+    if (count === idx) return p;
+  }
+
+  return null;
+}
+
 function CategoryTable({
   storageKey,
   categoryParam,
   participants,
   eventParam,
   part,
-  time
+  time,
 }: {
   storageKey: string;
   categoryParam: string;
@@ -52,7 +75,7 @@ function CategoryTable({
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
   const grouped = useMemo(
-    () => groupRegNumbersByProgram(participants, "Не знаю"),
+    () => groupRegNumbersByProgram(participants, KEEP_DUPLICATES_VALUE),
     [participants]
   );
 
@@ -88,6 +111,7 @@ function CategoryTable({
               </th>
             </tr>
           </thead>
+
           <tbody>
             {Object.keys(grouped).map((prog) => (
               <tr key={prog} className="border-b border-zinc-50 last:border-0">
@@ -96,13 +120,19 @@ function CategoryTable({
                     {prog}
                   </span>
                 </td>
+
                 <td className="py-6 px-3 align-top">
                   <div className="flex flex-wrap gap-x-3 gap-y-4">
                     {grouped[prog].map((num, idx) => {
                       const key = makeCrossKey(categoryParam, prog, num, idx);
                       const crossed = crossedSet.has(key);
-                      const participant = participants.find(
-                        (p) => p.regNumber === num && p.program === prog
+
+                      const participant = getParticipantAtIndex(
+                        participants,
+                        categoryParam,
+                        prog,
+                        num,
+                        idx
                       );
 
                       return (
@@ -117,7 +147,11 @@ function CategoryTable({
                         >
                           <span
                             className={`
-                              ${crossed ? "line-through opacity-30" : "opacity-100"}
+                              ${
+                                crossed
+                                  ? "line-through opacity-30"
+                                  : "opacity-100"
+                              }
                               ${
                                 participant?.orderType === "premium"
                                   ? "text-red-600"
@@ -127,6 +161,7 @@ function CategoryTable({
                           >
                             {num}
                           </span>
+
                           {idx < grouped[prog].length - 1 && (
                             <span className="text-zinc-400 ml-1 font-light">
                               ,
@@ -175,8 +210,13 @@ export default function CategoryClient() {
   useEffect(() => {
     if (!eventId || !time || !categoryParam) return;
 
+    const ac = new AbortController();
+
     fetch(
-      `/api/get-participants?event=${eventId}&time=${encodeURIComponent(time)}`
+      `/api/get-participants?event=${encodeURIComponent(
+        eventId
+      )}&time=${encodeURIComponent(time)}`,
+      { signal: ac.signal }
     )
       .then((res) => res.json())
       .then((data) => {
@@ -186,6 +226,8 @@ export default function CategoryClient() {
         setParticipants(list.filter((p) => p.category === categoryParam));
       })
       .catch(() => setParticipants([]));
+
+    return () => ac.abort();
   }, [eventId, time, categoryParam]);
 
   if (!decoded || !eventId || !time || !eventParam || !categoryParam) {
