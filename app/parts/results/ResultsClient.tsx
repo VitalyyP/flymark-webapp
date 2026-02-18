@@ -22,10 +22,10 @@ type Participant = {
   name: string;
 };
 
-const renderBackButton = (eventParam: string) => (
+const renderBackButton = (eventId: string) => (
   <div className="flex justify-center my-3">
     <Link
-      href={`/parts?event=${eventParam}`}
+      href={`/parts?eventId=${encodeURIComponent(eventId)}`}
       className="inline-flex items-center justify-center px-10 py-3 bg-[#A9A9A9] text-white font-bold rounded-[18px] hover:bg-[#969696] active:scale-95 transition-all min-w-[180px] text-sm"
     >
       <ChevronLeft size={18} className="mr-1" /> Назад
@@ -36,12 +36,14 @@ const renderBackButton = (eventParam: string) => (
 function CrossTable({
   storageKey,
   eventParam,
+  eventId,
   participants,
   part,
   time,
 }: {
   storageKey: string;
   eventParam: string;
+  eventId: string;
   participants: Participant[];
   part: string;
   time: string;
@@ -51,7 +53,7 @@ function CrossTable({
   );
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
-  const byCategory: Record<string, typeof participants> = {};
+  const byCategory: Record<string, Participant[]> = {};
 
   for (const p of participants) {
     const cat = (p.category ?? "").trim();
@@ -61,7 +63,7 @@ function CrossTable({
 
   const grouped: Record<string, Record<string, string[]>> = {};
   for (const [cat, list] of Object.entries(byCategory)) {
-    grouped[cat] = groupRegNumbersByProgram(list, "Невідома");
+    grouped[cat] = groupRegNumbersByProgram(list);
   }
 
   const categories = Object.keys(grouped).sort((a, b) =>
@@ -88,7 +90,7 @@ function CrossTable({
         </h1>
       </div>
 
-      {renderBackButton(eventParam)}
+      {renderBackButton(eventId)}
 
       <div className="w-full overflow-hidden mt-2">
         <table className="w-full border-collapse">
@@ -113,6 +115,7 @@ function CrossTable({
               </th>
             </tr>
           </thead>
+
           <tbody>
             {categories.map((cat, i) =>
               Object.keys(grouped[cat]).map((prog) => (
@@ -146,12 +149,27 @@ function CrossTable({
                       {grouped[cat][prog].map((num, idx) => {
                         const key = makeCrossKey(cat, prog, num, idx);
                         const crossed = crossedSet.has(key);
-                        const isPremium = participants.some(
-                          (p) =>
-                            p.regNumber === num &&
-                            p.category === cat &&
-                            p.orderType === "premium"
-                        );
+
+                        const isPremium = (() => {
+                          let count = -1;
+
+                          for (const p of participants) {
+                            if (p.category !== cat) continue;
+                            if ((p.program ?? "").trim() !== prog) continue;
+
+                            const sameNumber =
+                              (p.regNumber ?? "").trim() === num;
+
+                            if (!sameNumber) continue;
+
+                            count++;
+                            if (count === idx) {
+                              return p.orderType === "premium";
+                            }
+                          }
+
+                          return false;
+                        })();
 
                         return (
                           <span key={key} className="text-[16px] font-semibold">
@@ -183,7 +201,7 @@ function CrossTable({
         </table>
       </div>
 
-      <div className="mt-4">{renderBackButton(eventParam)}</div>
+      <div className="mt-4">{renderBackButton(eventId)}</div>
     </div>
   );
 }
@@ -213,26 +231,33 @@ export default function ResultsClient() {
 
   useEffect(() => {
     if (!eventId || !time) return;
+
+    const ac = new AbortController();
+
     const fetchParticipants = async () => {
       setLoading(true);
       try {
         const res = await fetch(
           `/api/get-participants?event=${encodeURIComponent(
             eventId
-          )}&time=${encodeURIComponent(time)}`
+          )}&time=${encodeURIComponent(time)}`,
+          { signal: ac.signal }
         );
+
         const data: { participants?: Participant[] } = await res.json();
         setParticipants(
           Array.isArray(data?.participants) ? data.participants : []
         );
-      } catch {
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         setParticipants([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchParticipants();
+    void fetchParticipants();
+    return () => ac.abort();
   }, [eventId, time]);
 
   if (!decoded || !eventId || !time) {
@@ -263,7 +288,7 @@ export default function ResultsClient() {
           <p className="text-zinc-500 my-10 font-medium">
             Учасників не знайдено
           </p>
-          {renderBackButton(eventParam)}
+          {renderBackButton(eventId)}
         </div>
       </div>
     );
@@ -274,6 +299,7 @@ export default function ResultsClient() {
       <CrossTable
         storageKey={storageKey}
         eventParam={eventParam}
+        eventId={eventId}
         participants={participants}
         part={part}
         time={time}

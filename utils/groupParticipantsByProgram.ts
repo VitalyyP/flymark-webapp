@@ -1,11 +1,12 @@
+export const KEEP_DUPLICATES_VALUE = "Не знаю";
+
 export type ParticipantLike = {
   regNumber: string;
   program: string;
 };
 
 export function groupRegNumbersByProgram(
-  participants: ParticipantLike[],
-  keepDuplicatesValue = "Не знаю"
+  participants: ParticipantLike[]
 ): Record<string, string[]> {
   const grouped: Record<string, string[]> = {};
   const seenPerProgram: Record<string, Set<string>> = {};
@@ -22,7 +23,7 @@ export function groupRegNumbersByProgram(
     const num = (p.regNumber ?? "").trim();
     if (!num) continue;
 
-    if (num === keepDuplicatesValue) {
+    if (num === KEEP_DUPLICATES_VALUE) {
       grouped[prog].push(num);
       continue;
     }
