@@ -21,8 +21,6 @@ type Participant = {
   program: string;
 };
 
-const KEEP_DUPLICATES_VALUE = "Не знаю";
-
 const renderBackButton = (eventParam: string) => (
   <Link
     href={`/parts/results?event=${eventParam}`}
@@ -75,7 +73,7 @@ function CategoryTable({
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
   const grouped = useMemo(
-    () => groupRegNumbersByProgram(participants, KEEP_DUPLICATES_VALUE),
+    () => groupRegNumbersByProgram(participants),
     [participants]
   );
 

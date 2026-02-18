@@ -22,8 +22,6 @@ type Participant = {
   name: string;
 };
 
-const KEEP_DUPLICATES_VALUE = "Не знаю";
-
 const renderBackButton = (eventId: string) => (
   <div className="flex justify-center my-3">
     <Link
@@ -65,7 +63,7 @@ function CrossTable({
 
   const grouped: Record<string, Record<string, string[]>> = {};
   for (const [cat, list] of Object.entries(byCategory)) {
-    grouped[cat] = groupRegNumbersByProgram(list, KEEP_DUPLICATES_VALUE);
+    grouped[cat] = groupRegNumbersByProgram(list);
   }
 
   const categories = Object.keys(grouped).sort((a, b) =>
