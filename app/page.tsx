@@ -8,27 +8,23 @@ import {
   MapPin,
   ClipboardList,
   RefreshCw,
-  Instagram
+  Instagram,
 } from "lucide-react";
 
 import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
-import {
-  Competition,
-  normalizeCompetition,
-  RawCompetition
-} from "@/utils/normalizeCompetition";
-import { encodeEvent } from "@/utils/eventPayload";
-
-const CITIES_IDS: number[] =
-  process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
-    .map((id) => Number(id.trim()))
-    .filter(Boolean) ?? [];
+import type { Competition } from "@/utils/normalizeCompetition";
 
 type VisibleEventsResponse = {
   ids?: unknown;
 };
 
 const BRAND_GREEN = "#00a63e";
+
+function toTrimmedString(v: unknown): string {
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number") return String(v);
+  return "";
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -40,91 +36,76 @@ export default function HomePage() {
   const [loadingVisible, setLoadingVisible] = useState(true);
 
   useEffect(() => {
+    const ac = new AbortController();
+
     const load = async () => {
       setLoadingCompetitions(true);
-      const results: Competition[] = [];
-
       try {
-        for (const cityId of CITIES_IDS) {
-          const res = await fetch("/api/flymark/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              cityId,
-              countryId: 1,
-              organisationId: "",
-              from: "",
-              to: "",
-              page: 1,
-              type: "Opened"
-            })
-          });
-
-          if (!res.ok) continue;
-
-          const data: unknown = await res.json();
-          const list: Competition[] = Array.isArray(data)
-            ? (data as RawCompetition[])
-                .map(normalizeCompetition)
-                .filter((x): x is Competition => x !== null)
-            : [];
-
-          list.forEach((c) => {
-            c.CompetitionId = String(
-              (c as unknown as { CompetitionId: unknown }).CompetitionId
-            ).trim();
-          });
-
-          results.push(...list);
-        }
-
-        results.sort((a, b) => {
-          return new Date(a.DateTo).getTime() - new Date(b.DateTo).getTime();
+        const res = await fetch("/api/competitions-opened", {
+          cache: "no-store",
+          signal: ac.signal,
         });
 
-        setCompetitions(results);
+        if (!res.ok) {
+          setCompetitions([]);
+          return;
+        }
+
+        const data: unknown = await res.json();
+        const list: Competition[] = Array.isArray(data)
+          ? (data as Competition[])
+          : [];
+
+        setCompetitions(list);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to load competitions", err);
+        setCompetitions([]);
       } finally {
         setLoadingCompetitions(false);
       }
     };
 
-    load();
+    void load();
+    return () => ac.abort();
   }, []);
 
   useEffect(() => {
+    const ac = new AbortController();
+
     const loadVisible = async () => {
       setLoadingVisible(true);
       try {
-        const r = await fetch("/api/visible-events", { cache: "no-store" });
+        const r = await fetch("/api/visible-events", {
+          cache: "no-store",
+          signal: ac.signal,
+        });
+
         const data: VisibleEventsResponse = await r.json();
 
         const raw = data?.ids;
         const ids: string[] = Array.isArray(raw)
-          ? raw
-              .map((x) => {
-                if (typeof x === "string") return x.trim();
-                if (typeof x === "number") return String(x);
-                return "";
-              })
-              .filter(Boolean)
+          ? raw.map((x) => toTrimmedString(x)).filter(Boolean)
           : [];
 
         setVisibleEvents(new Set(ids));
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setVisibleEvents(new Set());
       } finally {
         setLoadingVisible(false);
       }
     };
 
-    loadVisible();
+    void loadVisible();
+    return () => ac.abort();
   }, []);
 
   const filteredCompetitions = useMemo(() => {
     if (loadingVisible) return [];
     if (visibleEvents.size === 0) return [];
     return competitions.filter((c) =>
-      visibleEvents.has(String(c.CompetitionId).trim())
+      visibleEvents.has(toTrimmedString(c.CompetitionId))
     );
   }, [competitions, visibleEvents, loadingVisible]);
 
@@ -204,61 +185,60 @@ export default function HomePage() {
 
         {!isLoading && filteredCompetitions.length > 0 && (
           <ul className="flex flex-col gap-8">
-            {filteredCompetitions.map((c) => (
-              <li
-                key={`${c.CompetitionId}-${c.DateTo}-${c.CityName}`}
-                className="group bg-white rounded-[40px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] transition-all duration-500 p-5 md:p-8 border-[1.5px] border-zinc-200"
-              >
-                <div className="flex flex-col md:flex-row md:items-center gap-8">
-                  <div className="relative shrink-0 flex justify-center">
-                    <div className="bg-white p-2 rounded-[30px] shadow-xl border border-zinc-100 transition-transform duration-500">
-                      <div className="relative w-40 h-40 md:w-44 md:h-44 rounded-[22px] overflow-hidden bg-zinc-50">
-                        <Image
-                          src={c.CoverPhoto}
-                          alt={c.CompetitionName}
-                          fill
-                          sizes="(max-width: 768px) 160px, 176px"
-                          className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                        />
+            {filteredCompetitions.map((c) => {
+              const id = toTrimmedString(c.CompetitionId);
+
+              return (
+                <li
+                  key={`${id}-${c.DateTo}-${c.CityName}`}
+                  className="group bg-white rounded-[40px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] transition-all duration-500 p-5 md:p-8 border-[1.5px] border-zinc-200"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center gap-8">
+                    <div className="relative shrink-0 flex justify-center">
+                      <div className="bg-white p-2 rounded-[30px] shadow-xl border border-zinc-100 transition-transform duration-500">
+                        <div className="relative w-40 h-40 md:w-44 md:h-44 rounded-[22px] overflow-hidden bg-zinc-50">
+                          <Image
+                            src={c.CoverPhoto}
+                            alt={c.CompetitionName}
+                            fill
+                            sizes="(max-width: 768px) 160px, 176px"
+                            className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-col flex-1 text-center md:text-left">
-                    <h2 className="text-xl md:text-2xl font-black text-zinc-800 leading-tight mb-4">
-                      {c.CompetitionName}
-                    </h2>
-                    <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                      <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl text-zinc-700 font-bold text-sm shadow-md border border-zinc-50">
-                        <Calendar size={16} className="text-[#15803d]" />
-                        {formatUaDateFromISO(c.DateTo)}
-                      </div>
-                      <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl text-zinc-700 font-bold text-sm shadow-md border border-zinc-50">
-                        <MapPin size={16} className="text-[#15803d]" />
-                        {c.CityName}
+                    <div className="flex flex-col flex-1 text-center md:text-left">
+                      <h2 className="text-xl md:text-2xl font-black text-zinc-800 leading-tight mb-4">
+                        {c.CompetitionName}
+                      </h2>
+                      <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl text-zinc-700 font-bold text-sm shadow-md border border-zinc-50">
+                          <Calendar size={16} className="text-[#15803d]" />
+                          {formatUaDateFromISO(c.DateTo)}
+                        </div>
+                        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl text-zinc-700 font-bold text-sm shadow-md border border-zinc-50">
+                          <MapPin size={16} className="text-[#15803d]" />
+                          {c.CityName}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <button
-                    onClick={() => {
-                      const payload = encodeEvent({
-                        id: c.CompetitionId,
-                        name: c.CompetitionName,
-                        coverUrl: c.CoverPhoto
-                      });
-                      router.push(
-                        `/select?event=${encodeURIComponent(payload)}`
-                      );
-                    }}
-                    className="w-full md:w-auto md:min-w-[200px] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] py-4 px-10 rounded-3xl font-black text-[15px] flex items-center justify-center gap-3 transition-all border-[1.5px] border-[#16a34a]/40 hover:border-[#16a34a] active:scale-95 shadow-sm uppercase tracking-wide cursor-pointer"
-                  >
-                    <ClipboardList size={20} className="text-[#16a34a]" />
-                    <span>Замовити</span>
-                  </button>
-                </div>
-              </li>
-            ))}
+                    <button
+                      onClick={() => {
+                        router.push(
+                          `/select?eventId=${encodeURIComponent(id)}`
+                        );
+                      }}
+                      className="w-full md:w-auto md:min-w-[200px] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] py-4 px-10 rounded-3xl font-black text-[15px] flex items-center justify-center gap-3 transition-all border-[1.5px] border-[#16a34a]/40 hover:border-[#16a34a] active:scale-95 shadow-sm uppercase tracking-wide cursor-pointer"
+                    >
+                      <ClipboardList size={20} className="text-[#16a34a]" />
+                      <span>Замовити</span>
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>
