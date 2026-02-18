@@ -13,15 +13,14 @@ import {
   Camera,
   ExternalLink,
   LogOut,
-  Check
+  Check,
 } from "lucide-react";
 import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import {
   Competition,
   normalizeCompetition,
-  RawCompetition
+  RawCompetition,
 } from "@/utils/normalizeCompetition";
-import { encodeEvent } from "@/utils/eventPayload";
 
 type VisibleEventsResponse = {
   ids?: unknown;
@@ -106,8 +105,8 @@ export default function HomePage() {
               from: "",
               to: "",
               page: 1,
-              type: "Opened"
-            })
+              type: "Opened",
+            }),
           });
 
           if (!res.ok) continue;
@@ -239,7 +238,7 @@ export default function HomePage() {
       const res = await fetch("/api/visible-events", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(next) })
+        body: JSON.stringify({ ids: Array.from(next) }),
       });
 
       if (res.status === 401) {
@@ -304,8 +303,8 @@ export default function HomePage() {
       [competitionId]: {
         statusText: "Шукаю рядки з «Не знаю»…",
         foundCount: null,
-        findError: null
-      }
+        findError: null,
+      },
     }));
 
     setFindingId(competitionId);
@@ -317,10 +316,10 @@ export default function HomePage() {
           ...(prev[competitionId] ?? {
             statusText: null,
             foundCount: null,
-            findError: null
+            findError: null,
           }),
-          statusText: "Зчитую Google таблицю…"
-        }
+          statusText: "Зчитую Google таблицю…",
+        },
       }));
 
       const resolveRes = await fetch(
@@ -330,7 +329,7 @@ export default function HomePage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          cache: "no-store"
+          cache: "no-store",
         }
       );
 
@@ -341,12 +340,12 @@ export default function HomePage() {
             ...(prev[competitionId] ?? {
               statusText: null,
               foundCount: null,
-              findError: null
+              findError: null,
             }),
             statusText: null,
             findError:
-              "Сесія адміністратора закінчилась. Онови сторінку і введи пароль."
-          }
+              "Сесія адміністратора закінчилась. Онови сторінку і введи пароль.",
+          },
         }));
         return;
       }
@@ -355,7 +354,7 @@ export default function HomePage() {
         (await safeReadJson<ResolveRegnumbersResponse>(resolveRes)) ??
         ({
           ok: false,
-          error: "Сервер повернув некоректну відповідь"
+          error: "Сервер повернув некоректну відповідь",
         } as ResolveRegnumbersErr);
 
       if (!resolveRes.ok) {
@@ -371,11 +370,11 @@ export default function HomePage() {
             ...(prev[competitionId] ?? {
               statusText: null,
               foundCount: null,
-              findError: null
+              findError: null,
             }),
             statusText: null,
-            findError: msg
-          }
+            findError: msg,
+          },
         }));
         return;
       }
@@ -387,11 +386,11 @@ export default function HomePage() {
             ...(prev[competitionId] ?? {
               statusText: null,
               foundCount: null,
-              findError: null
+              findError: null,
             }),
             statusText: null,
-            findError: resolveData.error || "Помилка запиту"
-          }
+            findError: resolveData.error || "Помилка запиту",
+          },
         }));
         return;
       }
@@ -402,10 +401,10 @@ export default function HomePage() {
           ...(prev[competitionId] ?? {
             statusText: null,
             foundCount: null,
-            findError: null
+            findError: null,
           }),
-          statusText: "Оновлюю кеш учасників…"
-        }
+          statusText: "Оновлюю кеш учасників…",
+        },
       }));
 
       const refreshRes = await fetch(
@@ -414,7 +413,7 @@ export default function HomePage() {
         )}`,
         {
           method: "POST",
-          cache: "no-store"
+          cache: "no-store",
         }
       );
 
@@ -426,13 +425,13 @@ export default function HomePage() {
             ...(prev[competitionId] ?? {
               statusText: null,
               foundCount: null,
-              findError: null
+              findError: null,
             }),
             statusText: null,
             findError:
               refreshText ||
-              `Resolve ок, але refresh впав (${refreshRes.status})`
-          }
+              `Resolve ок, але refresh впав (${refreshRes.status})`,
+          },
         }));
         return;
       }
@@ -444,8 +443,8 @@ export default function HomePage() {
           foundCount: resolveData.updated,
           findError: resolveData.errors?.length
             ? `Не вдалося знайти номер для ${resolveData.errors.length} учасників`
-            : null
-        }
+            : null,
+        },
       }));
 
       setTimeout(() => {
@@ -454,7 +453,7 @@ export default function HomePage() {
           if (!cur) return prev;
           return {
             ...prev,
-            [competitionId]: { ...cur, foundCount: null }
+            [competitionId]: { ...cur, foundCount: null },
           };
         });
       }, 10000);
@@ -465,11 +464,11 @@ export default function HomePage() {
           ...(prev[competitionId] ?? {
             statusText: null,
             foundCount: null,
-            findError: null
+            findError: null,
           }),
           statusText: null,
-          findError: e instanceof Error ? e.message : "Невідома помилка"
-        }
+          findError: e instanceof Error ? e.message : "Невідома помилка",
+        },
       }));
     } finally {
       setFindingId(null);
@@ -544,14 +543,10 @@ export default function HomePage() {
                   const isVisible = visibleEvents.has(id);
                   const isHiddenFromAdmin = hiddenEvents.has(id);
 
-                  const eventPayload = encodeEvent({
-                    id,
-                    name: c.CompetitionName,
-                    coverUrl: c.CoverPhoto
-                  });
-
-                  const selectPath = `/select?event=${eventPayload}`;
-                  const partsPath = `/parts?event=${eventPayload}`;
+                  const selectPath = `/select?eventId=${encodeURIComponent(
+                    id
+                  )}`;
+                  const partsPath = `/parts?eventId=${encodeURIComponent(id)}`;
 
                   return (
                     <li
