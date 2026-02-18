@@ -36,7 +36,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 function rowToOptions(row: unknown): ParticipantOption[] {
   if (!isRecord(row)) return [];
 
-  const r = row as ParticipantRow;
+  const r: ParticipantRow = row;
 
   const d1Name = toTrimmedString(r.Dancer1Name);
   const d1Id = toTrimmedString(r.Dancer1Id);
@@ -90,6 +90,7 @@ export default function SelectParticipantPage() {
     useState<ParticipantOption | null>(null);
 
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const eventId = event?.id ?? "";
   const eventName = event?.name ?? "";
@@ -148,10 +149,7 @@ export default function SelectParticipantPage() {
 
         finalizeParticipants(options);
       } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") {
-          return;
-        }
-
+        if (err instanceof DOMException && err.name === "AbortError") return;
         console.error("Failed to load participants", err);
         setParticipants([]);
       } finally {
@@ -159,7 +157,7 @@ export default function SelectParticipantPage() {
       }
     };
 
-    loadParticipants();
+    void loadParticipants();
     return () => ac.abort();
   }, [eventId]);
 
@@ -184,8 +182,6 @@ export default function SelectParticipantPage() {
     setQuery(p.name);
   };
 
-  const [isFocused, setIsFocused] = useState(false);
-
   const handleSubmit = () => {
     if (!selectedParticipant || !event) return;
 
@@ -195,8 +191,8 @@ export default function SelectParticipantPage() {
       coverUrl: event.coverUrl,
       participant: {
         id: selectedParticipant.id,
-        name: selectedParticipant.name
-      }
+        name: selectedParticipant.name,
+      },
     });
 
     router.push(`/form?event=${encodeURIComponent(encoded)}`);
@@ -262,7 +258,9 @@ export default function SelectParticipantPage() {
                   <div className="flex items-center gap-3 overflow-hidden">
                     <Search
                       size={18}
-                      className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-green-600" : "text-zinc-400"}`}
+                      className={`shrink-0 transition-colors duration-300 ${
+                        isFocused ? "text-green-600" : "text-zinc-400"
+                      }`}
                     />
 
                     {isFocused && !query && (
@@ -329,7 +327,9 @@ export default function SelectParticipantPage() {
             >
               <span>Продовжити</span>
               <div
-                className={`transition-transform duration-300 ${selectedParticipant ? "translate-x-1" : ""}`}
+                className={`transition-transform duration-300 ${
+                  selectedParticipant ? "translate-x-1" : ""
+                }`}
               >
                 <ArrowRight size={20} className="text-white" />
               </div>
