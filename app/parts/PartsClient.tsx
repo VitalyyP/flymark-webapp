@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Clock, Calendar, ChevronRight, Loader2, Camera } from "lucide-react";
 
-import { decodeEvent, encodeEvent } from "@/utils/eventPayload";
+import { encodeEvent } from "@/utils/eventPayload";
 
 type SheetRow = {
   Time: string;
@@ -46,11 +46,40 @@ function timeToMinutes(t: string): number {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+type EventApiOk = {
+  ok: true;
+  event: {
+    id: string;
+    name: string;
+    coverUrl: string;
+    cityName: string;
+    dateTo: string;
+  };
+};
+
+function isEventApiOk(v: unknown): v is EventApiOk {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+
+  const e = v.event;
+  if (!isRecord(e)) return false;
+
+  return (
+    typeof e.id === "string" &&
+    typeof e.name === "string" &&
+    typeof e.coverUrl === "string"
+  );
+}
+
 export default function PartsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const eventParam = searchParams.get("event");
+  const eventIdParam = searchParams.get("eventId")?.trim() ?? "";
 
   const [eventId, setEventId] = useState("");
   const [eventName, setEventName] = useState("");
@@ -60,25 +89,60 @@ export default function PartsClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!eventParam) return;
-    const decoded = decodeEvent(eventParam);
-    if (!decoded) return;
-    setEventId(decoded.id);
-    setEventName(decoded.name);
-    setCoverUrl(decoded.coverUrl);
-  }, [eventParam]);
+    if (!eventIdParam) return;
+
+    const ac = new AbortController();
+
+    const loadEvent = async () => {
+      try {
+        const res = await fetch(
+          `/api/event?eventId=${encodeURIComponent(eventIdParam)}`,
+          { cache: "no-store", signal: ac.signal }
+        );
+
+        const json: unknown = await res.json();
+
+        if (res.ok && isEventApiOk(json)) {
+          setEventId(json.event.id);
+          setEventName(json.event.name);
+          setCoverUrl(json.event.coverUrl);
+        } else {
+          setEventId("");
+          setEventName("");
+          setCoverUrl("");
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setEventId("");
+        setEventName("");
+        setCoverUrl("");
+      }
+    };
+
+    void loadEvent();
+    return () => ac.abort();
+  }, [eventIdParam]);
 
   useEffect(() => {
     if (!eventId) return;
+
+    const ac = new AbortController();
+
     const load = async () => {
       setLoading(true);
       try {
         const [sheetRes, flymarkRes] = await Promise.all([
-          fetch(`/api/get-participants?event=${encodeURIComponent(eventId)}`),
-          fetch(`/api/event-times?event=${encodeURIComponent(eventId)}`),
+          fetch(`/api/get-participants?event=${encodeURIComponent(eventId)}`, {
+            signal: ac.signal,
+          }),
+          fetch(`/api/event-times?event=${encodeURIComponent(eventId)}`, {
+            signal: ac.signal,
+          }),
         ]);
+
         const sheetData: ApiResponse = await sheetRes.json();
         const flymarkData: { times: string[] } = await flymarkRes.json();
+
         const sheetTimes = new Set(
           (sheetData.rows ?? [])
             .map((r) => normalizeTime(r.Time))
@@ -98,18 +162,24 @@ export default function PartsClient() {
           time,
           enabled: sheetTimes.has(time),
         }));
+
         setTimes(merged);
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setTimes([]);
       } finally {
         setLoading(false);
       }
     };
-    load();
+
+    void load();
+    return () => ac.abort();
   }, [eventId]);
 
   const handleTimeSelect = (item: TimeItem) => {
     if (!item.enabled) return;
+
+    // ✅ тут лишаємо payload, якщо тебе це влаштовує (внутрішній перехід)
     const encoded = encodeEvent({
       id: eventId,
       name: eventName,
@@ -117,8 +187,11 @@ export default function PartsClient() {
       time: item.time,
       part: item.part.toString(),
     });
+
     router.push(`/parts/results?event=${encodeURIComponent(encoded)}`);
   };
+
+  const showHeaderLoading = !eventId && loading;
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-zinc-50 p-4 sm:p-6">
@@ -141,9 +214,10 @@ export default function PartsClient() {
               </div>
             </div>
           )}
+
           <div className="flex flex-col gap-2 text-center">
             <h1 className="text-[22px] md:text-[24px] font-black text-zinc-900 tracking-tight leading-tight px-4">
-              {eventName}
+              {showHeaderLoading ? "Завантаження…" : eventName}
             </h1>
             <div className="inline-flex items-center justify-center gap-2 text-zinc-500 text-sm font-medium">
               <Calendar size={14} className="text-green-600" />
@@ -168,7 +242,6 @@ export default function PartsClient() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {" "}
             {times.length > 0 ? (
               times.map((item) => (
                 <button
@@ -189,12 +262,13 @@ export default function PartsClient() {
                       }`}
                     >
                       Відділення{" "}
-                      <span className={`text-[16px] font-black uppercase`}>
-                        {" "}
-                        {item.part}{" "}
+                      <span className="text-[16px] font-black uppercase">
+                        {item.part}
                       </span>
                     </span>
+
                     <span className="text-zinc-400 font-light text-sm">/</span>
+
                     <span
                       className={`text-[16px] font-bold ${
                         item.enabled ? "text-zinc-800" : "text-zinc-500"
