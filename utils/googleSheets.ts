@@ -98,6 +98,18 @@ async function ensureSheetExists(
   }
 }
 
+function uniquePreserveOrder(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const it of items) {
+    if (!it) continue;
+    if (seen.has(it)) continue;
+    seen.add(it);
+    out.push(it);
+  }
+  return out;
+}
+
 function toValuesWithHeaders(rows: RowData[]) {
   if (rows.length === 0) {
     return {
@@ -118,13 +130,16 @@ function toValuesWithHeaders(rows: RowData[]) {
     "OrderType",
   ];
 
-  const firstRowKeys = Object.keys(rows[0]);
+  const allKeys: string[] = [];
+  for (const row of rows) {
+    for (const key of Object.keys(row)) allKeys.push(key);
+  }
+  const unionKeys = uniquePreserveOrder(allKeys);
 
   const headersFromPreferred = preferredOrder.filter((h) =>
-    firstRowKeys.includes(h)
+    unionKeys.includes(h)
   );
-
-  const rest = firstRowKeys.filter((k) => !headersFromPreferred.includes(k));
+  const rest = unionKeys.filter((k) => !headersFromPreferred.includes(k));
 
   const headers = [...headersFromPreferred, ...rest];
 
@@ -161,6 +176,7 @@ function headersMatch(existing: string[], expected: string[]): boolean {
   }
   return true;
 }
+
 async function initializeNewSheet(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
@@ -268,6 +284,27 @@ export async function saveRowsToSheet(
   }
 
   if (clearBeforeWrite) {
+    const trimmedTitle = (title ?? "").trim();
+
+    if (trimmedTitle) {
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId,
+        range: `${sheetName}!A:Z`,
+      });
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!A1`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[trimmedTitle], [""], headers, ...values],
+        },
+      });
+
+      return { cleared: true, written: values.length };
+    }
+
+    // Старий fallback без тайтла
     if (headersRowIndex === 3) {
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
