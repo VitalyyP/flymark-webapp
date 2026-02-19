@@ -239,22 +239,6 @@ export default function CategoryClient() {
     );
   }
 
-  if (participants.length === 0) {
-    return (
-      <div className="flex justify-center bg-zinc-100 min-h-screen p-3 sm:p-6 font-sans">
-        <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-sm border border-zinc-100 p-8 flex flex-col items-center">
-          <h1 className="text-[22px] font-black uppercase text-green-600 mb-2">
-            Відділення {part} / {time}
-          </h1>
-          <p className="text-zinc-500 my-10 font-medium">
-            Учасників у цій категорії не знайдено
-          </p>
-          {renderBackButton(eventParam)}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-3 sm:p-6 font-sans">
       <CategoryTable

@@ -209,7 +209,7 @@ export function ParticipantForm({
               </li>
               <li>
                 Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
-                до <strong className="text-gray-900">1000.00 грн.</strong>
+                до <strong className="text-gray-900">1100.00 грн.</strong>
               </li>
             </ul>
           </div>
@@ -233,7 +233,7 @@ export function ParticipantForm({
       description: (
         <div className="space-y-3">
           <div className="bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
-            <p className="text-blue-900 font-bold">Вартість: 1000.00 грн.</p>
+            <p className="text-blue-900 font-bold">Вартість: 900.00 грн.</p>
           </div>
 
           <ul className="space-y-2">
@@ -254,13 +254,6 @@ export function ParticipantForm({
                 зйомки перед іншими замовниками.
               </span>
             </li>
-            <li className="flex gap-2">
-              <span>🔒</span>
-              <span>
-                Вартість фіксується під час оплати й не залежить від кількості
-                фото.
-              </span>
-            </li>
           </ul>
 
           <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-sm border border-yellow-200">
@@ -274,10 +267,6 @@ export function ParticipantForm({
               !
             </p>
           </div>
-
-          <p className="text-sm uppercase font-bold text-red-600 ">
-            ⚠️ Важливо чітко вказати категорію згідно з програмою!
-          </p>
         </div>
       ),
     },
@@ -385,49 +374,32 @@ export function ParticipantForm({
               </div>
             </div>
 
-            <h2 className="text-[26px] md:text-[30px] font-semibold text-zinc-900 tracking-tight text-center leading-tight">
+            <h2 className="font-century text-[26px] md:text-[30px] text-zinc-900 tracking-tight text-center leading-tight">
               Дякуємо! <br />
-              <span className="text-[#00a63e]">Ваше замовлення прийнято.</span>
+              <span className="text-[#00a63e]">Запис виконано.</span>
             </h2>
 
             {lastSubmittedOrderType === "basic" && (
               <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
                 <div className="bg-white border-2 border-zinc-100 rounded-[22px] p-5 shadow-sm">
                   <p>
-                    ✅ Ви внесли всі дані –{" "}
-                    <strong className="text-zinc-900 font-extrabold">
-                      ЗАПИС ВИКОНАНО.
-                    </strong>{" "}
-                    Ви обрали пакет{" "}
-                    <span className="text-[#00a63e] font-black uppercase tracking-tight">
+                    Ви обрали{" "}
+                    <span className="text-[#00a63e] font-black uppercase">
                       {
                         orderOptions.find(
                           (o) => o.id === lastSubmittedOrderType
                         )?.title
                       }
                     </span>
-                    . Очікуйте зразки!
-                  </p>
-                </div>
-
-                <div className="bg-[#ffefd3] p-5 rounded-[22px] border-2 border-[#ffefd3] relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-400"></div>
-                  <p className="font-bold text-amber-900 text-[14px]">
-                    ⚠️ Якщо не всі дані були введені – виконано попередній
-                    запис. Для підтвердження запису повідомте номер участі та
-                    уточніть категорію асистенту біля зеленого банера «А фото».
+                    .
                   </p>
                 </div>
 
                 <div className="space-y-4 px-1">
                   <p className="flex gap-3">
-                    <span className="shrink-0">📝</span>
                     <span>
-                      Зразки фото ви отримаєте протягом{" "}
-                      <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
-                        3–7 днів
-                      </span>{" "}
-                      після турніру на вказаний вами номер у Viber або Telegram.
+                      Після реєстрації бажано повідомити номер учасника
+                      асистенту фотографа біля зеленого банера «А Фото»
                     </span>
                   </p>
 
@@ -435,8 +407,18 @@ export function ParticipantForm({
                     <p className="font-black text-zinc-900 uppercase text-[11px] tracking-widest mb-1">
                       💳 Оплата:
                     </p>
-                    <p>
-                      послуги для пакету{" "}
+                    <p className="flex gap-3">
+                      <span>
+                        Зразки фото ви отримаєте протягом{" "}
+                        <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
+                          3–7 днів
+                        </span>{" "}
+                        після турніру на вказаний вами номер у Viber або
+                        Telegram.
+                      </span>
+                    </p>
+                    <p className="mt-2">
+                      Послуги для пакету{" "}
                       <strong className="text-zinc-900">
                         {
                           orderOptions.find(
@@ -455,18 +437,15 @@ export function ParticipantForm({
               <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
                 <div className="bg-white border-2 border-zinc-100 rounded-[22px] p-5 shadow-sm">
                   <p>
-                    ✅ Ви внесли всі дані у формі –{" "}
-                    <span className="text-zinc-900 font-bold">
-                      попередній запис виконано.
-                    </span>{" "}
-                    Ви обрали пакет{" "}
-                    <span className="text-[#00a63e] font-black uppercase tracking-tight">
+                    Ви обрали{" "}
+                    <span className="text-[#00a63e] font-black uppercase">
                       {
                         orderOptions.find(
                           (o) => o.id === lastSubmittedOrderType
                         )?.title
                       }
                     </span>
+                    .
                   </p>
                 </div>
 
@@ -475,24 +454,19 @@ export function ParticipantForm({
                     <span className="text-lg">💳</span> Оплата:
                   </p>
                   <p className="text-zinc-700 font-medium">
-                    📸 Фотозйомка для пакету{" "}
-                    <strong className="text-zinc-900">
-                      {
-                        orderOptions.find(
-                          (o) => o.id === lastSubmittedOrderType
-                        )?.title
-                      }
-                    </strong>{" "}
-                    здійснюється лише після{" "}
+                    Фотозйомка пакета{" "}
+                    <strong className="text-zinc-900">"PREMIUM"</strong>{" "}
+                    здійснюється за умови{" "}
                     <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
                       100% оплати
                     </span>{" "}
-                    у день турніру.
+                    в день турніру.
                   </p>
-                  <div className="mt-3 p-3 bg-[#00a63e]/5 rounded-xl border-l-4 border-[#00a63e] text-[13px] italic">
-                    Після реєстрації повідомте номер участі асистенту біля
-                    зеленого банера «А Фото».
-                  </div>
+                  <p className="text-zinc-700 font-medium mt-2">
+                    Після реєстрації просимо повідомити номер учасника і внести
+                    оплату асистенту фотографа біля зеленого банера «А Фото».
+                  </p>
+                  <p></p>
                 </div>
               </div>
             )}
@@ -680,7 +654,7 @@ export function ParticipantForm({
                       : "text-zinc-600"
                   }`}
                 >
-                  Реєстраційний номер{" "}
+                  Cтартовий номер учасника{" "}
                   <span className="text-red-600 text-xl ml-1 leading-none inline-block transform translate-y-1">
                     *
                   </span>
@@ -765,9 +739,10 @@ export function ParticipantForm({
                 <p className="text-[14px] text-zinc-500 pl-1">
                   {regNumberUnknown ? (
                     <>
-                      Будь ласка, уточніть ваш номер у{" "}
+                      Будь ласка, після отримання номера учасника на руки,
+                      уточніть дані в{" "}
                       <span className="text-zinc-800 font-bold">
-                        асистента біля зеленого банера
+                        асистента фотографа біля зеленого банера «А фото»
                       </span>
                       .
                     </>

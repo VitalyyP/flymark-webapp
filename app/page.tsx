@@ -144,10 +144,9 @@ export default function HomePage() {
           </div>
 
           <div className="max-w-xl text-center px-2">
-            <h1 className="text-lg md:text-xl font-bold leading-snug text-zinc-800 mb-4">
-              📸 Команда <span style={{ color: BRAND_GREEN }}>А фото</span>{" "}
-              здійснює репортажну ФОТО зйомку під час виступу на танцювальному
-              майданчику.
+            <h1 className="font-century text-lg md:text-xl font-bold leading-snug text-zinc-800 mb-4">
+              <span style={{ color: BRAND_GREEN }}>«Афото»</span> репортажна
+              фотозйомка виступів спортсменів на танцювальному майданчику.
             </h1>
             <p className="text-sm md:text-base font-medium text-zinc-500">
               Для запису на фото оберіть турнір:
@@ -233,7 +232,7 @@ export default function HomePage() {
                       className="w-full md:w-auto md:min-w-[200px] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d] py-4 px-10 rounded-3xl font-black text-[15px] flex items-center justify-center gap-3 transition-all border-[1.5px] border-[#16a34a]/40 hover:border-[#16a34a] active:scale-95 shadow-sm uppercase tracking-wide cursor-pointer"
                     >
                       <ClipboardList size={20} className="text-[#16a34a]" />
-                      <span>Замовити</span>
+                      <span>Обрати</span>
                     </button>
                   </div>
                 </li>

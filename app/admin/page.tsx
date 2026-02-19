@@ -167,8 +167,8 @@ export default function HomePage() {
               typeof x === "string"
                 ? x.trim()
                 : typeof x === "number"
-                ? String(x)
-                : ""
+                  ? String(x)
+                  : ""
             )
             .filter(Boolean)
         : [];
@@ -567,11 +567,11 @@ export default function HomePage() {
                             }`}
                           />
                           <span
-                            className={`text-[10px] font-black uppercase tracking-widest ${
+                            className={`text-[10px] font-black uppercase ${
                               isVisible ? "text-green-600" : "text-zinc-400"
                             }`}
                           >
-                            {isVisible ? "Видно клієнтам" : "Приховано"}
+                            {isVisible ? "On" : "Off"}
                           </span>
                         </div>
 
@@ -635,9 +635,9 @@ export default function HomePage() {
                                 {findingId === id
                                   ? ui?.statusText
                                   : ui?.foundCount !== null &&
-                                    ui?.foundCount !== undefined
-                                  ? `Оновлено: ${ui.foundCount}`
-                                  : "Оновити Google"}
+                                      ui?.foundCount !== undefined
+                                    ? `Оновлено: ${ui.foundCount}`
+                                    : "Оновити Google"}
                               </span>
                             </button>
                           </div>
