@@ -46,9 +46,9 @@ async function getSheetsClient(
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: clientEmail,
-      private_key: privateKey
+      private_key: privateKey,
     },
-    scopes: [scope]
+    scopes: [scope],
   });
 
   return google.sheets({ version: "v4", auth });
@@ -61,7 +61,7 @@ async function sheetExists(
 ): Promise<boolean> {
   const spreadsheet = await sheets.spreadsheets.get({
     spreadsheetId,
-    fields: "sheets.properties.title"
+    fields: "sheets.properties.title",
   });
 
   return (
@@ -83,8 +83,8 @@ async function ensureSheetExists(
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
-        requests: [{ addSheet: { properties: { title: sheetName } } }]
-      }
+        requests: [{ addSheet: { properties: { title: sheetName } } }],
+      },
     });
     return { created: true };
   } catch (error) {
@@ -98,15 +98,50 @@ async function ensureSheetExists(
   }
 }
 
+function uniquePreserveOrder(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const it of items) {
+    if (!it) continue;
+    if (seen.has(it)) continue;
+    seen.add(it);
+    out.push(it);
+  }
+  return out;
+}
+
 function toValuesWithHeaders(rows: RowData[]) {
   if (rows.length === 0) {
     return {
       headers: [] as string[],
-      values: [] as (string | number | boolean)[][]
+      values: [] as (string | number | boolean)[][],
     };
   }
 
-  const headers = Object.keys(rows[0]);
+  const preferredOrder = [
+    "Time",
+    "DancerName",
+    "Category",
+    "Program",
+    "RegNumber",
+    "DancingClub",
+    "City",
+    "Phone",
+    "OrderType",
+  ];
+
+  const allKeys: string[] = [];
+  for (const row of rows) {
+    for (const key of Object.keys(row)) allKeys.push(key);
+  }
+  const unionKeys = uniquePreserveOrder(allKeys);
+
+  const headersFromPreferred = preferredOrder.filter((h) =>
+    unionKeys.includes(h)
+  );
+  const rest = unionKeys.filter((k) => !headersFromPreferred.includes(k));
+
+  const headers = [...headersFromPreferred, ...rest];
 
   const values = rows.map((row) =>
     headers.map((header) => {
@@ -141,6 +176,7 @@ function headersMatch(existing: string[], expected: string[]): boolean {
   }
   return true;
 }
+
 async function initializeNewSheet(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
@@ -155,21 +191,21 @@ async function initializeNewSheet(
       spreadsheetId,
       range: `${sheetName}!A1`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[trimmedTitle]] }
+      requestBody: { values: [[trimmedTitle]] },
     });
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!A2`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[""]] }
+      requestBody: { values: [[""]] },
     });
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!A3`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [headers] }
+      requestBody: { values: [headers] },
     });
 
     return;
@@ -179,7 +215,7 @@ async function initializeNewSheet(
     spreadsheetId,
     range: `${sheetName}!A1`,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [headers] }
+    requestBody: { values: [headers] },
   });
 }
 
@@ -194,7 +230,7 @@ export async function readSheetValues(options: ReadOptions = {}) {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!${range}`
+    range: `${sheetName}!${range}`,
   });
 
   return res.data.values ?? [];
@@ -227,7 +263,7 @@ export async function saveRowsToSheet(
 
   const headerRow1Response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!1:1`
+    range: `${sheetName}!1:1`,
   });
   const headerRow1 = normalizeHeaderRow(headerRow1Response.data.values);
 
@@ -238,7 +274,7 @@ export async function saveRowsToSheet(
   } else {
     const headerRow3Response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!3:3`
+      range: `${sheetName}!3:3`,
     });
     const headerRow3 = normalizeHeaderRow(headerRow3Response.data.values);
 
@@ -247,18 +283,40 @@ export async function saveRowsToSheet(
     }
   }
 
+  // ✅ FIX: if clearBeforeWrite + title -> ALWAYS keep layout with title at row 1, headers at row 3
   if (clearBeforeWrite) {
+    const trimmedTitle = (title ?? "").trim();
+
+    if (trimmedTitle) {
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId,
+        range: `${sheetName}!A:Z`,
+      });
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${sheetName}!A1`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[trimmedTitle], [""], headers, ...values],
+        },
+      });
+
+      return { cleared: true, written: values.length };
+    }
+
+    // Старий fallback без тайтла
     if (headersRowIndex === 3) {
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
-        range: `${sheetName}!A4:Z`
+        range: `${sheetName}!A4:Z`,
       });
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range: `${sheetName}!A3`,
         valueInputOption: "USER_ENTERED",
-        requestBody: { values: [headers, ...values] }
+        requestBody: { values: [headers, ...values] },
       });
 
       return { cleared: true, written: values.length };
@@ -266,14 +324,14 @@ export async function saveRowsToSheet(
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId,
-      range: `${sheetName}!A:Z`
+      range: `${sheetName}!A:Z`,
     });
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!A1`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [headers, ...values] }
+      requestBody: { values: [headers, ...values] },
     });
 
     return { cleared: true, written: values.length };
@@ -288,8 +346,8 @@ export async function saveRowsToSheet(
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
-      values: valuesToAppend
-    }
+      values: valuesToAppend,
+    },
   });
 
   return { appended: values.length };
