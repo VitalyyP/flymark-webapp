@@ -4,29 +4,29 @@ import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"]
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  subsets: ["latin"]
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "А-фото – Фотозйомка бальних танців",
+  title: "А Фото – Фотозйомка бальних танців",
   description:
-    "Команда А фото здійснює репортажну ФОТО зйомку під час виступу на танцювальному майданчику",
+    "Команда А Фото здійснює репортажну ФОТО зйомку під час виступу на танцювальному майданчику",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" }
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png"
-  }
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
