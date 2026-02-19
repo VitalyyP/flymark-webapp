@@ -201,7 +201,11 @@ export default function SelectParticipantPage() {
   if (!event) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg text-gray-600">Подію не знайдено</p>
+        <p className="text-center">
+          <span className="text-[14px] font-bold text-blue-500 uppercase animate-pulse flex items-center justify-center gap-1">
+            <RefreshCw size={14} className="animate-spin" /> Завантаження...
+          </span>
+        </p>
       </div>
     );
   }
@@ -233,7 +237,7 @@ export default function SelectParticipantPage() {
 
         <div className="w-full flex flex-col gap-8">
           <div className="space-y-1 text-center">
-            <h1 className="text-[28px] md:text-[32px] font-bold text-zinc-900 tracking-tight">
+            <h1 className="font-century text-[28px] md:text-[32px] font-bold text-zinc-900 tracking-tight">
               Запис на фото
             </h1>
             <p className="text-zinc-500 font-medium text-[15px]">

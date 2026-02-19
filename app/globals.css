@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Century Gothic";
+  src: url("/fonts/CenturyGothic.woff2") format("woff2");
+  font-style: normal;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-century: "Century Gothic", sans-serif;
 }
 
 @theme inline {
@@ -10,6 +17,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-century: var(--font-century);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,6 +32,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
 .phone-wrapper {
   display: flex;
   align-items: center;
