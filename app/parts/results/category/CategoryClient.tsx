@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
-import { groupRegNumbersByProgram } from "@/utils/groupParticipantsByProgram";
 import {
   makeCrossedStorageKey,
   makeCrossKey,
@@ -30,27 +29,6 @@ const renderBackButton = (eventParam: string) => (
   </Link>
 );
 
-function getParticipantAtIndex(
-  participants: Participant[],
-  category: string,
-  program: string,
-  regNumber: string,
-  idx: number
-): Participant | null {
-  let count = -1;
-
-  for (const p of participants) {
-    if ((p.category ?? "").trim() !== category) continue;
-    if ((p.program ?? "").trim() !== program) continue;
-    if ((p.regNumber ?? "").trim() !== regNumber) continue;
-
-    count++;
-    if (count === idx) return p;
-  }
-
-  return null;
-}
-
 function CategoryTable({
   storageKey,
   categoryParam,
@@ -72,13 +50,31 @@ function CategoryTable({
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
-  const grouped = useMemo(
-    () => groupRegNumbersByProgram(participants),
-    [participants]
-  );
+  const grouped = useMemo(() => {
+    const result: Record<string, Participant[]> = {};
 
-  Object.keys(grouped).forEach((prog) =>
-    grouped[prog].sort((a, b) => a.localeCompare(b, "uk", { numeric: true }))
+    for (const p of participants) {
+      const prog = (p.program ?? "").trim() || "Невідома";
+      (result[prog] ??= []).push(p);
+    }
+
+    for (const prog of Object.keys(result)) {
+      result[prog].sort((a, b) =>
+        (a.regNumber ?? "").localeCompare(b.regNumber ?? "", "uk", {
+          numeric: true,
+        })
+      );
+    }
+
+    return result;
+  }, [participants]);
+
+  const programs = useMemo(
+    () =>
+      Object.keys(grouped).sort((a, b) =>
+        a.localeCompare(b, "uk", { numeric: true })
+      ),
+    [grouped]
   );
 
   return (
@@ -111,7 +107,7 @@ function CategoryTable({
           </thead>
 
           <tbody>
-            {Object.keys(grouped).map((prog) => (
+            {programs.map((prog) => (
               <tr key={prog} className="border-b border-zinc-50 last:border-0">
                 <td className="py-6 px-3 align-top">
                   <span className="text-[15px] font-bold text-zinc-900 leading-tight block mt-1.5">
@@ -121,17 +117,13 @@ function CategoryTable({
 
                 <td className="py-6 px-3 align-top">
                   <div className="flex flex-wrap gap-x-3 gap-y-4">
-                    {grouped[prog].map((num, idx) => {
+                    {grouped[prog].map((p, idx) => {
+                      const num = (p.regNumber ?? "").trim();
                       const key = makeCrossKey(categoryParam, prog, num, idx);
                       const crossed = crossedSet.has(key);
 
-                      const participant = getParticipantAtIndex(
-                        participants,
-                        categoryParam,
-                        prog,
-                        num,
-                        idx
-                      );
+                      const isPremium =
+                        (p.orderType ?? "").trim().toLowerCase() === "premium";
 
                       return (
                         <span
@@ -150,11 +142,7 @@ function CategoryTable({
                                   ? "line-through opacity-30"
                                   : "opacity-100"
                               }
-                              ${
-                                participant?.orderType === "premium"
-                                  ? "text-red-600"
-                                  : "text-zinc-800"
-                              }
+                              ${isPremium ? "text-red-600" : "text-zinc-800"}
                             `}
                           >
                             {num}
@@ -221,7 +209,12 @@ export default function CategoryClient() {
         const list: Participant[] = Array.isArray(data?.participants)
           ? (data.participants as Participant[])
           : [];
-        setParticipants(list.filter((p) => p.category === categoryParam));
+
+        const filtered = list.filter(
+          (p) => (p.category ?? "").trim() === categoryParam.trim()
+        );
+
+        setParticipants(filtered);
       })
       .catch(() => setParticipants([]));
 

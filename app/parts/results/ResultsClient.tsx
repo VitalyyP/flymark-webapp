@@ -7,7 +7,10 @@ import { ChevronLeft } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
 import { normalizeTime } from "@/utils/normalizeTime";
-import { groupRegNumbersByProgram } from "@/utils/groupParticipantsByProgram";
+import {
+  groupParticipantsByProgramForDisplay,
+  type DisplayItem,
+} from "@/utils/groupParticipantsByProgramForDisplay";
 import {
   makeCrossedStorageKey,
   makeCrossKey,
@@ -53,29 +56,21 @@ function CrossTable({
   );
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
-  const byCategory: Record<string, Participant[]> = {};
 
+  const byCategory: Record<string, Participant[]> = {};
   for (const p of participants) {
     const cat = (p.category ?? "").trim();
     if (!cat) continue;
     (byCategory[cat] ??= []).push(p);
   }
 
-  const grouped: Record<string, Record<string, string[]>> = {};
+  const grouped: Record<string, Record<string, DisplayItem[]>> = {};
   for (const [cat, list] of Object.entries(byCategory)) {
-    grouped[cat] = groupRegNumbersByProgram(list);
+    grouped[cat] = groupParticipantsByProgramForDisplay(list);
   }
 
   const categories = Object.keys(grouped).sort((a, b) =>
     a.localeCompare(b, "uk", { numeric: true })
-  );
-
-  categories.forEach((cat) =>
-    Object.keys(grouped[cat]).forEach((prog) =>
-      grouped[cat][prog].sort((a, b) =>
-        a.localeCompare(b, "uk", { numeric: true })
-      )
-    )
   );
 
   return (
@@ -146,30 +141,10 @@ function CrossTable({
 
                   <td className="py-5 px-3 align-top">
                     <div className="flex flex-wrap gap-x-1 gap-y-1.5">
-                      {grouped[cat][prog].map((num, idx) => {
+                      {grouped[cat][prog].map((item, idx) => {
+                        const num = item.regNumber;
                         const key = makeCrossKey(cat, prog, num, idx);
                         const crossed = crossedSet.has(key);
-
-                        const isPremium = (() => {
-                          let count = -1;
-
-                          for (const p of participants) {
-                            if (p.category !== cat) continue;
-                            if ((p.program ?? "").trim() !== prog) continue;
-
-                            const sameNumber =
-                              (p.regNumber ?? "").trim() === num;
-
-                            if (!sameNumber) continue;
-
-                            count++;
-                            if (count === idx) {
-                              return p.orderType === "premium";
-                            }
-                          }
-
-                          return false;
-                        })();
 
                         return (
                           <span key={key} className="text-[16px] font-semibold">
@@ -180,7 +155,11 @@ function CrossTable({
                                     ? "line-through opacity-50"
                                     : "opacity-100"
                                 }
-                                ${isPremium ? "text-red-600" : "text-zinc-800"}
+                                ${
+                                  item.isPremium
+                                    ? "text-red-600"
+                                    : "text-zinc-800"
+                                }
                                 transition-opacity
                               `}
                             >

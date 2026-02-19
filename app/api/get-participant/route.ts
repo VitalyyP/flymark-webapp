@@ -9,6 +9,8 @@ type ResultItem = {
   dancer1Name: string;
   dancer2Name: string;
   program: string;
+  city: string;
+  club: string;
 };
 
 function normalizePrivateKey(key?: string): string | undefined {
@@ -66,16 +68,16 @@ export async function GET(request: Request) {
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: clientEmail,
-        private_key: privateKey
+        private_key: privateKey,
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${eventId}/A!A:Z`
+      range: `${eventId}/A!A:Z`,
     });
 
     const rows = (response.data.values ?? []) as SheetRow[];
@@ -92,11 +94,20 @@ export async function GET(request: Request) {
     const categoryIdx = headers.indexOf("CategoryName");
     const timeIdx = headers.indexOf("SectionTime");
     const programIdx = headers.indexOf("ProgramName");
+    const clubIdx = headers.indexOf("DancingClub");
+    const cityIdx = headers.indexOf("City");
 
     const dancer1IdIdx = headers.indexOf("Dancer1Id");
     const dancer2IdIdx = headers.indexOf("Dancer2Id");
 
-    const required = [dancer1NameIdx, categoryIdx, timeIdx, programIdx];
+    const required = [
+      dancer1NameIdx,
+      categoryIdx,
+      timeIdx,
+      programIdx,
+      clubIdx,
+      cityIdx,
+    ];
 
     if (required.some((x) => x === -1)) {
       return NextResponse.json(
@@ -116,6 +127,8 @@ export async function GET(request: Request) {
         const category = safeCell(row, categoryIdx);
         const time = safeCell(row, timeIdx);
         const program = safeCell(row, programIdx);
+        const club = safeCell(row, clubIdx);
+        const city = safeCell(row, cityIdx);
 
         if (!category) return null;
 
@@ -129,7 +142,15 @@ export async function GET(request: Request) {
 
           if (!matchesById) return null;
 
-          return { category, time, dancer1Name, dancer2Name, program };
+          return {
+            category,
+            time,
+            dancer1Name,
+            dancer2Name,
+            program,
+            club,
+            city,
+          };
         }
 
         const matchesByName = [dancer1Name, dancer2Name].some((d) => {
@@ -139,7 +160,15 @@ export async function GET(request: Request) {
 
         if (!matchesByName) return null;
 
-        return { category, time, dancer1Name, dancer2Name, program };
+        return {
+          category,
+          time,
+          dancer1Name,
+          dancer2Name,
+          program,
+          club,
+          city,
+        };
       })
       .filter((x): x is ResultItem => x !== null);
 
