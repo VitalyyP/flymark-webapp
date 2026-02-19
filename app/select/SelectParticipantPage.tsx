@@ -341,6 +341,17 @@ export default function SelectParticipantPage() {
           </div>
         </div>
       </main>
+
+      <footer className="w-full mt-auto pt-12 flex flex-col items-center">
+        <div className="relative w-30 h-30">
+          <Image
+            src="/ok-aphoto.png"
+            alt="A Фото"
+            fill
+            className="object-contain"
+          />
+        </div>
+      </footer>
     </div>
   );
 }
