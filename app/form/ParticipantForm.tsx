@@ -407,17 +407,7 @@ export function ParticipantForm({
                     <p className="font-black text-zinc-900 uppercase text-[11px] tracking-widest mb-1">
                       💳 Оплата:
                     </p>
-                    <p className="flex gap-3">
-                      <span>
-                        Зразки фото ви отримаєте протягом{" "}
-                        <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
-                          3–7 днів
-                        </span>{" "}
-                        після турніру на вказаний вами номер у Viber або
-                        Telegram.
-                      </span>
-                    </p>
-                    <p className="mt-2">
+                    <p>
                       Послуги для пакету{" "}
                       <strong className="text-zinc-900">
                         {
@@ -427,6 +417,16 @@ export function ParticipantForm({
                         }
                       </strong>{" "}
                       здійснюється на картку після вибору фото.
+                    </p>
+                    <p className="flex gap-3 mt-2">
+                      <span>
+                        Зразки фото ви отримаєте протягом{" "}
+                        <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
+                          3–7 днів
+                        </span>{" "}
+                        після турніру на вказаний вами номер у Viber або
+                        Telegram.
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -587,8 +587,8 @@ export function ParticipantForm({
                           checked
                             ? "bg-green-50/40 border-[#00a63e] shadow-md shadow-green-900/5"
                             : showValidation && selectedItems.length === 0
-                            ? "bg-white border-red-100 shadow-sm"
-                            : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
+                              ? "bg-white border-red-100 shadow-sm"
+                              : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
                         }
                       `}
                     >
@@ -690,10 +690,10 @@ export function ParticipantForm({
                               regNumberUnknown
                                 ? "bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed"
                                 : isSuccess
-                                ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
-                                : isError
-                                ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
-                                : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
+                                  ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
+                                  : isError
+                                    ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
+                                    : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
                             }
                           `}
                         />
@@ -797,8 +797,8 @@ export function ParticipantForm({
                           isSelected
                             ? "border-green-600 bg-green-50/30 shadow-md shadow-green-900/5"
                             : showValidation && !orderType
-                            ? "border-red-100 bg-white"
-                            : "border-zinc-100 bg-white hover:border-zinc-200"
+                              ? "border-red-100 bg-white"
+                              : "border-zinc-100 bg-white hover:border-zinc-200"
                         }
                       `}
                     >
