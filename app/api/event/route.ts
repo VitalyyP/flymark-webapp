@@ -1,14 +1,7 @@
+import { getCompetitionById } from "@/utils/flymark/getCompetitionById";
 import { NextResponse } from "next/server";
-import {
-  normalizeCompetition,
-  RawCompetition,
-  Competition,
-} from "@/utils/normalizeCompetition";
 
-const CITIES_IDS: number[] =
-  process.env.NEXT_PUBLIC_CITIES_IDS?.split(",")
-    .map((id) => Number(id.trim()))
-    .filter(Boolean) ?? [];
+export const runtime = "nodejs";
 
 type ApiOk = {
   ok: true;
@@ -32,10 +25,6 @@ function toStringSafe(v: unknown): string {
   return "";
 }
 
-function isArray<T>(v: unknown): v is T[] {
-  return Array.isArray(v);
-}
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const eventId = toStringSafe(searchParams.get("eventId"));
@@ -48,61 +37,28 @@ export async function GET(req: Request) {
   }
 
   try {
-    for (const cityId of CITIES_IDS) {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/flymark/search`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cityId,
-            countryId: 1,
-            organisationId: "",
-            from: "",
-            to: "",
-            page: 1,
-            type: "Opened",
-          }),
-          cache: "no-store",
-        }
+    const c = await getCompetitionById(eventId);
+
+    if (!c) {
+      return NextResponse.json<ApiErr>(
+        { ok: false, error: "Event not found" },
+        { status: 404 }
       );
-
-      if (!res.ok) continue;
-
-      const data: unknown = await res.json();
-
-      const list: Competition[] = isArray<RawCompetition>(data)
-        ? data
-            .map(normalizeCompetition)
-            .filter((x): x is Competition => x !== null)
-        : [];
-
-      const found = list.find((c) => toStringSafe(c.CompetitionId) === eventId);
-
-      if (found) {
-        return NextResponse.json<ApiOk>({
-          ok: true,
-          event: {
-            id: toStringSafe(found.CompetitionId),
-            name: toStringSafe(found.CompetitionName),
-            coverUrl: toStringSafe(found.CoverPhoto),
-            cityName: toStringSafe(found.CityName),
-            dateTo: toStringSafe(found.DateTo),
-          },
-        });
-      }
     }
 
-    return NextResponse.json<ApiErr>(
-      { ok: false, error: "Event not found" },
-      { status: 404 }
-    );
+    return NextResponse.json<ApiOk>({
+      ok: true,
+      event: {
+        id: String(c.Id),
+        name: c.Name,
+        coverUrl: c.CoverPhoto,
+        cityName: c.CityName,
+        dateTo: c.DateTo,
+      },
+    });
   } catch (e) {
     return NextResponse.json<ApiErr>(
-      {
-        ok: false,
-        error: e instanceof Error ? e.message : "Unknown error",
-      },
+      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
       { status: 500 }
     );
   }
