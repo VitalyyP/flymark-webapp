@@ -10,10 +10,16 @@ export type Program = {
   Name: string;
 };
 
+export type City = {
+  Name: string;
+};
+
 export type Registration = {
-  Id: number;
+  Id?: number;
+  ClubName?: string;
   Dancers?: Dancer[];
   Programs?: Program[];
+  City?: City;
 };
 
 export type Category = {
@@ -30,6 +36,8 @@ export type PerformanceRow = {
   Dancer1Id: string;
   Dancer2Name: string;
   Dancer2Id: string;
+  DancingClub: string;
+  City: string;
 };
 
 type CompetitionTableResponse = {
@@ -56,8 +64,8 @@ const api = axios.create({
   headers: {
     Accept: "application/json",
     "User-Agent": "Mozilla/5.0",
-    "Accept-Language": "uk,uk-UA;q=0.9,en;q=0.8,en-US;q=0.7"
-  }
+    "Accept-Language": "uk,uk-UA;q=0.9,en;q=0.8,en-US;q=0.7",
+  },
 });
 
 async function fetchRegistrations(
@@ -67,7 +75,7 @@ async function fetchRegistrations(
   const response = await api.get<{ Registration?: Registration[] }>(
     "/registration",
     {
-      params: { competitionId: eventId, categoryId }
+      params: { competitionId: eventId, categoryId },
     }
   );
 
@@ -127,7 +135,9 @@ export async function parseEvent(eventId: number): Promise<{
           Dancer1Name: dancers[0]?.FullName ?? "",
           Dancer1Id: dancers[0]?.Id?.toString() ?? "",
           Dancer2Name: dancers[1]?.FullName ?? "",
-          Dancer2Id: dancers[1]?.Id?.toString() ?? ""
+          Dancer2Id: dancers[1]?.Id?.toString() ?? "",
+          DancingClub: registration.ClubName ?? "",
+          City: registration.City?.Name ?? "",
         });
       }
     }

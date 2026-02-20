@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Search, User, ArrowRight, RefreshCw } from "lucide-react";
-import { useEventFromQuery } from "@/hooks/useEventFromQuery";
+
 import { encodeEvent } from "@/utils/eventPayload";
 
 type ParticipantOption = {
@@ -45,7 +45,6 @@ function rowToOptions(row: unknown): ParticipantOption[] {
   const d2Id = toTrimmedString(r.Dancer2Id);
 
   const out: ParticipantOption[] = [];
-
   if (d1Name && d1Id) out.push({ id: d1Id, name: d1Name });
   if (d2Name && d2Id) out.push({ id: d2Id, name: d2Name });
 
@@ -79,22 +78,49 @@ function isParticipantsFastOk(v: unknown): v is ParticipantsFastOk {
   });
 }
 
+type EventApiOk = {
+  ok: true;
+  event: {
+    id: string;
+    name: string;
+    coverUrl: string;
+    cityName: string;
+    dateTo: string;
+  };
+};
+
+function isEventApiOk(v: unknown): v is EventApiOk {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+  if (!isRecord(v.event)) return false;
+
+  const e = v.event as Record<string, unknown>;
+  return (
+    typeof e.id === "string" &&
+    typeof e.name === "string" &&
+    typeof e.coverUrl === "string" &&
+    typeof e.cityName === "string" &&
+    typeof e.dateTo === "string"
+  );
+}
+
 export default function SelectParticipantPage() {
   const router = useRouter();
-  const event = useEventFromQuery();
+  const searchParams = useSearchParams();
+
+  const eventId = (searchParams.get("eventId") ?? "").trim();
+
+  const [eventName, setEventName] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [loadingEvent, setLoadingEvent] = useState(false);
 
   const [participants, setParticipants] = useState<ParticipantOption[]>([]);
-
   const [query, setQuery] = useState("");
   const [selectedParticipant, setSelectedParticipant] =
     useState<ParticipantOption | null>(null);
 
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-
-  const eventId = event?.id ?? "";
-  const eventName = event?.name ?? "";
-  const coverUrl = event?.coverUrl ?? "";
 
   const finalizeParticipants = (options: ParticipantOption[]) => {
     const uniq = new Map<string, ParticipantOption>();
@@ -109,6 +135,43 @@ export default function SelectParticipantPage() {
     setParticipants(cleaned);
   };
 
+  // ✅ 1) тягнемо турнір з app/api/event/route.ts → /api/event?eventId=...
+  useEffect(() => {
+    if (!eventId) return;
+
+    const ac = new AbortController();
+
+    const loadEvent = async () => {
+      setLoadingEvent(true);
+      try {
+        const res = await fetch(
+          `/api/event?eventId=${encodeURIComponent(eventId)}`,
+          { cache: "no-store", signal: ac.signal }
+        );
+
+        const data: unknown = await res.json();
+
+        if (isEventApiOk(data)) {
+          setEventName(data.event.name.trim());
+          setCoverUrl(data.event.coverUrl.trim());
+        } else {
+          setEventName("");
+          setCoverUrl("");
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setEventName("");
+        setCoverUrl("");
+      } finally {
+        setLoadingEvent(false);
+      }
+    };
+
+    void loadEvent();
+    return () => ac.abort();
+  }, [eventId]);
+
+  // ✅ 2) тягнемо учасників по eventId (як було)
   useEffect(() => {
     if (!eventId) return;
 
@@ -139,7 +202,10 @@ export default function SelectParticipantPage() {
 
         const r2 = await fetch(
           `/api/participants?event=${encodeURIComponent(eventId)}`,
-          { cache: "no-store", signal: ac.signal }
+          {
+            cache: "no-store",
+            signal: ac.signal,
+          }
         );
 
         const j2: unknown = await r2.json();
@@ -164,7 +230,6 @@ export default function SelectParticipantPage() {
   const filtered = useMemo(() => {
     const q = normalizeText(query);
     if (!q) return [];
-
     return participants.filter((p) =>
       normalizeText(p.name)
         .split(" ")
@@ -183,12 +248,12 @@ export default function SelectParticipantPage() {
   };
 
   const handleSubmit = () => {
-    if (!selectedParticipant || !event) return;
+    if (!selectedParticipant || !eventId) return;
 
     const encoded = encodeEvent({
-      id: event.id,
-      name: event.name,
-      coverUrl: event.coverUrl,
+      id: eventId,
+      name: eventName,
+      coverUrl,
       participant: {
         id: selectedParticipant.id,
         name: selectedParticipant.name,
@@ -198,7 +263,7 @@ export default function SelectParticipantPage() {
     router.push(`/form?event=${encodeURIComponent(encoded)}`);
   };
 
-  if (!event) {
+  if (!eventId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-center">
@@ -210,6 +275,8 @@ export default function SelectParticipantPage() {
     );
   }
 
+  const showCover = Boolean(coverUrl) && !loadingEvent;
+
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans items-center px-4 py-8 md:py-12">
       <main className="w-full max-w-[440px] flex flex-col items-center gap-8 md:gap-10">
@@ -220,18 +287,24 @@ export default function SelectParticipantPage() {
             </span>
 
             <h2 className="text-xl md:text-2xl font-bold text-zinc-800 leading-snug max-w-[260px] pt-1">
-              {eventName}
+              {loadingEvent ? "Завантаження..." : eventName || `ID: ${eventId}`}
             </h2>
           </div>
 
           <div className="relative w-40 h-40 md:w-40 md:h-40 rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
-            <Image
-              src={coverUrl}
-              alt={eventName}
-              fill
-              className="object-cover"
-              priority
-            />
+            {showCover ? (
+              <Image
+                src={coverUrl}
+                alt={eventName || "Event cover"}
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400 text-sm">
+                {loadingEvent ? "..." : "No cover"}
+              </div>
+            )}
           </div>
         </div>
 
@@ -275,6 +348,7 @@ export default function SelectParticipantPage() {
                   </div>
                 )}
               </div>
+
               <input
                 id="participant-search"
                 name="participantName"

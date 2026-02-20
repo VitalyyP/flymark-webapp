@@ -57,6 +57,8 @@ export type ResultItem = {
   dancer1Name: string;
   dancer2Name?: string;
   program: string;
+  club: string;
+  city: string;
 };
 
 type Props = {
@@ -270,6 +272,14 @@ export function ParticipantForm({
     },
   ];
 
+  const { club, city } = (() => {
+    const first = results[0];
+    return {
+      club: first?.club ?? "",
+      city: first?.city ?? "",
+    };
+  })();
+
   const secondName: string = (() => {
     const firstResult = results[0];
     if (!firstResult) return "";
@@ -313,6 +323,8 @@ export function ParticipantForm({
       eventName,
       name: participantName,
       secondName,
+      club,
+      city,
       items: selected,
       regNumber: regNumberUnknown ? "Не знаю" : regNumber,
       orderType,
@@ -541,7 +553,11 @@ export function ParticipantForm({
                     }
                   />
                   <span
-                    className={`text-[11px] font-black uppercase tracking-widest ${showValidation && selectedItems.length === 0 ? "text-red-700" : "text-zinc-600"}`}
+                    className={`text-[11px] font-black uppercase tracking-widest ${
+                      showValidation && selectedItems.length === 0
+                        ? "text-red-700"
+                        : "text-zinc-600"
+                    }`}
                   >
                     Програма виступів{" "}
                     <span className="text-red-500 text-xl ml-1 leading-none inline-block transform translate-y-1">
@@ -571,8 +587,8 @@ export function ParticipantForm({
                           checked
                             ? "bg-green-50/40 border-[#00a63e] shadow-md shadow-green-900/5"
                             : showValidation && selectedItems.length === 0
-                              ? "bg-white border-red-100 shadow-sm"
-                              : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
+                            ? "bg-white border-red-100 shadow-sm"
+                            : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
                         }
                       `}
                     >
@@ -581,7 +597,9 @@ export function ParticipantForm({
                       </div>
                       <div className="flex flex-col gap-2 w-full">
                         <span
-                          className={`text-[15px] md:text-[16px] font-bold leading-snug ${checked ? "text-zinc-900" : "text-zinc-800"}`}
+                          className={`text-[15px] md:text-[16px] font-bold leading-snug ${
+                            checked ? "text-zinc-900" : "text-zinc-800"
+                          }`}
                         >
                           {removeLastBracket(item.category)}
                         </span>
@@ -630,7 +648,11 @@ export function ParticipantForm({
                   }
                 />
                 <span
-                  className={`text-[11px] font-black uppercase tracking-widest ${showValidation && !regNumber && !regNumberUnknown ? "text-red-700" : "text-zinc-600"}`}
+                  className={`text-[11px] font-black uppercase tracking-widest ${
+                    showValidation && !regNumber && !regNumberUnknown
+                      ? "text-red-700"
+                      : "text-zinc-600"
+                  }`}
                 >
                   Cтартовий номер учасника{" "}
                   <span className="text-red-600 text-xl ml-1 leading-none inline-block transform translate-y-1">
@@ -668,10 +690,10 @@ export function ParticipantForm({
                               regNumberUnknown
                                 ? "bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed"
                                 : isSuccess
-                                  ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
-                                  : isError
-                                    ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
-                                    : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
+                                ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
+                                : isError
+                                ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
+                                : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
                             }
                           `}
                         />
@@ -706,7 +728,9 @@ export function ParticipantForm({
                       />
                     </div>
                     <span
-                      className={`text-[14px] font-semibold whitespace-nowrap transition-colors ${regNumberUnknown ? "text-[#00a63e]" : "text-zinc-500"}`}
+                      className={`text-[14px] font-semibold whitespace-nowrap transition-colors ${
+                        regNumberUnknown ? "text-[#00a63e]" : "text-zinc-500"
+                      }`}
                     >
                       Не знаю
                     </span>
@@ -748,7 +772,11 @@ export function ParticipantForm({
                   }
                 />
                 <span
-                  className={`text-[11px] font-black uppercase tracking-widest ${showValidation && !orderType ? "text-red-700" : "text-zinc-600"}`}
+                  className={`text-[11px] font-black uppercase tracking-widest ${
+                    showValidation && !orderType
+                      ? "text-red-700"
+                      : "text-zinc-600"
+                  }`}
                 >
                   Вид замовлення{" "}
                   <span className="text-red-500 text-xl ml-1 leading-none inline-block transform translate-y-1">
@@ -769,8 +797,8 @@ export function ParticipantForm({
                           isSelected
                             ? "border-green-600 bg-green-50/30 shadow-md shadow-green-900/5"
                             : showValidation && !orderType
-                              ? "border-red-100 bg-white"
-                              : "border-zinc-100 bg-white hover:border-zinc-200"
+                            ? "border-red-100 bg-white"
+                            : "border-zinc-100 bg-white hover:border-zinc-200"
                         }
                       `}
                     >
@@ -784,20 +812,28 @@ export function ParticipantForm({
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
-                  ${isSelected ? "border-[#00a63e] bg-[#00a63e]" : "border-zinc-200"}`}
+                  ${
+                    isSelected
+                      ? "border-[#00a63e] bg-[#00a63e]"
+                      : "border-zinc-200"
+                  }`}
                           >
                             {isSelected && (
                               <div className="w-1.5 h-1.5 rounded-full bg-white" />
                             )}
                           </div>
                           <span
-                            className={`font-century text-[15px] sm:text-base font-bold ${isSelected ? "text-zinc-900" : "text-zinc-700"}`}
+                            className={`text-[15px] sm:text-base font-bold ${
+                              isSelected ? "text-zinc-900" : "text-zinc-700"
+                            }`}
                           >
                             {option.title}
                           </span>
                         </div>
                         <div
-                          className={`transition-transform duration-300 ${isOpened ? "rotate-180" : ""}`}
+                          className={`transition-transform duration-300 ${
+                            isOpened ? "rotate-180" : ""
+                          }`}
                         >
                           <ChevronDown
                             size={20}
@@ -808,7 +844,11 @@ export function ParticipantForm({
                         </div>
                       </button>
                       <div
-                        className={`transition-all duration-300 ease-in-out overflow-hidden px-4 ${isOpened ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+                        className={`transition-all duration-300 ease-in-out overflow-hidden px-4 ${
+                          isOpened
+                            ? "max-h-[2000px] opacity-100"
+                            : "max-h-0 opacity-0"
+                        }`}
                       >
                         <div className="px-5 pb-5 pt-0 flex flex-col gap-5">
                           <div className="h-px w-full bg-zinc-300" />
@@ -819,7 +859,11 @@ export function ParticipantForm({
                             type="button"
                             onClick={() => setOrderType(option.id)}
                             className={`w-full py-3.5 rounded-xl font-black uppercase text-[12px] tracking-widest transition-all
-                              ${isSelected ? "bg-[#00a63e] text-white" : "bg-green-50/40 border-2 border-[#00a63e] shadow-md shadow-green-900/5"}
+                              ${
+                                isSelected
+                                  ? "bg-[#00a63e] text-white"
+                                  : "bg-green-50/40 border-2 border-[#00a63e] shadow-md shadow-green-900/5"
+                              }
                             `}
                           >
                             {isSelected ? "Пакет обрано" : "Обрати цей пакет"}
@@ -861,7 +905,11 @@ export function ParticipantForm({
                     </svg>
                   </div>
                   <span
-                    className={`text-[11px] font-black uppercase tracking-widest ${showValidation && phone.length < 10 ? "text-red-700" : "text-zinc-600"}`}
+                    className={`text-[11px] font-black uppercase tracking-widest ${
+                      showValidation && phone.length < 10
+                        ? "text-red-700"
+                        : "text-zinc-600"
+                    }`}
                   >
                     Номер телефону{" "}
                     <span className="text-red-500 text-xl ml-1 leading-none inline-block transform translate-y-1">

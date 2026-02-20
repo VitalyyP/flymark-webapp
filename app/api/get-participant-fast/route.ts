@@ -8,13 +8,13 @@ type ResultItem = {
   dancer1Name: string;
   dancer2Name: string;
   program: string;
+  city?: string;
 };
 
 type Query = {
   event: string;
   id: string;
   name?: string;
-  sectionListId?: string;
 };
 
 function normalizeText(s: string): string {
@@ -39,7 +39,6 @@ function getQuery(url: string): Query | null {
   const event = normalizeText(searchParams.get("event") ?? "");
   const id = normalizeText(searchParams.get("id") ?? "");
   const name = normalizeText(searchParams.get("name") ?? "");
-  const sectionListId = normalizeText(searchParams.get("sectionListId") ?? "");
 
   if (!event || !id) return null;
 
@@ -47,7 +46,6 @@ function getQuery(url: string): Query | null {
     event,
     id,
     name: name || undefined,
-    sectionListId: sectionListId || undefined
   };
 }
 
@@ -82,7 +80,7 @@ function parseCategoriesResponse(data: unknown): FlymarkCategory[] {
     out.push({
       CategoryName,
       SectionId,
-      ResultProgramName
+      ResultProgramName,
     });
   }
 
@@ -124,13 +122,82 @@ async function fetchJson(
     method: "GET",
     headers: {
       accept: "application/json",
-      "accept-language": "uk-UA,uk;q=0.9,en;q=0.8"
+      "accept-language": "uk-UA,uk;q=0.9,en;q=0.8",
     },
-    cache: "no-store"
+    cache: "no-store",
   });
 
   const data: unknown = await res.json().catch(() => ({}));
   return { ok: res.ok, status: res.status, data };
+}
+
+type FlymarkDancer = {
+  FirstName: string;
+  LastName: string;
+  City: string;
+  Id: number;
+};
+
+function isFlymarkDancer(v: unknown): v is FlymarkDancer {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v["FirstName"] === "string" &&
+    typeof v["LastName"] === "string" &&
+    typeof v["City"] === "string" &&
+    typeof v["Id"] === "number"
+  );
+}
+
+const dancersCache = new Map<
+  string,
+  { fetchedAt: number; byId: Map<string, string> }
+>();
+
+const DANCERS_TTL_MS = 10 * 60 * 1000; // 10 хв
+
+async function getCityFromDancers(
+  eventId: string,
+  dancerId: string
+): Promise<string> {
+  const now = Date.now();
+  const cached = dancersCache.get(eventId);
+
+  if (cached && now - cached.fetchedAt < DANCERS_TTL_MS) {
+    return cached.byId.get(String(dancerId)) ?? "";
+  }
+
+  const url = `https://flymark.dance/api/v2/competition-stream/${encodeURIComponent(
+    eventId
+  )}/dancers`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      if (cached) return cached.byId.get(String(dancerId)) ?? "";
+      return "";
+    }
+
+    const data: unknown = await res.json();
+    const arr: unknown[] = Array.isArray(data) ? data : [];
+
+    const byId = new Map<string, string>();
+    for (const item of arr) {
+      if (!isFlymarkDancer(item)) continue;
+      byId.set(String(item.Id), item.City.trim());
+    }
+
+    dancersCache.set(eventId, { fetchedAt: now, byId });
+
+    return byId.get(String(dancerId)) ?? "";
+  } catch {
+    if (cached) return cached.byId.get(String(dancerId)) ?? "";
+    return "";
+  }
 }
 
 export async function GET(request: Request) {
@@ -142,6 +209,7 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
+    const cityPromise = getCityFromDancers(q.event, q.id);
 
     const categoriesUrl = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
       q.event
@@ -163,17 +231,13 @@ export async function GET(request: Request) {
     }
 
     const inferredSectionListId =
-      q.sectionListId ??
-      (categories[0].SectionId !== null
-        ? String(categories[0].SectionId)
-        : "0");
+      categories[0].SectionId !== null ? String(categories[0].SectionId) : "0";
 
     const sectionsUrl = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
       q.event
     )}/${encodeURIComponent(inferredSectionListId)}`;
 
     const secsRes = await fetchJson(sectionsUrl);
-
     const sections = secsRes.ok ? parseSectionsResponse(secsRes.data) : [];
 
     const sectionNameById = new Map<number, string>();
@@ -181,6 +245,8 @@ export async function GET(request: Request) {
 
     const dancer1Name = q.name ?? "";
     const dancer2Name = "";
+
+    const city = await cityPromise;
 
     const results: ResultItem[] = categories.map((c) => {
       const time =
@@ -191,7 +257,8 @@ export async function GET(request: Request) {
         time,
         dancer1Name,
         dancer2Name,
-        program: c.ResultProgramName
+        program: c.ResultProgramName,
+        city: city,
       };
     });
 

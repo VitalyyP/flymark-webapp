@@ -54,8 +54,8 @@ export async function POST(req: Request) {
           details: {
             hasEventId: Boolean(eventId),
             hasName: Boolean(dancerName),
-            itemsIsArray: Array.isArray(itemsRaw)
-          }
+            itemsIsArray: Array.isArray(itemsRaw),
+          },
         },
         { status: 400 }
       );
@@ -75,6 +75,10 @@ export async function POST(req: Request) {
     const regNumber = toTrimmedString(body.regNumber ?? body.RegNumber);
     const orderType = toTrimmedString(body.orderType ?? body.OrderType);
     const phone = toTrimmedString(body.phone ?? body.Phone);
+    const club = toTrimmedString(
+      body.club ?? body.Club ?? body.dancingClub ?? body.DancingClub
+    );
+    const city = toTrimmedString(body.city ?? body.City);
 
     const rows: RowData[] = items.map((item) => ({
       DancerName: dancerName,
@@ -83,13 +87,15 @@ export async function POST(req: Request) {
       Time: item.time,
       RegNumber: regNumber,
       OrderType: orderType,
-      Phone: phone
+      Phone: phone,
+      DancingClub: club,
+      City: city,
     }));
 
     await saveRowsToSheet(rows, {
       sheetName: `${eventId}/B`,
       clearBeforeWrite: false,
-      title: eventName || undefined
+      title: eventName || undefined,
     });
 
     return NextResponse.json({ success: true, written: rows.length });
