@@ -199,7 +199,7 @@ export default function PartsClient() {
         <div className="flex flex-col items-center gap-5 pt-4">
           {coverUrl && (
             <div className="relative">
-              <div className="w-32 h-32 rounded-[22px] overflow-hidden border-4 border-white shadow-md">
+              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md">
                 <Image
                   src={coverUrl}
                   alt={eventName}
