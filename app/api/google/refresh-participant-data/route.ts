@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
+import { normalizeTime } from "@/utils/normalizeTime";
 
 export const runtime = "nodejs";
 
@@ -52,12 +53,12 @@ async function getSheetsClient() {
 
   const auth = new google.auth.GoogleAuth({
     credentials: { client_email: clientEmail, private_key: privateKey },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
   return {
     sheets: google.sheets({ version: "v4", auth }),
-    spreadsheetId
+    spreadsheetId,
   };
 }
 
@@ -127,9 +128,9 @@ async function fetchJson(url: string) {
     method: "GET",
     headers: {
       accept: "application/json",
-      "accept-language": "uk-UA,uk;q=0.9,en;q=0.8"
+      "accept-language": "uk-UA,uk;q=0.9,en;q=0.8",
     },
-    cache: "no-store"
+    cache: "no-store",
   });
   const data = await res.json().catch(() => ({}));
   return { ok: res.ok, status: res.status, data };
@@ -239,7 +240,7 @@ export async function POST(req: Request) {
 
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A:Z`
+      range: `${sheetName}!A:Z`,
     });
 
     const rows = (resp.data.values ?? []) as SheetRow[];
@@ -302,7 +303,9 @@ export async function POST(req: Request) {
       return m;
     }
 
-    const updates: Array<{ range: string; values: string[][] }> = [];
+    const updatesRaw: Array<{ range: string; values: string[][] }> = [];
+    const updatesTime: Array<{ range: string; values: string[][] }> = [];
+
     const errors: Array<{ row: number; name: string; reason: string }> = [];
     let tried = 0;
 
@@ -334,66 +337,74 @@ export async function POST(req: Request) {
         errors.push({
           row: sheetRow,
           name,
-          reason: "No matching category/program in Flymark"
+          reason: "No matching category/program in Flymark",
         });
         continue;
       }
 
-      let newTime = "";
+      let newTimeRaw = "";
       if (best.SectionId !== null) {
         const sectionListId = String(best.SectionId);
         const map = await getSectionNameById(sectionListId);
-        newTime = map.get(best.SectionId) ?? "";
+        newTimeRaw = map.get(best.SectionId) ?? "";
       }
 
+      const newTime = normalizeTime(newTimeRaw);
       const newCat = best.CategoryName;
       const newProg = best.ResultProgramName;
 
       const oldCat = toStr(row[idxCat]);
       const oldProg = toStr(row[idxProg]);
-      const oldTime = toStr(row[idxTime]);
+      const oldTime = normalizeTime(row[idxTime]);
 
       const needsCat = newCat && oldCat !== newCat;
       const needsProg = newProg && oldProg !== newProg;
-      const needsTime = newTime && oldTime !== newTime;
+      const needsTime = newTime.length > 0 && oldTime !== newTime;
 
       if (!needsCat && !needsProg && !needsTime) continue;
 
       if (needsCat) {
-        updates.push({
+        updatesRaw.push({
           range: `${sheetName}!${colCat}${sheetRow}`,
-          values: [[newCat]]
+          values: [[newCat]],
         });
       }
 
       if (needsProg) {
-        updates.push({
+        updatesRaw.push({
           range: `${sheetName}!${colProg}${sheetRow}`,
-          values: [[newProg]]
+          values: [[newProg]],
         });
       }
 
       if (needsTime) {
-        updates.push({
+        updatesTime.push({
           range: `${sheetName}!${colTime}${sheetRow}`,
-          values: [[newTime]]
+          values: [[newTime]],
         });
       }
     }
 
-    if (updates.length) {
+    if (updatesRaw.length) {
       await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
-        requestBody: { valueInputOption: "RAW", data: updates }
+        requestBody: { valueInputOption: "RAW", data: updatesRaw },
+      });
+    }
+
+    if (updatesTime.length) {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: { valueInputOption: "USER_ENTERED", data: updatesTime },
       });
     }
 
     const body: ApiOk = {
       ok: true,
-      updated: updates.length,
+      updated: updatesRaw.length + updatesTime.length,
       tried,
       checked: rows.length - 3,
-      errors: errors.length ? errors : undefined
+      errors: errors.length ? errors : undefined,
     };
 
     return NextResponse.json(body, { status: 200 });
