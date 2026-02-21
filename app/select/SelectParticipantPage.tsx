@@ -291,7 +291,7 @@ export default function SelectParticipantPage() {
             </h2>
           </div>
 
-          <div className="relative w-40 h-40 md:w-40 md:h-40 rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
+          <div className="relative w-40 h-40 md:w-40 md:h-40 rounded-[22px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
             {showCover ? (
               <Image
                 src={coverUrl}
