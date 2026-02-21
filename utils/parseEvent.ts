@@ -1,4 +1,5 @@
 import axios from "axios";
+import { normalizeTime } from "./normalizeTime";
 
 export type Dancer = {
   Id: number;
@@ -126,7 +127,9 @@ export async function parseEvent(eventId: number): Promise<{
         if (!matchedEntry) continue;
 
         const sectionIdString = matchedEntry[0];
-        const sectionTime = sectionMap.get(Number(sectionIdString)) ?? "";
+        const sectionTimeRaw = sectionMap.get(Number(sectionIdString)) ?? "";
+
+        const sectionTime = normalizeTime(sectionTimeRaw);
 
         rows.push({
           SectionTime: sectionTime,
