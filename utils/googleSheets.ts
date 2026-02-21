@@ -54,45 +54,68 @@ async function getSheetsClient(
   return google.sheets({ version: "v4", auth });
 }
 
-async function sheetExists(
+async function getSheetMeta(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string
-): Promise<boolean> {
+): Promise<{ exists: boolean; sheetId: number | null }> {
   const spreadsheet = await sheets.spreadsheets.get({
     spreadsheetId,
-    fields: "sheets.properties.title",
+    fields: "sheets(properties(sheetId,title))",
   });
 
-  return (
-    spreadsheet.data.sheets?.some(
-      (sheet) => sheet.properties?.title === sheetName
-    ) ?? false
-  );
+  const found =
+    spreadsheet.data.sheets?.find((s) => s.properties?.title === sheetName) ??
+    null;
+
+  const sheetId =
+    typeof found?.properties?.sheetId === "number"
+      ? found.properties.sheetId
+      : null;
+
+  return { exists: Boolean(found), sheetId };
 }
 
 async function ensureSheetExists(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string
-): Promise<{ created: boolean }> {
-  const exists = await sheetExists(sheets, spreadsheetId, sheetName);
-  if (exists) return { created: false };
+): Promise<{ created: boolean; sheetId: number }> {
+  const meta = await getSheetMeta(sheets, spreadsheetId, sheetName);
+  if (meta.exists && meta.sheetId !== null) {
+    return { created: false, sheetId: meta.sheetId };
+  }
 
   try {
-    await sheets.spreadsheets.batchUpdate({
+    const resp = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
         requests: [{ addSheet: { properties: { title: sheetName } } }],
       },
     });
-    return { created: true };
+
+    const reply = resp.data.replies?.[0]?.addSheet?.properties;
+    const sheetId = reply?.sheetId;
+
+    if (typeof sheetId !== "number") {
+      const meta2 = await getSheetMeta(sheets, spreadsheetId, sheetName);
+      if (meta2.sheetId === null) {
+        throw new Error("Failed to resolve created sheetId");
+      }
+      return { created: true, sheetId: meta2.sheetId };
+    }
+
+    return { created: true, sheetId };
   } catch (error) {
     if (
       error instanceof Error &&
       error.message.toLowerCase().includes("already exists")
     ) {
-      return { created: false };
+      const meta2 = await getSheetMeta(sheets, spreadsheetId, sheetName);
+      if (meta2.sheetId === null) {
+        throw new Error("Sheet exists but sheetId not found");
+      }
+      return { created: false, sheetId: meta2.sheetId };
     }
     throw error;
   }
@@ -184,6 +207,50 @@ async function writeCanonicalLayout(
   });
 }
 
+async function setupCanonicalSheetLayout(params: {
+  sheets: sheets_v4.Sheets;
+  spreadsheetId: string;
+  sheetId: number;
+}) {
+  const { sheets, spreadsheetId, sheetId } = params;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          updateSheetProperties: {
+            properties: {
+              sheetId,
+              gridProperties: {
+                frozenRowCount: 3,
+              },
+            },
+            fields: "gridProperties.frozenRowCount",
+          },
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startRowIndex: 2,
+              endRowIndex: 3,
+              startColumnIndex: 0,
+              endColumnIndex: 26,
+            },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { bold: true },
+              },
+            },
+            fields: "userEnteredFormat.textFormat.bold",
+          },
+        },
+      ],
+    },
+  });
+}
+
 export async function readSheetValues(options: ReadOptions = {}) {
   const spreadsheetId = getSpreadsheetIdOrThrow(options.spreadsheetId);
   const sheetName = options.sheetName ?? "Sheet1";
@@ -220,7 +287,11 @@ export async function saveRowsToSheet(
   const { headers, values } = toValuesWithHeaders(rows);
   if (headers.length === 0) return { written: 0, appended: 0 };
 
-  const { created } = await ensureSheetExists(sheets, spreadsheetId, sheetName);
+  const { created, sheetId } = await ensureSheetExists(
+    sheets,
+    spreadsheetId,
+    sheetName
+  );
 
   if (clearBeforeWrite) {
     await sheets.spreadsheets.values.clear({
@@ -237,6 +308,8 @@ export async function saveRowsToSheet(
       values
     );
 
+    await setupCanonicalSheetLayout({ sheets, spreadsheetId, sheetId });
+
     return { cleared: true, written: values.length };
   }
 
@@ -249,6 +322,8 @@ export async function saveRowsToSheet(
       title,
       values
     );
+
+    await setupCanonicalSheetLayout({ sheets, spreadsheetId, sheetId });
 
     return { created: true, appended: values.length };
   }
