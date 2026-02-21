@@ -57,7 +57,7 @@ async function ensureSheetExists(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string
-): Promise<{ created: boolean }> {
+): Promise<void> {
   const spreadsheet = await sheets.spreadsheets.get({
     spreadsheetId,
     fields: "sheets.properties.title",
@@ -67,7 +67,7 @@ async function ensureSheetExists(
     spreadsheet.data.sheets?.some((s) => s.properties?.title === sheetName) ??
     false;
 
-  if (exists) return { created: false };
+  if (exists) return;
 
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -75,18 +75,27 @@ async function ensureSheetExists(
       requests: [{ addSheet: { properties: { title: sheetName } } }],
     },
   });
-
-  return { created: true };
 }
 
-async function writeVisibleEventsAtomic(
+async function clearWholeSheet(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetName: string
+): Promise<void> {
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: `${sheetName}!A:Z`,
+  });
+}
+
+async function writeWholeSheet(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string,
   ids: string[]
-) {
+): Promise<void> {
   const values: (string | number | boolean)[][] = [
-    [""], // A1 title (empty)
+    [""], // A1 spacer
     [""], // A2 spacer
     ["CompetitionId"], // A3 header
     ...ids.map((id) => [id]), // A4+
@@ -107,20 +116,25 @@ export async function GET() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${SHEET_NAME}!A:A`,
+      range: `${SHEET_NAME}!A4:A`,
     });
 
     const rows = res.data.values ?? [];
 
     const ids: string[] = rows
-      .slice(3)
       .map((r) => normalizeId(r?.[0]))
       .filter((v) => v.length > 0 && v !== "CompetitionId");
 
-    return NextResponse.json({ ids });
+    return NextResponse.json(
+      { ids },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     console.error("GET /api/visible-events error:", error);
-    return NextResponse.json({ ids: [] }, { status: 200 });
+    return NextResponse.json(
+      { ids: [] },
+      { status: 200, headers: { "Cache-Control": "no-store" } }
+    );
   }
 }
 
@@ -131,7 +145,7 @@ export async function PUT(req: Request) {
     if (!isVisibleEventsPayload(body)) {
       return NextResponse.json(
         { ok: false, error: "Invalid payload" },
-        { status: 400 }
+        { status: 400, headers: { "Cache-Control": "no-store" } }
       );
     }
 
@@ -144,11 +158,18 @@ export async function PUT(req: Request) {
 
     await ensureSheetExists(sheets, spreadsheetId, SHEET_NAME);
 
-    await writeVisibleEventsAtomic(sheets, spreadsheetId, SHEET_NAME, ids);
+    await clearWholeSheet(sheets, spreadsheetId, SHEET_NAME);
+    await writeWholeSheet(sheets, spreadsheetId, SHEET_NAME, ids);
 
-    return NextResponse.json({ ok: true, ids });
+    return NextResponse.json(
+      { ok: true, ids },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     console.error("PUT /api/visible-events error:", error);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Internal error" },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
+    );
   }
 }
