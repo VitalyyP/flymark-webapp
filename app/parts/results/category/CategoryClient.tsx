@@ -13,6 +13,11 @@ import {
   toggleCrossedKey,
 } from "@/utils/crossedStorage";
 
+import {
+  groupParticipantsByProgramForDisplay,
+  type DisplayItem,
+} from "@/utils/groupParticipantsByProgramForDisplay";
+
 type Participant = {
   regNumber: string;
   orderType: string;
@@ -50,23 +55,8 @@ function CategoryTable({
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
-  const grouped = useMemo(() => {
-    const result: Record<string, Participant[]> = {};
-
-    for (const p of participants) {
-      const prog = (p.program ?? "").trim() || "Невідома";
-      (result[prog] ??= []).push(p);
-    }
-
-    for (const prog of Object.keys(result)) {
-      result[prog].sort((a, b) =>
-        (a.regNumber ?? "").localeCompare(b.regNumber ?? "", "uk", {
-          numeric: true,
-        })
-      );
-    }
-
-    return result;
+  const grouped = useMemo<Record<string, DisplayItem[]>>(() => {
+    return groupParticipantsByProgramForDisplay(participants);
   }, [participants]);
 
   const programs = useMemo(
@@ -117,13 +107,10 @@ function CategoryTable({
 
                 <td className="py-6 px-3 align-top">
                   <div className="flex flex-wrap gap-x-3 gap-y-4">
-                    {grouped[prog].map((p, idx) => {
-                      const num = (p.regNumber ?? "").trim();
+                    {(grouped[prog] ?? []).map((item, idx) => {
+                      const num = item.regNumber;
                       const key = makeCrossKey(categoryParam, prog, num, idx);
                       const crossed = crossedSet.has(key);
-
-                      const isPremium =
-                        (p.orderType ?? "").trim().toLowerCase() === "premium";
 
                       return (
                         <span
@@ -142,13 +129,17 @@ function CategoryTable({
                                   ? "line-through opacity-30"
                                   : "opacity-100"
                               }
-                              ${isPremium ? "text-red-600" : "text-zinc-800"}
+                              ${
+                                item.isPremium
+                                  ? "text-red-600"
+                                  : "text-zinc-800"
+                              }
                             `}
                           >
                             {num}
                           </span>
 
-                          {idx < grouped[prog].length - 1 && (
+                          {idx < (grouped[prog]?.length ?? 0) - 1 && (
                             <span className="text-zinc-400 ml-1 font-light">
                               ,
                             </span>
@@ -205,9 +196,11 @@ export default function CategoryClient() {
       { signal: ac.signal }
     )
       .then((res) => res.json())
-      .then((data) => {
-        const list: Participant[] = Array.isArray(data?.participants)
-          ? (data.participants as Participant[])
+      .then((data: unknown) => {
+        const obj = (data ?? {}) as { participants?: unknown };
+
+        const list: Participant[] = Array.isArray(obj.participants)
+          ? (obj.participants as Participant[])
           : [];
 
         const filtered = list.filter(
