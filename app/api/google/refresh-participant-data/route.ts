@@ -6,17 +6,7 @@ export const runtime = "nodejs";
 
 type SheetRow = (string | number | boolean | null | undefined)[];
 
-type ApiOk = {
-  ok: true;
-  updated: number;
-  tried: number;
-  checked: number;
-  errors?: Array<{ row: number; name: string; reason: string }>;
-};
-
-type ApiErr = { ok: false; error: string };
-
-function normalizePrivateKey(key?: string) {
+function normalizePrivateKey(key?: string): string | undefined {
   if (!key) return undefined;
   return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
 }
@@ -27,8 +17,8 @@ function toStr(v: unknown): string {
   return "";
 }
 
-function clean(s: string) {
-  return s.trim().replace(/\s+/g, " ");
+function normKey(s: string) {
+  return s.trim().normalize("NFC").toLowerCase().replace(/\s+/g, " ");
 }
 
 function colToA1(colIndex0: number) {
@@ -52,10 +42,7 @@ async function getSheetsClient() {
   }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
+    credentials: { client_email: clientEmail, private_key: privateKey },
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
@@ -65,25 +52,23 @@ async function getSheetsClient() {
   };
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function readString(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+function readNumber(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
 type FlyCat = {
   CategoryName: string;
   SectionId: number | null;
   ResultProgramName: string;
 };
-
-type FlySection = { Id: number; Name: string };
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function readString(v: unknown) {
-  return typeof v === "string" ? v : "";
-}
-
-function readNumber(v: unknown) {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
 
 function parseCats(data: unknown): FlyCat[] {
   if (!isRecord(data)) return [];
@@ -108,6 +93,8 @@ function parseCats(data: unknown): FlyCat[] {
   return out;
 }
 
+type FlySection = { Id: number; Name: string };
+
 function parseSections(data: unknown): FlySection[] {
   if (!isRecord(data)) return [];
   const raw = data["Sections"];
@@ -127,19 +114,71 @@ function parseSections(data: unknown): FlySection[] {
 }
 
 async function fetchJson(url: string) {
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Accept-Language": "uk-UA,uk;q=0.9,en;q=0.8",
+    },
+    cache: "no-store",
+  });
   const data = await res.json().catch(() => ({}));
   return { ok: res.ok, data };
 }
 
+type DancerIndexItem = { id: string; key: string; fullName: string };
+
+async function buildDancerIndex(eventId: string): Promise<DancerIndexItem[]> {
+  const base =
+    process.env.NEXT_PUBLIC_BASE_URL?.trim() || "http://localhost:3000";
+
+  const r = await fetch(
+    `${base}/api/participants-fast?eventId=${encodeURIComponent(eventId)}`,
+    { cache: "no-store" }
+  );
+  const j = await r.json().catch(() => ({}));
+
+  const out: DancerIndexItem[] = [];
+
+  if (Array.isArray(j?.dancers)) {
+    for (const d of j.dancers) {
+      const fullName = `${toStr(d.LastName)} ${toStr(d.FirstName)}`.trim();
+      const id = toStr(d.Id);
+      if (!fullName || !id) continue;
+
+      out.push({
+        id,
+        key: fullName.toLowerCase().normalize("NFC"),
+        fullName,
+      });
+    }
+  }
+
+  const uniq = new Map<string, DancerIndexItem>();
+  for (const x of out) if (!uniq.has(x.key)) uniq.set(x.key, x);
+  return Array.from(uniq.values());
+}
+
+function cleanForMatch(s: string) {
+  let str = s.trim();
+  if (
+    (str.startsWith("'") && str.endsWith("'")) ||
+    (str.startsWith('"') && str.endsWith('"'))
+  ) {
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+}
+
 function pickStrictFlyCat(rowCat: string, rowProg: string, cats: FlyCat[]) {
-  const cat = clean(rowCat);
-  const prog = clean(rowProg);
+  const cat = cleanForMatch(rowCat);
+  const prog = cleanForMatch(rowProg);
 
   return (
     cats.find(
       (c) =>
-        clean(c.CategoryName) === cat && clean(c.ResultProgramName) === prog
+        cleanForMatch(c.CategoryName) === cat &&
+        cleanForMatch(c.ResultProgramName) === prog
     ) ?? null
   );
 }
@@ -148,48 +187,36 @@ export async function POST(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = toStr(searchParams.get("eventId"));
-
-    if (!eventId) {
-      const body: ApiErr = { ok: false, error: "Missing eventId" };
-      return NextResponse.json(body, { status: 400 });
-    }
+    if (!eventId)
+      return NextResponse.json(
+        { ok: false, error: "Missing eventId" },
+        { status: 400 }
+      );
 
     const sheetName = `${eventId}/B`;
-
     const { sheets, spreadsheetId } = await getSheetsClient();
 
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range: `${sheetName}!A:Z`,
     });
-
     const rows = (resp.data.values ?? []) as SheetRow[];
-
-    if (rows.length < 3) {
+    if (rows.length < 3)
       return NextResponse.json({ ok: true, updated: 0, tried: 0, checked: 0 });
-    }
 
     const headers = (rows[2] ?? []).map((h) =>
       typeof h === "string" ? h.trim() : ""
     );
-
     const idxName = headers.indexOf("DancerName");
     const idxCat = headers.indexOf("Category");
     const idxProg = headers.indexOf("Program");
     const idxTime = headers.indexOf("Time");
 
-    if ([idxName, idxCat, idxProg, idxTime].includes(-1)) {
-      return NextResponse.json(
-        { ok: false, error: "Required columns missing" },
-        { status: 500 }
-      );
-    }
-
     const colTime = colToA1(idxTime);
 
-    const updatesTime: Array<{ range: string; values: string[][] }> = [];
-    const errors: ApiOk["errors"] = [];
-
+    const dancerIndex = await buildDancerIndex(eventId);
+    const updates: Array<{ range: string; values: string[][] }> = [];
+    const errors: Array<{ row: number; name: string; reason: string }> = [];
     let tried = 0;
 
     for (let i = 3; i < rows.length; i++) {
@@ -198,76 +225,85 @@ export async function POST(req: Request) {
 
       const name = toStr(row[idxName]);
       if (!name) continue;
-
       tried++;
+
+      const found = dancerIndex.find((d) => d.key === normKey(name));
+      if (!found) {
+        errors.push({ row: sheetRow, name, reason: "Dancer not found" });
+        continue;
+      }
+      const dancerId = found.id;
 
       const rowCat = toStr(row[idxCat]);
       const rowProg = toStr(row[idxProg]);
 
-      const r = await fetchJson(
-        `https://flymark.dance/api/competitionStream/${eventId}/0`
-      );
+      const url = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
+        eventId
+      )}/0?dancerId=${encodeURIComponent(dancerId)}`;
+      const catsResp = await fetchJson(url);
+      const cats = parseCats(catsResp.data);
 
-      const cats = parseCats(r.data);
+      if (!cats.length) continue;
 
-      const best = pickStrictFlyCat(rowCat, rowProg, cats);
+      const matchedCat = pickStrictFlyCat(rowCat, rowProg, cats);
 
-      if (!best) {
-        errors?.push({
-          row: sheetRow,
-          name,
-          reason: "Category + Program mismatch (strict only)",
-        });
+      if (!matchedCat) {
+        const catMatch = cats.some(
+          (c) => cleanForMatch(c.CategoryName) === cleanForMatch(rowCat)
+        );
+        const progMatch = cats.some(
+          (c) => cleanForMatch(c.ResultProgramName) === cleanForMatch(rowProg)
+        );
+
+        let reason = "";
+        if (!catMatch && !progMatch)
+          reason = `Category mismatches ('${rowCat}') and Program mismatches ('${rowProg}')`;
+        else if (!catMatch) reason = `Category mismatches ('${rowCat}')`;
+        else if (!progMatch) reason = `Program mismatches ('${rowProg}')`;
+        else reason = `Category + Program mismatch (strict)`;
+
+        errors.push({ row: sheetRow, name, reason });
         continue;
       }
 
       let newTime = "";
-
-      if (best.SectionId !== null) {
-        const r2 = await fetchJson(
-          `https://flymark.dance/api/competitionStream/${eventId}/${best.SectionId}`
+      if (matchedCat.SectionId !== null) {
+        const rSec = await fetchJson(
+          `https://flymark.dance/api/competitionStream/${encodeURIComponent(
+            eventId
+          )}/${matchedCat.SectionId}`
         );
-
-        const secs = parseSections(r2.data);
-
-        newTime = normalizeTime(
-          secs.find((s) => s.Id === best.SectionId)?.Name ?? ""
-        );
+        const secs = parseSections(rSec.data);
+        newTime = secs.find((s) => s.Id === matchedCat.SectionId)?.Name ?? "";
       }
 
       const oldTime = normalizeTime(row[idxTime]);
+      newTime = normalizeTime(newTime);
 
-      if (!newTime || newTime === oldTime) continue;
-
-      updatesTime.push({
-        range: `${sheetName}!${colTime}${sheetRow}`,
-        values: [[newTime]],
-      });
+      if (oldTime !== newTime && newTime) {
+        updates.push({
+          range: `${sheetName}!${colTime}${sheetRow}`,
+          values: [[newTime]],
+        });
+      }
     }
 
-    if (updatesTime.length) {
+    if (updates.length) {
       await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
-        requestBody: {
-          valueInputOption: "USER_ENTERED",
-          data: updatesTime,
-        },
+        requestBody: { valueInputOption: "USER_ENTERED", data: updates },
       });
     }
 
-    const body: ApiOk = {
+    return NextResponse.json({
       ok: true,
-      updated: updatesTime.length,
+      updated: updates.length,
       tried,
       checked: rows.length - 3,
-      errors: errors?.length ? errors : undefined,
-    };
-
-    return NextResponse.json(body);
+      errors: errors.length ? errors : undefined,
+    });
   } catch (e) {
-    return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
-      { status: 500 }
-    );
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
