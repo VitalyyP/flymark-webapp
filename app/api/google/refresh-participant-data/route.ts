@@ -16,7 +16,7 @@ type ApiOk = {
 
 type ApiErr = { ok: false; error: string };
 
-function normalizePrivateKey(key?: string): string | undefined {
+function normalizePrivateKey(key?: string) {
   if (!key) return undefined;
   return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
 }
@@ -27,8 +27,8 @@ function toStr(v: unknown): string {
   return "";
 }
 
-function normKey(s: string) {
-  return s.trim().normalize("NFC").toLowerCase().replace(/\s+/g, " ");
+function clean(s: string) {
+  return s.trim().replace(/\s+/g, " ");
 }
 
 function colToA1(colIndex0: number) {
@@ -52,7 +52,10 @@ async function getSheetsClient() {
   }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: { client_email: clientEmail, private_key: privateKey },
+    credentials: {
+      client_email: clientEmail,
+      private_key: privateKey,
+    },
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
@@ -62,23 +65,25 @@ async function getSheetsClient() {
   };
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function readString(v: unknown): string {
-  return typeof v === "string" ? v : "";
-}
-
-function readNumber(v: unknown): number | null {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-
 type FlyCat = {
   CategoryName: string;
   SectionId: number | null;
   ResultProgramName: string;
 };
+
+type FlySection = { Id: number; Name: string };
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function readString(v: unknown) {
+  return typeof v === "string" ? v : "";
+}
+
+function readNumber(v: unknown) {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
 
 function parseCats(data: unknown): FlyCat[] {
   if (!isRecord(data)) return [];
@@ -103,8 +108,6 @@ function parseCats(data: unknown): FlyCat[] {
   return out;
 }
 
-type FlySection = { Id: number; Name: string };
-
 function parseSections(data: unknown): FlySection[] {
   if (!isRecord(data)) return [];
   const raw = data["Sections"];
@@ -124,104 +127,21 @@ function parseSections(data: unknown): FlySection[] {
 }
 
 async function fetchJson(url: string) {
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      "accept-language": "uk-UA,uk;q=0.9,en;q=0.8",
-    },
-    cache: "no-store",
-  });
+  const res = await fetch(url, { cache: "no-store" });
   const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, data };
+  return { ok: res.ok, data };
 }
 
-type DancerIndexItem = { id: string; key: string; fullName: string };
+function pickStrictFlyCat(rowCat: string, rowProg: string, cats: FlyCat[]) {
+  const cat = clean(rowCat);
+  const prog = clean(rowProg);
 
-async function buildDancerIndex(eventId: string): Promise<DancerIndexItem[]> {
-  const base =
-    process.env.NEXT_PUBLIC_BASE_URL?.trim() || "http://localhost:3000";
-
-  const r = await fetch(
-    `${base}/api/participants-fast?eventId=${encodeURIComponent(eventId)}`,
-    { cache: "no-store" }
+  return (
+    cats.find(
+      (c) =>
+        clean(c.CategoryName) === cat && clean(c.ResultProgramName) === prog
+    ) ?? null
   );
-  const j = await r.json().catch(() => ({}));
-
-  const out: DancerIndexItem[] = [];
-
-  if (Array.isArray(j?.dancers)) {
-    for (const d of j.dancers) {
-      const fullName = `${toStr(d.LastName)} ${toStr(d.FirstName)}`.trim();
-      const id = toStr(d.Id);
-      if (!fullName || !id) continue;
-
-      out.push({ id, fullName, key: normKey(fullName) });
-    }
-  }
-
-  const uniq = new Map<string, DancerIndexItem>();
-  for (const x of out) if (!uniq.has(x.key)) uniq.set(x.key, x);
-  return Array.from(uniq.values());
-}
-
-function findDancerId(
-  name: string,
-  idx: DancerIndexItem[]
-): { id: string } | { error: string } {
-  const q = normKey(name);
-
-  const exact = idx.find((x) => x.key === q);
-  if (exact) return { id: exact.id };
-
-  const tokens = q.split(" ").filter(Boolean);
-  const matches = idx.filter((x) => tokens.every((t) => x.key.includes(t)));
-
-  if (matches.length === 1) return { id: matches[0].id };
-  if (matches.length === 0) return { error: "dancerId not found" };
-
-  return { error: `ambiguous dancer name (${matches.length})` };
-}
-
-function normLoose(s: string) {
-  return normKey(s)
-    .replace(/[()[\],.;:!?'"“”«»]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function scoreMatch(rowCat: string, rowProg: string, fly: FlyCat) {
-  const rP = normLoose(rowProg);
-  const fP = normLoose(fly.ResultProgramName);
-
-  const rC = normLoose(rowCat);
-  const fC = normLoose(fly.CategoryName);
-
-  let score = 0;
-
-  if (rP && fP && rP === fP) score += 10;
-  else if (rP && fP && (fP.includes(rP) || rP.includes(fP))) score += 6;
-
-  if (rC && fC && rC === fC) score += 5;
-  else if (rC && fC && (fC.includes(rC) || rC.includes(fC))) score += 2;
-
-  return score;
-}
-
-function pickBestFlyCat(rowCat: string, rowProg: string, cats: FlyCat[]) {
-  let best: FlyCat | null = null;
-  let bestScore = -1;
-
-  for (const c of cats) {
-    const s = scoreMatch(rowCat, rowProg, c);
-    if (s > bestScore) {
-      bestScore = s;
-      best = c;
-    }
-  }
-
-  if (!best || bestScore < 6) return null;
-  return best;
 }
 
 export async function POST(req: Request) {
@@ -244,9 +164,9 @@ export async function POST(req: Request) {
     });
 
     const rows = (resp.data.values ?? []) as SheetRow[];
+
     if (rows.length < 3) {
-      const body: ApiOk = { ok: true, updated: 0, tried: 0, checked: 0 };
-      return NextResponse.json(body, { status: 200 });
+      return NextResponse.json({ ok: true, updated: 0, tried: 0, checked: 0 });
     }
 
     const headers = (rows[2] ?? []).map((h) =>
@@ -255,58 +175,21 @@ export async function POST(req: Request) {
 
     const idxName = headers.indexOf("DancerName");
     const idxCat = headers.indexOf("Category");
-    const idxTime = headers.indexOf("Time");
     const idxProg = headers.indexOf("Program");
+    const idxTime = headers.indexOf("Time");
 
-    if (idxName === -1 || idxCat === -1 || idxTime === -1 || idxProg === -1) {
-      const body: ApiErr = { ok: false, error: "Required columns missing" };
-      return NextResponse.json(body, { status: 500 });
+    if ([idxName, idxCat, idxProg, idxTime].includes(-1)) {
+      return NextResponse.json(
+        { ok: false, error: "Required columns missing" },
+        { status: 500 }
+      );
     }
 
-    const colCat = colToA1(idxCat);
     const colTime = colToA1(idxTime);
-    const colProg = colToA1(idxProg);
 
-    const dancerIndex = await buildDancerIndex(eventId);
-
-    const catsByDancer = new Map<string, FlyCat[]>();
-    const sectionNameByIdCache = new Map<string, Map<number, string>>();
-
-    async function getCats(dancerId: string) {
-      if (catsByDancer.has(dancerId)) return catsByDancer.get(dancerId)!;
-
-      const url = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
-        eventId
-      )}/0?dancerId=${encodeURIComponent(dancerId)}`;
-
-      const r = await fetchJson(url);
-      const cats = r.ok ? parseCats(r.data) : [];
-      catsByDancer.set(dancerId, cats);
-      return cats;
-    }
-
-    async function getSectionNameById(sectionListId: string) {
-      const cached = sectionNameByIdCache.get(sectionListId);
-      if (cached) return cached;
-
-      const url = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
-        eventId
-      )}/${encodeURIComponent(sectionListId)}`;
-
-      const r = await fetchJson(url);
-      const secs = r.ok ? parseSections(r.data) : [];
-
-      const m = new Map<number, string>();
-      for (const s of secs) m.set(s.Id, s.Name);
-
-      sectionNameByIdCache.set(sectionListId, m);
-      return m;
-    }
-
-    const updatesRaw: Array<{ range: string; values: string[][] }> = [];
     const updatesTime: Array<{ range: string; values: string[][] }> = [];
+    const errors: ApiOk["errors"] = [];
 
-    const errors: Array<{ row: number; name: string; reason: string }> = [];
     let tried = 0;
 
     for (let i = 3; i < rows.length; i++) {
@@ -318,99 +201,73 @@ export async function POST(req: Request) {
 
       tried++;
 
-      const found = findDancerId(name, dancerIndex);
-      if ("error" in found) {
-        errors.push({ row: sheetRow, name, reason: found.error });
-        continue;
-      }
-
-      const dancerId = found.id;
-
       const rowCat = toStr(row[idxCat]);
       const rowProg = toStr(row[idxProg]);
 
-      const cats = await getCats(dancerId);
-      if (!cats.length) continue;
+      const r = await fetchJson(
+        `https://flymark.dance/api/competitionStream/${eventId}/0`
+      );
 
-      const best = pickBestFlyCat(rowCat, rowProg, cats);
+      const cats = parseCats(r.data);
+
+      const best = pickStrictFlyCat(rowCat, rowProg, cats);
+
       if (!best) {
-        errors.push({
+        errors?.push({
           row: sheetRow,
           name,
-          reason: "No matching category/program in Flymark",
+          reason: "Category + Program mismatch (strict only)",
         });
         continue;
       }
 
-      let newTimeRaw = "";
+      let newTime = "";
+
       if (best.SectionId !== null) {
-        const sectionListId = String(best.SectionId);
-        const map = await getSectionNameById(sectionListId);
-        newTimeRaw = map.get(best.SectionId) ?? "";
+        const r2 = await fetchJson(
+          `https://flymark.dance/api/competitionStream/${eventId}/${best.SectionId}`
+        );
+
+        const secs = parseSections(r2.data);
+
+        newTime = normalizeTime(
+          secs.find((s) => s.Id === best.SectionId)?.Name ?? ""
+        );
       }
 
-      const newTime = normalizeTime(newTimeRaw);
-      const newCat = best.CategoryName;
-      const newProg = best.ResultProgramName;
-
-      const oldCat = toStr(row[idxCat]);
-      const oldProg = toStr(row[idxProg]);
       const oldTime = normalizeTime(row[idxTime]);
 
-      const needsCat = newCat && oldCat !== newCat;
-      const needsProg = newProg && oldProg !== newProg;
-      const needsTime = newTime.length > 0 && oldTime !== newTime;
+      if (!newTime || newTime === oldTime) continue;
 
-      if (!needsCat && !needsProg && !needsTime) continue;
-
-      if (needsCat) {
-        updatesRaw.push({
-          range: `${sheetName}!${colCat}${sheetRow}`,
-          values: [[newCat]],
-        });
-      }
-
-      if (needsProg) {
-        updatesRaw.push({
-          range: `${sheetName}!${colProg}${sheetRow}`,
-          values: [[newProg]],
-        });
-      }
-
-      if (needsTime) {
-        updatesTime.push({
-          range: `${sheetName}!${colTime}${sheetRow}`,
-          values: [[newTime]],
-        });
-      }
-    }
-
-    if (updatesRaw.length) {
-      await sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId,
-        requestBody: { valueInputOption: "RAW", data: updatesRaw },
+      updatesTime.push({
+        range: `${sheetName}!${colTime}${sheetRow}`,
+        values: [[newTime]],
       });
     }
 
     if (updatesTime.length) {
       await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
-        requestBody: { valueInputOption: "USER_ENTERED", data: updatesTime },
+        requestBody: {
+          valueInputOption: "USER_ENTERED",
+          data: updatesTime,
+        },
       });
     }
 
     const body: ApiOk = {
       ok: true,
-      updated: updatesRaw.length + updatesTime.length,
+      updated: updatesTime.length,
       tried,
       checked: rows.length - 3,
-      errors: errors.length ? errors : undefined,
+      errors: errors?.length ? errors : undefined,
     };
 
-    return NextResponse.json(body, { status: 200 });
+    return NextResponse.json(body);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    const body: ApiErr = { ok: false, error: msg };
-    return NextResponse.json(body, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
+      { status: 500 }
+    );
   }
 }
