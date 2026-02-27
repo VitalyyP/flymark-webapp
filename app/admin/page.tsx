@@ -167,8 +167,8 @@ export default function HomePage() {
               typeof x === "string"
                 ? x.trim()
                 : typeof x === "number"
-                  ? String(x)
-                  : ""
+                ? String(x)
+                : ""
             )
             .filter(Boolean)
         : [];
@@ -408,7 +408,7 @@ export default function HomePage() {
       }));
 
       const refreshRes = await fetch(
-        `/api/google/refresh-participant-data?eventId=${encodeURIComponent(
+        `/api/google/refresh-participant-time?eventId=${encodeURIComponent(
           competitionId
         )}`,
         {
@@ -635,9 +635,9 @@ export default function HomePage() {
                                 {findingId === id
                                   ? ui?.statusText
                                   : ui?.foundCount !== null &&
-                                      ui?.foundCount !== undefined
-                                    ? `Оновлено: ${ui.foundCount}`
-                                    : "Оновити Google"}
+                                    ui?.foundCount !== undefined
+                                  ? `Оновлено: ${ui.foundCount}`
+                                  : "Оновити Google"}
                               </span>
                             </button>
                           </div>
