@@ -422,6 +422,7 @@ export default function SelectParticipantPage() {
             src="/ok-aphoto.png"
             alt="A Фото"
             fill
+            sizes="120px"
             className="object-contain"
           />
         </div>
