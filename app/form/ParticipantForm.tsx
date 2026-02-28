@@ -3,15 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { CustomCheckbox } from "@/components/CustomCheckbox";
-import {
-  User,
-  Award,
-  Clock,
-  Fingerprint,
-  Loader2,
-  LayoutList,
-  ChevronDown,
-} from "lucide-react";
+import { User, Award, Clock, Fingerprint, Loader2 } from "lucide-react";
 
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
@@ -80,21 +72,14 @@ export function ParticipantForm({
 }: Props) {
   const [regNumber, setRegNumber] = useState("");
   const [regNumberUnknown, setRegNumberUnknown] = useState(false);
-  const [orderType, setOrderType] = useState("");
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [lastSubmittedOrderType, setLastSubmittedOrderType] = useState<
-    "basic" | "premium" | ""
-  >("");
   const [loadingNumber, setLoadingNumber] = useState(true);
-
-  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const programRef = useRef<HTMLDivElement>(null);
   const regNumberRef = useRef<HTMLDivElement>(null);
-  const orderTypeRef = useRef<HTMLDivElement>(null);
   const phoneRef = useRef<HTMLDivElement>(null);
 
   const [showValidation, setShowValidation] = useState(false);
@@ -105,7 +90,6 @@ export function ParticipantForm({
     const errors = [
       { condition: selectedItems.length === 0, ref: programRef },
       { condition: !regNumber && !regNumberUnknown, ref: regNumberRef },
-      { condition: !orderType, ref: orderTypeRef },
       { condition: phone.replace(/\D/g, "").length < 10, ref: phoneRef },
     ];
 
@@ -186,91 +170,9 @@ export function ParticipantForm({
 
   const isPhoneValid = phone.replace(/\D/g, "").length === 12;
   const hasRegNumber = regNumberUnknown || !!regNumber.trim();
-  const hasRequiredFields = hasRegNumber && !!orderType && isPhoneValid;
+  const hasRequiredFields = hasRegNumber && isPhoneValid;
   const hasItems = selectedItems.length > 0;
   const canSubmit = hasRequiredFields && hasItems && !sending;
-
-  const orderOptions = [
-    {
-      id: "basic",
-      title: "📸 ВИБІР фото ЗА ЗРАЗКАМИ",
-      description: (
-        <div className="space-y-2">
-          <div className=" bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
-            <p className="text-blue-900 font-bold pb-2">Вартість:</p>
-            <ul className="list-disc ml-4 space-y-1">
-              <li>
-                Одне-три фото —{" "}
-                <strong className="text-gray-900">100.00 грн.</strong> за штуку
-              </li>
-              <li>
-                Чотири і більше —{" "}
-                <strong className="text-gray-900">90.00 грн.</strong> за штуку
-              </li>
-              <li>
-                Всі фото — від <strong className="text-gray-900">700.00</strong>{" "}
-                до <strong className="text-gray-900">1100.00 грн.</strong>
-              </li>
-            </ul>
-          </div>
-          <p className="mt-3">
-            😇{" "}
-            <span className="font-semibold text-green-700">
-              НІЯКИХ ПЕРЕДПЛАТ
-            </span>{" "}
-            — оплата після вибору фото!
-          </p>
-          <p className="text-sm text-gray-500 italic">
-            Посилання на хмару надійде на Viber/Telegram протягом 3–7 днів після
-            турніру.
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: "premium",
-      title: `🏆 Premium ПАКЕТ: ВСІ ФОТО вже ЗАВТРА`,
-      description: (
-        <div className="space-y-3">
-          <div className="bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
-            <p className="text-blue-900 font-bold">Вартість: 900.00 грн.</p>
-          </div>
-
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span>⚡</span>
-              <span>
-                Ви отримуєте всі оригінальні світлини (мінімум{" "}
-                <strong className="text-gray-900">27 шт.</strong>){" "}
-                <strong className="text-gray-900">ПРОТЯГОМ ДОБИ</strong> після
-                завершення турніру
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span>🔝</span>
-              <span>
-                Спортсмени з Premium-пакетом мають{" "}
-                <strong className="text-gray-900">пріоритет</strong> під час
-                зйомки перед іншими замовниками.
-              </span>
-            </li>
-          </ul>
-
-          <div className="bg-yellow-50 p-3 rounded-md text-gray-800 text-sm border border-yellow-200">
-            <p className="font-bold mb-1 underline">УМОВИ ОПЛАТИ:</p>
-            <p>
-              100% оплата здійснюється у день турніру після реєстрації та
-              повідомлення номера участі асистенту фотографа біля{" "}
-              <strong className="text-gray-900 underline">
-                зеленого рекламного банера А Фото
-              </strong>
-              !
-            </p>
-          </div>
-        </div>
-      ),
-    },
-  ];
 
   const { club, city } = (() => {
     const first = results[0];
@@ -327,7 +229,7 @@ export function ParticipantForm({
       city,
       items: selected,
       regNumber: regNumberUnknown ? "Не знаю" : regNumber,
-      orderType,
+      orderType: "basic",
       phone,
     };
 
@@ -340,14 +242,11 @@ export function ParticipantForm({
     setSending(false);
 
     if (response.ok) {
-      setLastSubmittedOrderType(orderType as "basic" | "premium");
       setSuccess(true);
       setRegNumber("");
       setRegNumberUnknown(false);
-      setOrderType("");
       setPhone("");
       setSelectedItems([]);
-      setOpenAccordion(null);
     }
   };
 
@@ -379,97 +278,22 @@ export function ParticipantForm({
               <span className="text-[#00a63e]">Запис виконано.</span>
             </h2>
 
-            {lastSubmittedOrderType === "basic" && (
-              <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
-                <div className="bg-white border-2 border-zinc-100 rounded-[22px] p-5 shadow-sm">
-                  <p>
-                    Ви обрали{" "}
-                    <span className="text-[#00a63e] font-black uppercase">
-                      {
-                        orderOptions.find(
-                          (o) => o.id === lastSubmittedOrderType
-                        )?.title
-                      }
-                    </span>
-                    .
-                  </p>
-                </div>
-
-                <div className="space-y-4 px-1">
-                  <p className="flex gap-3">
-                    <span>
-                      Після реєстрації бажано повідомити номер учасника
-                      асистенту фотографа біля зеленого банера «А Фото»
-                    </span>
-                  </p>
-
-                  <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
-                    <p className="font-black text-zinc-900 uppercase text-[11px] tracking-widest mb-1">
-                      💳 Оплата:
-                    </p>
-                    <p>
-                      Послуги для пакету{" "}
-                      <strong className="text-zinc-900">
-                        {
-                          orderOptions.find(
-                            (o) => o.id === lastSubmittedOrderType
-                          )?.title
-                        }
-                      </strong>{" "}
-                      здійснюється на картку після вибору фото.
-                    </p>
-                    <p className="flex gap-3 mt-2">
-                      <span>
-                        Зразки фото ви отримаєте протягом{" "}
-                        <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
-                          3–7 днів
-                        </span>{" "}
-                        після турніру на вказаний вами номер у Viber або
-                        Telegram.
-                      </span>
-                    </p>
-                  </div>
-                </div>
+            <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
+              <div className="bg-white border-2 font-semibold border-zinc-100 rounded-[22px] p-5 shadow-sm text-center">
+                <p>ПОБАЧИМОСЬ на ТУРНІРІ</p>
               </div>
-            )}
 
-            {lastSubmittedOrderType === "premium" && (
-              <div className="flex flex-col gap-5 text-[15px] leading-relaxed text-zinc-600">
-                <div className="bg-white border-2 border-zinc-100 rounded-[22px] p-5 shadow-sm">
-                  <p>
-                    Ви обрали{" "}
-                    <span className="text-[#00a63e] font-black uppercase">
-                      {
-                        orderOptions.find(
-                          (o) => o.id === lastSubmittedOrderType
-                        )?.title
-                      }
-                    </span>
-                    .
-                  </p>
-                </div>
-
-                <div className="bg-zinc-50 rounded-2xl p-5 border border-zinc-100">
-                  <p className="font-black text-zinc-900 uppercase text-[11px] tracking-widest mb-2 flex items-center gap-2">
-                    <span className="text-lg">💳</span> Оплата:
-                  </p>
-                  <p className="text-zinc-700 font-medium">
-                    Фотозйомка пакета{" "}
-                    <strong className="text-zinc-900">"PREMIUM"</strong>{" "}
-                    здійснюється за умови{" "}
-                    <span className="text-zinc-900 font-bold underline decoration-[#00a63e]/30">
-                      100% оплати
-                    </span>{" "}
-                    в день турніру.
-                  </p>
-                  <p className="text-zinc-700 font-medium mt-2">
-                    Після реєстрації просимо повідомити номер учасника і внести
-                    оплату асистенту фотографа біля зеленого банера «А Фото».
-                  </p>
-                  <p></p>
-                </div>
+              <div className="space-y-4 px-1">
+                <p className="flex gap-3">
+                  <span>
+                    Ви завжди можете перевірити або уточнити деталі замовлення у
+                    нашого асистента біля зеленого банера{" "}
+                    <strong className="text-zinc-900">«А Фото»</strong> прямо
+                    під час турніру!
+                  </span>
+                </p>
               </div>
-            )}
+            </div>
 
             <div className="py-2 text-center">
               <p className="text-zinc-400 text-[13px] mb-2 uppercase font-black tracking-widest">
@@ -713,7 +537,7 @@ export function ParticipantForm({
                     role="button"
                     tabIndex={0}
                     onClick={toggleRegNumberUnknown}
-                    className={`flex-none w-[115px] sm:w-[130px] flex items-center justify-center gap-2 px-2 sm:px-4 rounded-[22px] border-2 transition-all cursor-pointer select-none 
+                    className={`flex-none w-[115px] sm:w-[130px] flex items-center justify-center gap-2 px-2 sm:px-4 rounded-[22px] border-2 transition-all cursor-pointer select-none
                       ${
                         regNumberUnknown
                           ? "bg-white border-[#00a63e] shadow-sm shadow-green-900/10"
@@ -750,129 +574,6 @@ export function ParticipantForm({
                     "Введіть номер, під яким ви виступаєте на паркеті."
                   )}
                 </p>
-              </div>
-            </div>
-
-            <div ref={orderTypeRef} className="w-full flex flex-col gap-4">
-              <label
-                className={`w-full flex items-center gap-3 px-4 py-2 rounded-md shadow-sm transition-all duration-300 border
-                  ${
-                    showValidation && !orderType
-                      ? "bg-red-50 border-red-200 ring-2 ring-red-500/5"
-                      : "bg-[#ffefd3] border-transparent"
-                  }
-                `}
-              >
-                <LayoutList
-                  size={18}
-                  className={
-                    showValidation && !orderType
-                      ? "text-red-500"
-                      : "text-[#00a63e]"
-                  }
-                />
-                <span
-                  className={`text-[11px] font-black uppercase tracking-widest ${
-                    showValidation && !orderType
-                      ? "text-red-700"
-                      : "text-zinc-600"
-                  }`}
-                >
-                  Вид замовлення{" "}
-                  <span className="text-red-500 text-xl ml-1 leading-none inline-block transform translate-y-1">
-                    *
-                  </span>
-                </span>
-              </label>
-
-              <div className="flex flex-col gap-3">
-                {orderOptions.map((option) => {
-                  const isOpened = openAccordion === option.id;
-                  const isSelected = orderType === option.id;
-                  return (
-                    <div
-                      key={option.id}
-                      className={`group overflow-hidden rounded-3xl border-2 transition-all duration-300
-                        ${
-                          isSelected
-                            ? "border-green-600 bg-green-50/30 shadow-md shadow-green-900/5"
-                            : showValidation && !orderType
-                              ? "border-red-100 bg-white"
-                              : "border-zinc-100 bg-white hover:border-zinc-200"
-                        }
-                      `}
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenAccordion(isOpened ? null : option.id)
-                        }
-                        className="w-full flex justify-between items-center p-5 text-left outline-none cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
-                  ${
-                    isSelected
-                      ? "border-[#00a63e] bg-[#00a63e]"
-                      : "border-zinc-200"
-                  }`}
-                          >
-                            {isSelected && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                            )}
-                          </div>
-                          <span
-                            className={`text-[15px] sm:text-base font-bold ${
-                              isSelected ? "text-zinc-900" : "text-zinc-700"
-                            }`}
-                          >
-                            {option.title}
-                          </span>
-                        </div>
-                        <div
-                          className={`transition-transform duration-300 ${
-                            isOpened ? "rotate-180" : ""
-                          }`}
-                        >
-                          <ChevronDown
-                            size={20}
-                            className={
-                              isOpened ? "text-[#00a63e]" : "text-zinc-400"
-                            }
-                          />
-                        </div>
-                      </button>
-                      <div
-                        className={`transition-all duration-300 ease-in-out overflow-hidden px-4 ${
-                          isOpened
-                            ? "max-h-[2000px] opacity-100"
-                            : "max-h-0 opacity-0"
-                        }`}
-                      >
-                        <div className="px-5 pb-5 pt-0 flex flex-col gap-5">
-                          <div className="h-px w-full bg-zinc-300" />
-                          <div className="text-zinc-600 text-[14px] leading-relaxed">
-                            {option.description}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setOrderType(option.id)}
-                            className={`w-full py-3.5 rounded-xl font-black uppercase text-[12px] tracking-widest transition-all
-                              ${
-                                isSelected
-                                  ? "bg-[#00a63e] text-white"
-                                  : "bg-green-50/40 border-2 border-[#00a63e] shadow-md shadow-green-900/5"
-                              }
-                            `}
-                          >
-                            {isSelected ? "Пакет обрано" : "Обрати цей пакет"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 
@@ -938,6 +639,102 @@ export function ParticipantForm({
                   <span className="text-zinc-800 font-bold">всі поля</span> для
                   успішного замовлення
                 </p>
+              </div>
+            </div>
+
+            <div className="w-full flex flex-col gap-6">
+              <h2 className="font-black text-center text-2xl text-zinc-600">
+                📸 Що далі?
+              </h2>
+
+              <div className="flex flex-col gap-5 px-2">
+                <div className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-6 h-6 rounded-full bg-green-100 text-[#00a63e] flex items-center justify-center text-xs font-bold">
+                      1
+                    </div>
+                  </div>
+                  <p className="text-[14px] text-zinc-600 leading-relaxed">
+                    Після натискання кнопки{" "}
+                    <button
+                      onClick={() =>
+                        window.scrollTo({
+                          top: document.body.scrollHeight,
+                          behavior: "smooth",
+                        })
+                      }
+                      className="font-bold text-[#00a63e] hover:underline decoration-dashed underline-offset-4 cursor-pointer"
+                    >
+                      «Відправити замовлення»
+                    </button>{" "}
+                    ми опрацьовуємо дані та передаємо їх фотографу.
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-6 h-6 rounded-full bg-green-100 text-[#00a63e] flex items-center justify-center text-xs font-bold">
+                      2
+                    </div>
+                  </div>
+                  <p className="text-[14px] text-zinc-600 leading-relaxed">
+                    <b>Вибір фото:</b> протягом <strong>3–7 днів</strong> на
+                    вказаний вами номер у Viber/Telegram ми надішлемо зразки
+                    фото для вибору.
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-6 h-6 rounded-full bg-green-100 text-[#00a63e] flex items-center justify-center text-xs font-bold">
+                      3
+                    </div>
+                  </div>
+                  <p className="text-[14px] text-zinc-600 leading-relaxed">
+                    <b>Отримання:</b> після оплати на карту ви отримаєте
+                    посилання на «хмару» з оригіналами фото у високій якості.
+                  </p>
+                </div>
+
+                <div className="mt-2 p-5 rounded-3xl bg-white border border-zinc-100 shadow-sm">
+                  <h4 className="text-[13px] font-bold text-zinc-800 uppercase tracking-wide mb-3 flex items-center gap-2 justify-center">
+                    <span>💰</span>
+                    Вартість
+                  </h4>
+                  <ul className="space-y-2">
+                    <li className="flex justify-between text-[14px]">
+                      <span className="font-bold text-zinc-800">1–3 фото</span>
+                      <span className="text-zinc-800">100 грн/шт</span>
+                    </li>
+                    <li className="flex justify-between text-[14px] border-t pt-2 border-zinc-100">
+                      <span className="font-bold text-zinc-800">4+ фото</span>
+                      <span className="text-zinc-800">90 грн/шт</span>
+                    </li>
+                    <li className="flex justify-between text-[14px] border-t pt-2 border-zinc-100">
+                      <span className="font-bold text-zinc-800">Усі фото</span>
+                      <span className="text-zinc-800">700–1100 грн</span>
+                    </li>
+                  </ul>
+
+                  <div className="mt-4 pt-4 border-t border-dashed border-zinc-200">
+                    <div className="flex gap-2">
+                      <span className="text-[#00a63e] font-bold text-lg leading-none">
+                        *
+                      </span>
+
+                      <p className="text-[13px] leading-relaxed text-zinc-600">
+                        <span className="text-[#00a63e] font-bold text-[11px] uppercase tracking-wider mr-1">
+                          Опція &quot;PREMIUM&quot;
+                        </span>
+                        – отримайте всі фото вже завтра!
+                        <span className="text-zinc-500 italic block mt-1 text-[12px]">
+                          (За особистою домовленістю з фотографом або асистентом
+                          у день турніру)
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
