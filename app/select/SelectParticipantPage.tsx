@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Search, User, ArrowRight, RefreshCw } from "lucide-react";
@@ -40,7 +40,6 @@ function rowToOptions(row: unknown): ParticipantOption[] {
 
   const d1Name = toTrimmedString(r.Dancer1Name);
   const d1Id = toTrimmedString(r.Dancer1Id);
-
   const d2Name = toTrimmedString(r.Dancer2Name);
   const d2Id = toTrimmedString(r.Dancer2Id);
 
@@ -53,55 +52,15 @@ function rowToOptions(row: unknown): ParticipantOption[] {
 
 type ParticipantsFastOk = {
   ok: true;
-  count: number;
   dancers: Array<{
-    FirstName: string;
-    LastName: string;
-    City: string;
-    Id: number;
+    FirstName?: string;
+    LastName?: string;
+    Id?: number;
   }>;
 };
 
 function isParticipantsFastOk(v: unknown): v is ParticipantsFastOk {
-  if (!isRecord(v)) return false;
-  if (v.ok !== true) return false;
-  if (!Array.isArray(v.dancers)) return false;
-
-  return v.dancers.every((d) => {
-    if (!isRecord(d)) return false;
-    return (
-      typeof d.FirstName === "string" &&
-      typeof d.LastName === "string" &&
-      typeof d.City === "string" &&
-      typeof d.Id === "number"
-    );
-  });
-}
-
-type EventApiOk = {
-  ok: true;
-  event: {
-    id: string;
-    name: string;
-    coverUrl: string;
-    cityName: string;
-    dateTo: string;
-  };
-};
-
-function isEventApiOk(v: unknown): v is EventApiOk {
-  if (!isRecord(v)) return false;
-  if (v.ok !== true) return false;
-  if (!isRecord(v.event)) return false;
-
-  const e = v.event as Record<string, unknown>;
-  return (
-    typeof e.id === "string" &&
-    typeof e.name === "string" &&
-    typeof e.coverUrl === "string" &&
-    typeof e.cityName === "string" &&
-    typeof e.dateTo === "string"
-  );
+  return isRecord(v) && v.ok === true && Array.isArray(v.dancers);
 }
 
 export default function SelectParticipantPage() {
@@ -112,140 +71,114 @@ export default function SelectParticipantPage() {
 
   const [eventName, setEventName] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
-  const [loadingEvent, setLoadingEvent] = useState(false);
 
   const [participants, setParticipants] = useState<ParticipantOption[]>([]);
   const [query, setQuery] = useState("");
   const [selectedParticipant, setSelectedParticipant] =
     useState<ParticipantOption | null>(null);
 
+  const [loadingEvent, setLoadingEvent] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const finalizeParticipants = (options: ParticipantOption[]) => {
-    const uniq = new Map<string, ParticipantOption>();
-    for (const opt of options) {
-      if (!uniq.has(opt.id)) uniq.set(opt.id, opt);
-    }
+  const requestIdRef = useRef(0);
 
-    const cleaned = Array.from(uniq.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, "uk", { numeric: true })
-    );
-
-    setParticipants(cleaned);
-  };
-
-  // ✅ 1) тягнемо турнір з app/api/event/route.ts → /api/event?eventId=...
   useEffect(() => {
     if (!eventId) return;
 
-    const ac = new AbortController();
-
-    const loadEvent = async () => {
+    const run = async () => {
       setLoadingEvent(true);
       try {
         const res = await fetch(
           `/api/event?eventId=${encodeURIComponent(eventId)}`,
-          { cache: "no-store", signal: ac.signal }
+          { cache: "no-store" }
         );
+        const data = await res.json();
 
-        const data: unknown = await res.json();
-
-        if (isEventApiOk(data)) {
-          setEventName(data.event.name.trim());
-          setCoverUrl(data.event.coverUrl.trim());
-        } else {
-          setEventName("");
-          setCoverUrl("");
+        if (data?.ok) {
+          setEventName(data.event.name ?? "");
+          setCoverUrl(data.event.coverUrl ?? "");
         }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        setEventName("");
-        setCoverUrl("");
       } finally {
         setLoadingEvent(false);
       }
     };
 
-    void loadEvent();
-    return () => ac.abort();
+    void run();
   }, [eventId]);
 
-  // ✅ 2) тягнемо учасників по eventId (як було)
   useEffect(() => {
     if (!eventId) return;
 
-    const ac = new AbortController();
+    const run = async () => {
+      const myId = ++requestIdRef.current;
 
-    const loadParticipants = async () => {
       setLoadingParticipants(true);
+
       try {
+        let options: ParticipantOption[] = [];
+
         const r1 = await fetch(
           `/api/participants-fast?eventId=${encodeURIComponent(eventId)}`,
-          { cache: "no-store", signal: ac.signal }
+          { cache: "no-store" }
         );
+        const j1 = await r1.json();
 
-        const j1: unknown = await r1.json();
-
-        if (isParticipantsFastOk(j1) && j1.dancers.length > 0) {
-          const options: ParticipantOption[] = j1.dancers
+        if (isParticipantsFastOk(j1)) {
+          options = j1.dancers
             .map((d) => {
-              const id = String(d.Id);
-              const name = `${d.LastName.trim()} ${d.FirstName.trim()}`.trim();
+              const id = d.Id != null ? String(d.Id) : "";
+              const name = `${d.LastName?.trim() ?? ""} ${
+                d.FirstName?.trim() ?? ""
+              }`.trim();
               return id && name ? { id, name } : null;
             })
             .filter((x): x is ParticipantOption => x !== null);
-
-          finalizeParticipants(options);
-          return;
         }
 
-        const r2 = await fetch(
-          `/api/participants?event=${encodeURIComponent(eventId)}`,
-          {
-            cache: "no-store",
-            signal: ac.signal,
-          }
-        );
+        if (options.length === 0) {
+          const r2 = await fetch(
+            `/api/participants?event=${encodeURIComponent(eventId)}`,
+            { cache: "no-store" }
+          );
+          const j2 = await r2.json();
+          const rows: unknown[] = Array.isArray(j2) ? j2 : [];
+          options = rows.flatMap(rowToOptions);
+        }
 
-        const j2: unknown = await r2.json();
+        if (myId !== requestIdRef.current) return;
 
-        const rows: unknown[] = Array.isArray(j2) ? j2 : [];
-        const options = rows.flatMap(rowToOptions);
-
-        finalizeParticipants(options);
+        const uniq = new Map(options.map((o) => [o.id, o]));
+        setParticipants([...uniq.values()]);
       } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        console.error("Failed to load participants", err);
+        console.error(err);
         setParticipants([]);
       } finally {
-        setLoadingParticipants(false);
+        if (myId === requestIdRef.current) {
+          setLoadingParticipants(false);
+        }
       }
     };
 
-    void loadParticipants();
-    return () => ac.abort();
+    void run();
   }, [eventId]);
+
+  useEffect(() => {
+    const match = participants.find(
+      (p) => normalizeText(p.name) === normalizeText(query)
+    );
+    setSelectedParticipant(match ?? null);
+  }, [query, participants]);
 
   const filtered = useMemo(() => {
     const q = normalizeText(query);
     if (!q) return [];
-    return participants.filter((p) =>
-      normalizeText(p.name)
-        .split(" ")
-        .some((part) => part.startsWith(q))
-    );
+    return participants.filter((p) => normalizeText(p.name).includes(q));
   }, [participants, query]);
 
-  const handleSearch = (value: string) => {
-    setQuery(value);
-    setSelectedParticipant(null);
-  };
-
-  const handlePick = (p: ParticipantOption) => {
-    setSelectedParticipant(p);
-    setQuery(p.name);
-  };
+  const showCover = Boolean(coverUrl) && !loadingEvent;
+  const handleSearch = (value: string) => setQuery(value);
+  const handlePick = (p: ParticipantOption) => setQuery(p.name);
 
   const handleSubmit = () => {
     if (!selectedParticipant || !eventId) return;
@@ -254,28 +187,11 @@ export default function SelectParticipantPage() {
       id: eventId,
       name: eventName,
       coverUrl,
-      participant: {
-        id: selectedParticipant.id,
-        name: selectedParticipant.name,
-      },
+      participant: selectedParticipant,
     });
 
     router.push(`/form?event=${encodeURIComponent(encoded)}`);
   };
-
-  if (!eventId) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-center">
-          <span className="text-[14px] font-bold text-blue-500 uppercase animate-pulse flex items-center justify-center gap-1">
-            <RefreshCw size={14} className="animate-spin" /> Завантаження...
-          </span>
-        </p>
-      </div>
-    );
-  }
-
-  const showCover = Boolean(coverUrl) && !loadingEvent;
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans items-center px-4 py-8 md:py-12">
@@ -285,12 +201,10 @@ export default function SelectParticipantPage() {
             <span className="px-3 py-1 bg-zinc-100 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">
               Турнір
             </span>
-
             <h2 className="text-xl md:text-2xl font-bold text-zinc-800 leading-snug max-w-[260px] pt-1">
               {loadingEvent ? "Завантаження..." : eventName || `ID: ${eventId}`}
             </h2>
           </div>
-
           <div className="relative w-full max-w-[300px] aspect-video rounded-[22px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
             {showCover ? (
               <Image
@@ -339,7 +253,6 @@ export default function SelectParticipantPage() {
                         isFocused ? "text-green-600" : "text-zinc-400"
                       }`}
                     />
-
                     {isFocused && !query && (
                       <span className="text-sm font-bold text-green-600 animate-in slide-in-from-left-2 fade-in duration-300 whitespace-nowrap">
                         Почніть вводити прізвище або імʼя
@@ -362,13 +275,11 @@ export default function SelectParticipantPage() {
                   !isFocused && !loadingParticipants ? "Оберіть учасника" : ""
                 }
                 disabled={loadingParticipants}
-                className={`w-full bg-white border rounded-2xl py-4 pl-11 pr-5 text-[16px] font-medium text-zinc-800 transition-all shadow-sm outline-none
-                ${
+                className={`w-full bg-white border rounded-2xl py-4 pl-11 pr-5 text-[16px] font-medium text-zinc-800 transition-all shadow-sm outline-none ${
                   isFocused
                     ? "border-green-600/50 ring-4 ring-green-600/5"
                     : "border-zinc-200"
-                }
-                disabled:bg-zinc-100 disabled:cursor-not-allowed`}
+                } disabled:bg-zinc-100 disabled:cursor-not-allowed`}
               />
 
               {query && filtered.length > 0 && !loadingParticipants && (
@@ -396,8 +307,7 @@ export default function SelectParticipantPage() {
             <button
               onClick={handleSubmit}
               disabled={!selectedParticipant || loadingParticipants}
-              className={`w-full py-4 rounded-2xl font-semibold text-[17px] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.98]
-              ${
+              className={`w-full py-4 rounded-2xl font-semibold text-[17px] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.98] ${
                 selectedParticipant
                   ? "bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer"
                   : "bg-zinc-300 text-white cursor-not-allowed shadow-none"
