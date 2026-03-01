@@ -9,6 +9,7 @@ type ResultItem = {
   dancer2Name: string;
   program: string;
   city?: string;
+  club?: string;
 };
 
 type Query = {
@@ -53,6 +54,7 @@ type FlymarkCategory = {
   CategoryName: string;
   SectionId: number | null;
   ResultProgramName: string;
+  Id: number;
 };
 
 function parseCategoriesResponse(data: unknown): FlymarkCategory[] {
@@ -68,6 +70,7 @@ function parseCategoriesResponse(data: unknown): FlymarkCategory[] {
 
     const CategoryName = readString(item["CategoryName"]);
     const SectionId = readNumber(item["SectionId"]);
+    const Id = readNumber(item["Id"]);
 
     let ResultProgramName = "";
     const rp = item["ResultProgram"];
@@ -75,12 +78,13 @@ function parseCategoriesResponse(data: unknown): FlymarkCategory[] {
       ResultProgramName = readString(rp["ProgramName"]);
     }
 
-    if (!CategoryName) continue;
+    if (!CategoryName || Id === null) continue;
 
     out.push({
       CategoryName,
       SectionId,
       ResultProgramName,
+      Id,
     });
   }
 
@@ -106,8 +110,7 @@ function parseSectionsResponse(data: unknown): FlymarkSection[] {
     const Id = readNumber(item["Id"]);
     const Name = readString(item["Name"]);
 
-    if (Id === null) continue;
-    if (!Name) continue;
+    if (Id === null || !Name) continue;
 
     out.push({ Id, Name });
   }
@@ -131,134 +134,131 @@ async function fetchJson(
   return { ok: res.ok, status: res.status, data };
 }
 
-type FlymarkDancer = {
-  FirstName: string;
-  LastName: string;
-  City: string;
-  Id: number;
-};
+// --- кеш для профілів ---
+const profileCache = new Map<
+  string,
+  { fetchedAt: number; profile: { city: string; club: string } }
+>();
+const PROFILE_TTL_MS = 10 * 60 * 1000;
 
-function isFlymarkDancer(v: unknown): v is FlymarkDancer {
-  if (!isRecord(v)) return false;
-  return (
-    typeof v["FirstName"] === "string" &&
-    typeof v["LastName"] === "string" &&
-    typeof v["City"] === "string" &&
-    typeof v["Id"] === "number"
-  );
+async function getDancerProfile(
+  dancerId: string
+): Promise<{ city: string; club: string }> {
+  const now = Date.now();
+  const cached = profileCache.get(dancerId);
+  if (cached && now - cached.fetchedAt < PROFILE_TTL_MS) return cached.profile;
+
+  const url = `https://flymark.dance/api/dancer/${encodeURIComponent(
+    dancerId
+  )}/profile`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { city: "", club: "" };
+    const data: unknown = await res.json();
+    if (!isRecord(data)) return { city: "", club: "" };
+
+    const clubs = Array.isArray(data["Clubs"]) ? data["Clubs"] : [];
+    const clubName =
+      clubs.length > 0 && isRecord(clubs[0])
+        ? readString(clubs[0]["Name"])
+        : "";
+
+    const cityName =
+      clubs.length > 0 && isRecord(clubs[0]) && isRecord(clubs[0]["City"])
+        ? readString(clubs[0]["City"]["Name"])
+        : "";
+
+    const profile = { city: cityName, club: clubName };
+    profileCache.set(dancerId, { fetchedAt: now, profile });
+    return profile;
+  } catch {
+    return { city: "", club: "" };
+  }
 }
 
-const dancersCache = new Map<
-  string,
-  { fetchedAt: number; byId: Map<string, string> }
->();
-
-const DANCERS_TTL_MS = 10 * 60 * 1000; // 10 хв
-
-async function getCityFromDancers(
+// --- функція для отримання реального dancerId з реєстрації ---
+async function getRealDancerId(
   eventId: string,
-  dancerId: string
-): Promise<string> {
-  const now = Date.now();
-  const cached = dancersCache.get(eventId);
-
-  if (cached && now - cached.fetchedAt < DANCERS_TTL_MS) {
-    return cached.byId.get(String(dancerId)) ?? "";
-  }
-
-  const url = `https://flymark.dance/api/v2/competition-stream/${encodeURIComponent(
+  categoryId: number,
+  dancerName: string
+): Promise<string | undefined> {
+  const url = `https://flymark.dance/api/registration?competitionId=${encodeURIComponent(
     eventId
-  )}/dancers`;
+  )}&categoryId=${encodeURIComponent(categoryId)}`;
+  const res = await fetch(url);
+  if (!res.ok) return undefined;
 
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { accept: "application/json" },
-      cache: "no-store",
-    });
+  const data: unknown = await res.json();
+  if (!isRecord(data)) return undefined;
 
-    if (!res.ok) {
-      if (cached) return cached.byId.get(String(dancerId)) ?? "";
-      return "";
+  const registrations = Array.isArray(data["Registration"])
+    ? data["Registration"]
+    : [];
+  for (const reg of registrations) {
+    if (!isRecord(reg)) continue;
+    const dancers = Array.isArray(reg["Dancers"]) ? reg["Dancers"] : [];
+    for (const dancer of dancers) {
+      if (!isRecord(dancer)) continue;
+      const fullName = readString(dancer["FullName"]);
+      const id = readNumber(dancer["Id"]);
+      if (fullName === dancerName && id !== null) return String(id);
     }
-
-    const data: unknown = await res.json();
-    const arr: unknown[] = Array.isArray(data) ? data : [];
-
-    const byId = new Map<string, string>();
-    for (const item of arr) {
-      if (!isFlymarkDancer(item)) continue;
-      byId.set(String(item.Id), item.City.trim());
-    }
-
-    dancersCache.set(eventId, { fetchedAt: now, byId });
-
-    return byId.get(String(dancerId)) ?? "";
-  } catch {
-    if (cached) return cached.byId.get(String(dancerId)) ?? "";
-    return "";
   }
+  return undefined;
 }
 
 export async function GET(request: Request) {
   try {
     const q = getQuery(request.url);
-    if (!q) {
+    if (!q)
       return NextResponse.json(
         { error: "Missing required params: event, id" },
         { status: 400 }
       );
-    }
-    const cityPromise = getCityFromDancers(q.event, q.id);
 
     const categoriesUrl = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
       q.event
     )}/0?dancerId=${encodeURIComponent(q.id)}`;
-
     const catsRes = await fetchJson(categoriesUrl);
-
-    if (!catsRes.ok) {
+    if (!catsRes.ok)
       return NextResponse.json(
         { error: "Flymark categories request failed", status: catsRes.status },
         { status: 502 }
       );
-    }
 
     const categories = parseCategoriesResponse(catsRes.data);
-
-    if (categories.length === 0) {
-      return NextResponse.json([], { status: 200 });
-    }
+    if (categories.length === 0) return NextResponse.json([], { status: 200 });
 
     const inferredSectionListId =
       categories[0].SectionId !== null ? String(categories[0].SectionId) : "0";
-
     const sectionsUrl = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
       q.event
     )}/${encodeURIComponent(inferredSectionListId)}`;
-
     const secsRes = await fetchJson(sectionsUrl);
     const sections = secsRes.ok ? parseSectionsResponse(secsRes.data) : [];
-
     const sectionNameById = new Map<number, string>();
     for (const s of sections) sectionNameById.set(s.Id, s.Name);
 
     const dancer1Name = q.name ?? "";
     const dancer2Name = "";
 
-    const city = await cityPromise;
+    // --- отримати реальний dancerId ---
+    const dancerRealId =
+      (await getRealDancerId(q.event, categories[0].Id, dancer1Name)) ?? q.id;
+    console.log("DancerRealId:", dancerRealId);
+    const profile = await getDancerProfile(dancerRealId);
 
     const results: ResultItem[] = categories.map((c) => {
       const time =
         c.SectionId !== null ? sectionNameById.get(c.SectionId) ?? "" : "";
-
       return {
         category: c.CategoryName,
         time,
         dancer1Name,
         dancer2Name,
         program: c.ResultProgramName,
-        city: city,
+        city: profile.city,
+        club: profile.club,
       };
     });
 
