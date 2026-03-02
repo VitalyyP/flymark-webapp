@@ -208,7 +208,6 @@ export default function SelectParticipantPage() {
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50 text-zinc-900 font-sans items-center px-4 py-8 md:py-12">
       <main className="w-full max-w-[440px] flex flex-col items-center gap-8 md:gap-10">
-        {/* Header */}
         <div className="flex flex-col items-center text-center w-full gap-8">
           <div className="flex flex-col items-center gap-2 w-full">
             <span className="px-3 py-1 bg-zinc-100 rounded-full text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">

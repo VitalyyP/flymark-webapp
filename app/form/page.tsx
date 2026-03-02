@@ -34,6 +34,19 @@ function isSufficient(results: ResultItem[] | null): results is ResultItem[] {
   return Array.isArray(results) && results.length > 0;
 }
 
+function uniqueByCategoryProgram(results: ResultItem[]): ResultItem[] {
+  const seen = new Set<string>();
+
+  return results.filter((r) => {
+    const key = `${r.category}__${r.program}`;
+
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
 
@@ -63,14 +76,25 @@ export default async function Page({ searchParams }: PageProps) {
   let results: ResultItem[] | null = null;
 
   try {
-    const fast = await fetchJson<ResultItem[]>(fastUrl);
-    if (fast.ok && isSufficient(fast.data)) {
-      results = fast.data;
-    } else {
-      const slow = await fetchJson<ResultItem[]>(slowUrl);
-      if (slow.ok && Array.isArray(slow.data)) {
-        results = slow.data;
-      }
+    const [fast, slow] = await Promise.all([
+      fetchJson<ResultItem[]>(fastUrl),
+      fetchJson<ResultItem[]>(slowUrl),
+    ]);
+
+    const fastData =
+      fast.ok && isSufficient(fast.data)
+        ? uniqueByCategoryProgram(fast.data)
+        : null;
+
+    const slowClub = slow.data?.[0]?.club;
+
+    if (fastData) {
+      results = fastData.map((r) => ({
+        ...r,
+        ...(slowClub ? { club: slowClub } : {}),
+      }));
+    } else if (slow.ok && isSufficient(slow.data)) {
+      results = slow.data;
     }
   } catch (e) {
     console.error("Failed to load participant", e);

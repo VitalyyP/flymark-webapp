@@ -242,7 +242,6 @@ export async function GET(request: Request) {
     const dancer1Name = q.name ?? "";
     const dancer2Name = "";
 
-    // --- отримати реальний dancerId ---
     const dancerRealId =
       (await getRealDancerId(q.event, categories[0].Id, dancer1Name)) ?? q.id;
     console.log("DancerRealId:", dancerRealId);

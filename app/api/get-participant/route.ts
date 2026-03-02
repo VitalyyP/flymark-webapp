@@ -19,7 +19,7 @@ function normalizePrivateKey(key?: string): string | undefined {
 }
 
 function normalizeText(s: string): string {
-  return s.trim().normalize("NFC");
+  return s.trim().normalize("NFC").toLowerCase();
 }
 
 function safeCell(row: SheetRow, idx: number): string {
@@ -34,11 +34,9 @@ export async function GET(request: Request) {
 
     const eventIdRaw = searchParams.get("event");
     const nameRaw = searchParams.get("name");
-    const idRaw = searchParams.get("id");
 
     const eventId = normalizeText(eventIdRaw ?? "");
     const name = normalizeText(nameRaw ?? "");
-    const dancerId = normalizeText(idRaw ?? "");
 
     if (!eventId) {
       return NextResponse.json(
@@ -47,9 +45,9 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!dancerId && !name) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Missing id or name parameter" },
+        { error: "Missing name parameter" },
         { status: 400 }
       );
     }
@@ -97,9 +95,6 @@ export async function GET(request: Request) {
     const clubIdx = headers.indexOf("DancingClub");
     const cityIdx = headers.indexOf("City");
 
-    const dancer1IdIdx = headers.indexOf("Dancer1Id");
-    const dancer2IdIdx = headers.indexOf("Dancer2Id");
-
     const required = [
       dancer1NameIdx,
       categoryIdx,
@@ -116,58 +111,30 @@ export async function GET(request: Request) {
       );
     }
 
-    const nameParts = name
-      ? normalizeText(name).split(/\s+/).filter(Boolean)
-      : [];
+    const nameParts = name.split(/\s+/).filter(Boolean);
 
     const results: ResultItem[] = dataRows
       .map((row) => {
         const dancer1Name = safeCell(row, dancer1NameIdx);
         const dancer2Name = safeCell(row, dancer2NameIdx);
-        const category = safeCell(row, categoryIdx);
-        const time = safeCell(row, timeIdx);
-        const program = safeCell(row, programIdx);
-        const club = safeCell(row, clubIdx);
-        const city = safeCell(row, cityIdx);
 
-        if (!category) return null;
+        const normalized1 = normalizeText(dancer1Name);
+        const normalized2 = normalizeText(dancer2Name);
 
-        if (dancerId) {
-          const d1id = safeCell(row, dancer1IdIdx);
-          const d2id = safeCell(row, dancer2IdIdx);
+        const matches = [normalized1, normalized2].some((d) =>
+          nameParts.every((part) => d.includes(part))
+        );
 
-          const matchesById =
-            normalizeText(d1id) === dancerId ||
-            normalizeText(d2id) === dancerId;
-
-          if (!matchesById) return null;
-
-          return {
-            category,
-            time,
-            dancer1Name,
-            dancer2Name,
-            program,
-            club,
-            city,
-          };
-        }
-
-        const matchesByName = [dancer1Name, dancer2Name].some((d) => {
-          const nd = normalizeText(d);
-          return nameParts.every((part) => nd.includes(part));
-        });
-
-        if (!matchesByName) return null;
+        if (!matches) return null;
 
         return {
-          category,
-          time,
+          category: safeCell(row, categoryIdx),
+          time: safeCell(row, timeIdx),
+          program: safeCell(row, programIdx),
+          club: safeCell(row, clubIdx),
+          city: safeCell(row, cityIdx),
           dancer1Name,
           dancer2Name,
-          program,
-          club,
-          city,
         };
       })
       .filter((x): x is ResultItem => x !== null);
