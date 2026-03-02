@@ -67,6 +67,7 @@ function CategoryTable({
         .map((p) => ({
           regNumber: p!.regNumber,
           isPremium: p!.orderType === "premium",
+          program: p!.program,
         }));
     }
     return out;
@@ -122,7 +123,12 @@ function CategoryTable({
                 <div className="flex flex-wrap gap-x-3 gap-y-4">
                   {(grouped[key] ?? []).map((item, idx) => {
                     const num = item.regNumber;
-                    const crossKey = makeCrossKey(categoryParam, key, num, idx);
+                    const crossKey = makeCrossKey(
+                      categoryParam,
+                      item.program,
+                      num,
+                      idx
+                    );
                     const crossed = crossedSet.has(crossKey);
                     return (
                       <span

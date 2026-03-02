@@ -8,6 +8,7 @@ type Participant = {
 export type DisplayItem = {
   regNumber: string;
   isPremium: boolean;
+  program: string;
 };
 
 const UNKNOWN = "Не знаю";
@@ -63,10 +64,14 @@ export function groupParticipantsByProgramForDisplay(
       if (reg === unknownValue) {
         const flags = unknownPremiumByProgram[prog] ?? [];
         for (let i = 0; i < info.count; i++) {
-          out.push({ regNumber: reg, isPremium: flags[i] ?? false });
+          out.push({
+            regNumber: reg,
+            isPremium: flags[i],
+            program: prog ?? false,
+          });
         }
       } else {
-        out.push({ regNumber: reg, isPremium: info.anyPremium });
+        out.push({ regNumber: reg, isPremium: info.anyPremium, program: prog });
       }
     }
 

@@ -15,7 +15,8 @@ export function makeCrossKey(
   regNumber: string,
   idx: number
 ) {
-  return `${category}|||${program}|||${regNumber}|||${idx}`;
+  const finalIdx = regNumber === "Не знаю" ? idx : -1;
+  return `${category}|||${program}|||${regNumber}|||${finalIdx}`;
 }
 
 export function readCrossedFromStorage(storageKey: string): string[] {
