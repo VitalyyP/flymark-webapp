@@ -4,6 +4,7 @@ export type EventPayload = {
   coverUrl: string;
   time?: string;
   part?: string;
+  program?: string;
   participant?: {
     id: string;
     name: string;
@@ -74,6 +75,14 @@ function isEventPayload(v: unknown): v is EventPayload {
   }
 
   if ("part" in v && v.part !== undefined && typeof v.part !== "string") {
+    return false;
+  }
+
+  if (
+    "program" in v &&
+    v.program !== undefined &&
+    typeof v.program !== "string"
+  ) {
     return false;
   }
 
