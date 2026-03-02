@@ -247,8 +247,8 @@ export default function CategoryClient() {
 
   if (!participants)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading…
+      <div className="flex items-center justify-center min-h-screen bg-zinc-50">
+        <div className="w-8 h-8 border-4 border-zinc-200 border-t-green-600 rounded-full animate-spin" />
       </div>
     );
 
