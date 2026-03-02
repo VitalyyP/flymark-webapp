@@ -12,7 +12,6 @@ import {
   readCrossedFromStorage,
   toggleCrossedKey,
 } from "@/utils/crossedStorage";
-
 import {
   groupParticipantsByProgramForDisplay,
   type DisplayItem,
@@ -41,6 +40,7 @@ function CategoryTable({
   eventParam,
   part,
   time,
+  roundMap,
 }: {
   storageKey: string;
   categoryParam: string;
@@ -48,6 +48,7 @@ function CategoryTable({
   eventParam: string;
   part: string;
   time: string;
+  roundMap: Record<string, string[]>;
 }) {
   const [crossedKeys, setCrossedKeys] = useState<string[]>(() =>
     readCrossedFromStorage(storageKey)
@@ -55,17 +56,39 @@ function CategoryTable({
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
-  const grouped = useMemo<Record<string, DisplayItem[]>>(() => {
-    return groupParticipantsByProgramForDisplay(participants);
-  }, [participants]);
+  const groupedByRounds = useMemo<Record<string, DisplayItem[]>>(() => {
+    if (!roundMap || Object.keys(roundMap).length === 0) return {};
+    const byNumber = new Map(participants.map((p) => [p.regNumber, p]));
+    const out: Record<string, DisplayItem[]> = {};
+    for (const round of Object.keys(roundMap)) {
+      out[round] = roundMap[round]
+        .map((num) => byNumber.get(num))
+        .filter(Boolean)
+        .map((p) => ({
+          regNumber: p!.regNumber,
+          isPremium: p!.orderType === "premium",
+          program: p!.program,
+        }));
+    }
+    return out;
+  }, [participants, roundMap]);
 
-  const programs = useMemo(
-    () =>
-      Object.keys(grouped).sort((a, b) =>
-        a.localeCompare(b, "uk", { numeric: true })
-      ),
-    [grouped]
+  const hasRounds = Object.keys(groupedByRounds).length > 0;
+  const groupedByPrograms = useMemo(
+    () => groupParticipantsByProgramForDisplay(participants),
+    [participants]
   );
+
+  const grouped = hasRounds ? groupedByRounds : groupedByPrograms;
+
+  const rows = useMemo(() => {
+    const keys = Object.keys(grouped);
+    return hasRounds
+      ? keys.sort((a, b) => +a - +b)
+      : keys.sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
+  }, [grouped, hasRounds]);
+
+  const label = hasRounds ? "Захід" : "Програма";
 
   return (
     <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-sm border border-zinc-100 p-3 sm:p-8 flex flex-col">
@@ -79,81 +102,64 @@ function CategoryTable({
         </div>
       </div>
 
-      <div className="w-full overflow-hidden mt-4">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-zinc-100">
-              <th className="py-3 px-3 text-left align-top w-1/3">
-                <span className="text-[13px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-                  Програма
-                </span>
-              </th>
-              <th className="py-3 px-3 text-left align-top">
-                <span className="text-[13px] font-bold uppercase text-zinc-400 tracking-widest leading-none">
-                  Номери учасників
-                </span>
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {programs.map((prog) => (
-              <tr key={prog} className="border-b border-zinc-50 last:border-0">
-                <td className="py-6 px-3 align-top">
-                  <span className="text-[15px] font-bold text-zinc-900 leading-tight block mt-1.5">
-                    {prog}
-                  </span>
-                </td>
-
-                <td className="py-6 px-3 align-top">
-                  <div className="flex flex-wrap gap-x-3 gap-y-4">
-                    {(grouped[prog] ?? []).map((item, idx) => {
-                      const num = item.regNumber;
-                      const key = makeCrossKey(categoryParam, prog, num, idx);
-                      const crossed = crossedSet.has(key);
-
-                      return (
+      <table className="w-full border-collapse mt-4">
+        <thead>
+          <tr className="border-b-2 border-zinc-100">
+            <th className="py-3 px-3 text-left text-[13px] font-bold text-zinc-400 uppercase">
+              {label}
+            </th>
+            <th className="py-3 px-3 text-left text-[13px] font-bold text-zinc-400 uppercase">
+              Номери учасників
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((key) => (
+            <tr key={key} className="border-b border-zinc-50 last:border-0">
+              <td className="py-6 px-3 font-bold text-zinc-900">
+                {hasRounds ? `Захід ${key}` : key}
+              </td>
+              <td className="py-6 px-3">
+                <div className="flex flex-wrap gap-x-3 gap-y-4">
+                  {(grouped[key] ?? []).map((item, idx) => {
+                    const num = item.regNumber;
+                    const crossKey = makeCrossKey(
+                      categoryParam,
+                      item.program,
+                      num,
+                      idx
+                    );
+                    const crossed = crossedSet.has(crossKey);
+                    return (
+                      <span
+                        key={crossKey}
+                        className="text-[22px] font-semibold cursor-pointer active:scale-90"
+                        onClick={() =>
+                          setCrossedKeys((prev) =>
+                            toggleCrossedKey(prev, crossKey, storageKey)
+                          )
+                        }
+                      >
                         <span
-                          key={key}
-                          className="text-[22px] font-semibold cursor-pointer select-none transition-all active:scale-90"
-                          onClick={() =>
-                            setCrossedKeys((prev) =>
-                              toggleCrossedKey(prev, key, storageKey)
-                            )
-                          }
+                          className={`
+                            ${crossed ? "line-through opacity-30" : ""}
+                            ${item.isPremium ? "text-red-600" : "text-zinc-800"}
+                          `}
                         >
-                          <span
-                            className={`
-                              ${
-                                crossed
-                                  ? "line-through opacity-30"
-                                  : "opacity-100"
-                              }
-                              ${
-                                item.isPremium
-                                  ? "text-red-600"
-                                  : "text-zinc-800"
-                              }
-                            `}
-                          >
-                            {num}
-                          </span>
-
-                          {idx < (grouped[prog]?.length ?? 0) - 1 && (
-                            <span className="text-zinc-400 ml-1 font-light">
-                              ,
-                            </span>
-                          )}
+                          {num}
                         </span>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                        {idx < (grouped[key]?.length ?? 0) - 1 && (
+                          <span className="text-zinc-400 ml-1">,</span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <div className="mt-12 mb-4 flex justify-center border-t border-zinc-50 pt-8">
         {renderBackButton(eventParam)}
@@ -164,7 +170,6 @@ function CategoryTable({
 
 export default function CategoryClient() {
   const searchParams = useSearchParams();
-
   const eventParam = searchParams.get("event") ?? "";
   const categoryParam = searchParams.get("category") ?? "";
 
@@ -174,8 +179,8 @@ export default function CategoryClient() {
   );
 
   const eventId = decoded?.id ?? "";
-  const time = decoded?.time ?? "";
   const part = decoded?.part ?? "";
+  const time = decoded?.time ?? "";
 
   const storageKey = useMemo(() => {
     if (!eventId || !time) return "";
@@ -183,36 +188,52 @@ export default function CategoryClient() {
   }, [eventId, time]);
 
   const [participants, setParticipants] = useState<Participant[] | null>(null);
+  const [roundMap, setRoundMap] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    if (!eventId || !time || !categoryParam) return;
-
-    const ac = new AbortController();
+    if (!eventId || !categoryParam) return;
 
     fetch(
-      `/api/get-participants?event=${encodeURIComponent(
-        eventId
-      )}&time=${encodeURIComponent(time)}`,
-      { signal: ac.signal }
+      `/api/get-participants?event=${eventId}&time=${encodeURIComponent(time)}`
     )
-      .then((res) => res.json())
-      .then((data: unknown) => {
-        const obj = (data ?? {}) as { participants?: unknown };
-
-        const list: Participant[] = Array.isArray(obj.participants)
-          ? (obj.participants as Participant[])
-          : [];
-
-        const filtered = list.filter(
-          (p) => (p.category ?? "").trim() === categoryParam.trim()
+      .then((r) => r.json())
+      .then((data) => {
+        const filtered: Participant[] = (data.participants ?? []).filter(
+          (p: Participant) => p.category.trim() === categoryParam.trim()
         );
-
         setParticipants(filtered);
       })
       .catch(() => setParticipants([]));
+  }, [eventId, categoryParam, time]);
 
-    return () => ac.abort();
-  }, [eventId, time, categoryParam]);
+  useEffect(() => {
+    if (!eventId || !categoryParam || !participants?.length) return;
+
+    const program = participants[0].program;
+
+    fetch(
+      `/api/flymark/streamdetails?id=${eventId}` +
+        `&categoryName=${encodeURIComponent(categoryParam)}` +
+        `&programName=${encodeURIComponent(program)}` +
+        `&competitionId=${eventId}`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const qualifications = data?.details?.Qualifications;
+        if (!qualifications) return;
+
+        const rounds: Record<string, string[]> = {};
+
+        for (const q of qualifications) {
+          for (const r of q?.Rounds ?? []) {
+            Object.assign(rounds, r?.Rounds ?? {});
+          }
+        }
+
+        setRoundMap(rounds);
+      })
+      .catch((err) => console.error("flymark error:", err));
+  }, [eventId, categoryParam, participants]);
 
   if (!decoded || !eventId || !time || !eventParam || !categoryParam) {
     return (
@@ -224,13 +245,12 @@ export default function CategoryClient() {
     );
   }
 
-  if (participants === null) {
+  if (!participants)
     return (
       <div className="flex items-center justify-center min-h-screen bg-zinc-50">
         <div className="w-8 h-8 border-4 border-zinc-200 border-t-green-600 rounded-full animate-spin" />
       </div>
     );
-  }
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-3 sm:p-6 font-sans">
@@ -241,6 +261,7 @@ export default function CategoryClient() {
         eventParam={eventParam}
         part={part}
         time={time}
+        roundMap={roundMap}
       />
     </div>
   );
