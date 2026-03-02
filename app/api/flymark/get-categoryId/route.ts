@@ -3,37 +3,16 @@ import { getFlymarkCookieHeader } from "@/utils/flymarkAuth";
 
 type Section = {
   Id: number;
-  Name: string;
-  Index: number;
-  IsActive: boolean;
-  IsClosed: boolean;
 };
 
 type ResultProgram = {
-  Id: number;
   ProgramName: string;
-  ProgramId: number;
-  ProgramGroupTypes: unknown[];
 };
 
 type Category = {
   Id: number;
-  StartAt: string;
-  Kolo: string;
   CategoryName: string;
-  CategoryId: number;
-  ResultProgramId: number;
   ResultProgram?: ResultProgram;
-  SectionId: number;
-  State: number;
-  Index: number;
-  Dances: unknown[];
-  TotalCouples: number;
-  TotalRounds: number;
-  Redance: boolean;
-  IsProgramLinked: boolean;
-  DoCalculate: boolean;
-  IsCategoryLinked: boolean;
 };
 
 type SectionsResponse = {
