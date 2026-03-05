@@ -10,28 +10,31 @@ type PageProps = {
   searchParams: Promise<SearchParams>;
 };
 
-async function getBaseUrl(): Promise<string> {
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  return host ? `${proto}://${host}` : "";
-}
-
 async function fetchJson<T>(
   url: string
-): Promise<{ ok: boolean; data: T | null }> {
+): Promise<{ ok: boolean; results: T } | null> {
   try {
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return { ok: false, data: null };
-    const data = (await res.json()) as T;
-    return { ok: true, data };
-  } catch {
-    return { ok: false, data: null };
+    if (!res.ok) return { ok: false, results: [] as unknown as T };
+
+    const data = await res.json();
+
+    return { ok: true, results: data.results ?? data };
+  } catch (e) {
+    console.error("fetchJson error:", e);
+    return { ok: false, results: [] as unknown as T };
   }
 }
 
 function isSufficient(results: ResultItem[] | null): results is ResultItem[] {
   return Array.isArray(results) && results.length > 0;
+}
+
+async function getBaseUrl(): Promise<string> {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  return host ? `${proto}://${host}` : "";
 }
 
 export default async function Page({ searchParams }: PageProps) {
@@ -50,9 +53,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   const fastUrl = `${base}/api/get-participant-fast?event=${encodeURIComponent(
     event.id
-  )}&id=${encodeURIComponent(participant.id)}&name=${encodeURIComponent(
-    participant.name
-  )}`;
+  )}&name=${encodeURIComponent(participant.name)}`;
 
   const slowUrl = `${base}/api/get-participant?event=${encodeURIComponent(
     event.id
@@ -63,20 +64,21 @@ export default async function Page({ searchParams }: PageProps) {
   let results: ResultItem[] | null = null;
 
   try {
-    const fast = await fetchJson<ResultItem[]>(fastUrl);
-    if (fast.ok && isSufficient(fast.data)) {
-      results = fast.data;
-    } else {
-      const slow = await fetchJson<ResultItem[]>(slowUrl);
-      if (slow.ok && Array.isArray(slow.data)) {
-        results = slow.data;
-      }
+    const [fast, slow] = await Promise.all([
+      fetchJson<ResultItem[]>(fastUrl),
+      fetchJson<ResultItem[]>(slowUrl),
+    ]);
+
+    if (fast?.ok && isSufficient(fast.results)) {
+      results = fast.results;
+    } else if (slow?.ok && isSufficient(slow.results)) {
+      results = slow.results;
     }
   } catch (e) {
     console.error("Failed to load participant", e);
   }
 
-  if (!results) return <div>Помилка завантаження</div>;
+  if (!results || results.length === 0) return <div>Помилка завантаження</div>;
 
   return (
     <ParticipantForm

@@ -42,14 +42,14 @@ export async function GET(request: Request) {
 
     if (!eventId) {
       return NextResponse.json(
-        { error: "Missing event parameter" },
+        { ok: false, error: "Missing event parameter", results: [] },
         { status: 400 }
       );
     }
 
     if (!dancerId && !name) {
       return NextResponse.json(
-        { error: "Missing id or name parameter" },
+        { ok: false, error: "Missing id or name parameter", results: [] },
         { status: 400 }
       );
     }
@@ -60,16 +60,17 @@ export async function GET(request: Request) {
 
     if (!clientEmail || !privateKey || !spreadsheetId) {
       return NextResponse.json(
-        { error: "Missing Google Sheets environment variables" },
+        {
+          ok: false,
+          error: "Missing Google Sheets environment variables",
+          results: [],
+        },
         { status: 500 }
       );
     }
 
     const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: clientEmail,
-        private_key: privateKey,
-      },
+      credentials: { client_email: clientEmail, private_key: privateKey },
       scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     });
 
@@ -83,7 +84,7 @@ export async function GET(request: Request) {
     const rows = (response.data.values ?? []) as SheetRow[];
 
     if (rows.length < 3) {
-      return NextResponse.json([], { status: 200 });
+      return NextResponse.json({ ok: true, results: [] }, { status: 200 });
     }
 
     const headers = rows[2].map((h) => (typeof h === "string" ? h.trim() : ""));
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
 
     if (required.some((x) => x === -1)) {
       return NextResponse.json(
-        { error: "Required columns not found" },
+        { ok: false, error: "Required columns not found", results: [] },
         { status: 500 }
       );
     }
@@ -139,7 +140,6 @@ export async function GET(request: Request) {
           const matchesById =
             normalizeText(d1id) === dancerId ||
             normalizeText(d2id) === dancerId;
-
           if (!matchesById) return null;
 
           return {
@@ -172,10 +172,13 @@ export async function GET(request: Request) {
       })
       .filter((x): x is ResultItem => x !== null);
 
-    return NextResponse.json(results, { status: 200 });
+    return NextResponse.json({ ok: true, results }, { status: 200 });
   } catch (e: unknown) {
     console.error("Error:", e);
     const message = e instanceof Error ? e.message : "Unknown error occurred";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: message, results: [] },
+      { status: 500 }
+    );
   }
 }
