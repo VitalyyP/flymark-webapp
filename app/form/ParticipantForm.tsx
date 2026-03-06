@@ -180,20 +180,11 @@ export function ParticipantForm({
   })();
 
   const secondName: string = (() => {
-    const firstResult = results[0];
-    if (!firstResult) return "";
-
-    if (
-      firstResult.dancer1Name &&
-      firstResult.dancer1Name !== participantName
-    ) {
-      return firstResult.dancer1Name;
-    }
-    if (
-      firstResult.dancer2Name &&
-      firstResult.dancer2Name !== participantName
-    ) {
-      return firstResult.dancer2Name;
+    for (const r of results) {
+      if (r.dancer1Name && r.dancer1Name !== participantName)
+        return r.dancer1Name;
+      if (r.dancer2Name && r.dancer2Name !== participantName)
+        return r.dancer2Name;
     }
     return "";
   })();

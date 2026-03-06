@@ -1,52 +1,31 @@
 import { google, sheets_v4 } from "googleapis";
 
-function normalizePrivateKey(key?: string): string | undefined {
+function normalizePrivateKey(key?: string) {
   if (!key) return key;
-  return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
+  return key.replace(/\\n/g, "\n");
 }
-
-type SpreadsheetId = string;
-type SheetName = string;
 
 type CellValue = string | number | boolean | null;
 export type RowData = Record<string, CellValue>;
 
-type BaseOptions = {
-  spreadsheetId?: SpreadsheetId;
-  sheetName?: SheetName;
-};
-
-type ReadOptions = BaseOptions & {
-  range?: string;
-};
-
-type WriteOptions = BaseOptions & {
+type Options = {
+  spreadsheetId?: string;
+  sheetName?: string;
   clearBeforeWrite?: boolean;
   title?: string;
 };
 
-function getSpreadsheetIdOrThrow(spreadsheetId?: string): string {
-  const resolvedId = spreadsheetId ?? process.env.SHEET_ID;
-  if (!resolvedId) throw new Error("SHEET_ID required");
-  return resolvedId;
+function getSpreadsheetId(spreadsheetId?: string) {
+  const id = spreadsheetId ?? process.env.SHEET_ID;
+  if (!id) throw new Error("SHEET_ID required");
+  return id;
 }
 
-async function getSheetsClient(
-  scope:
-    | "https://www.googleapis.com/auth/spreadsheets.readonly"
-    | "https://www.googleapis.com/auth/spreadsheets"
-): Promise<sheets_v4.Sheets> {
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
-
-  if (!clientEmail || !privateKey) {
-    throw new Error("Missing GOOGLE_CLIENT_EMAIL or GOOGLE_PRIVATE_KEY");
-  }
-
+async function getSheets(scope: string): Promise<sheets_v4.Sheets> {
   const auth = new google.auth.GoogleAuth({
     credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
+      client_email: process.env.GOOGLE_CLIENT_EMAIL,
+      private_key: normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY),
     },
     scopes: [scope],
   });
@@ -54,94 +33,14 @@ async function getSheetsClient(
   return google.sheets({ version: "v4", auth });
 }
 
-async function getSheetMeta(
-  sheets: sheets_v4.Sheets,
-  spreadsheetId: string,
-  sheetName: string
-): Promise<{ exists: boolean; sheetId: number | null }> {
-  const spreadsheet = await sheets.spreadsheets.get({
-    spreadsheetId,
-    fields: "sheets(properties(sheetId,title))",
-  });
-
-  const found =
-    spreadsheet.data.sheets?.find((s) => s.properties?.title === sheetName) ??
-    null;
-
-  const sheetId =
-    typeof found?.properties?.sheetId === "number"
-      ? found.properties.sheetId
-      : null;
-
-  return { exists: Boolean(found), sheetId };
+function unique(items: string[]) {
+  return [...new Set(items.filter(Boolean))];
 }
 
-async function ensureSheetExists(
-  sheets: sheets_v4.Sheets,
-  spreadsheetId: string,
-  sheetName: string
-): Promise<{ created: boolean; sheetId: number }> {
-  const meta = await getSheetMeta(sheets, spreadsheetId, sheetName);
-  if (meta.exists && meta.sheetId !== null) {
-    return { created: false, sheetId: meta.sheetId };
-  }
+function toValues(rows: RowData[]) {
+  if (!rows.length) return { headers: [], values: [] };
 
-  try {
-    const resp = await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [{ addSheet: { properties: { title: sheetName } } }],
-      },
-    });
-
-    const reply = resp.data.replies?.[0]?.addSheet?.properties;
-    const sheetId = reply?.sheetId;
-
-    if (typeof sheetId !== "number") {
-      const meta2 = await getSheetMeta(sheets, spreadsheetId, sheetName);
-      if (meta2.sheetId === null) {
-        throw new Error("Failed to resolve created sheetId");
-      }
-      return { created: true, sheetId: meta2.sheetId };
-    }
-
-    return { created: true, sheetId };
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.toLowerCase().includes("already exists")
-    ) {
-      const meta2 = await getSheetMeta(sheets, spreadsheetId, sheetName);
-      if (meta2.sheetId === null) {
-        throw new Error("Sheet exists but sheetId not found");
-      }
-      return { created: false, sheetId: meta2.sheetId };
-    }
-    throw error;
-  }
-}
-
-function uniquePreserveOrder(items: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const it of items) {
-    if (!it) continue;
-    if (seen.has(it)) continue;
-    seen.add(it);
-    out.push(it);
-  }
-  return out;
-}
-
-function toValuesWithHeaders(rows: RowData[]) {
-  if (rows.length === 0) {
-    return {
-      headers: [] as string[],
-      values: [] as (string | number | boolean)[][],
-    };
-  }
-
-  const preferredOrder = [
+  const preferred = [
     "Time",
     "DancerName",
     "Category",
@@ -153,67 +52,66 @@ function toValuesWithHeaders(rows: RowData[]) {
     "OrderType",
   ];
 
-  const allKeys: string[] = [];
-  for (const row of rows) {
-    for (const key of Object.keys(row)) allKeys.push(key);
-  }
-  const unionKeys = uniquePreserveOrder(allKeys);
+  const keys = unique(rows.flatMap((r) => Object.keys(r)));
 
-  const headersFromPreferred = preferredOrder.filter((h) =>
-    unionKeys.includes(h)
-  );
-  const rest = unionKeys.filter((k) => !headersFromPreferred.includes(k));
-  const headers = [...headersFromPreferred, ...rest];
+  const headers = [
+    ...preferred.filter((k) => keys.includes(k)),
+    ...keys.filter((k) => !preferred.includes(k)),
+  ];
 
   const values = rows.map((row) =>
-    headers.map((header) => {
-      const cellValue = row[header];
-      if (
-        typeof cellValue === "string" ||
-        typeof cellValue === "number" ||
-        typeof cellValue === "boolean"
-      ) {
-        return cellValue;
-      }
-      return "";
+    headers.map((h) => {
+      const v = row[h];
+      return typeof v === "string" ||
+        typeof v === "number" ||
+        typeof v === "boolean"
+        ? v
+        : "";
     })
   );
 
   return { headers, values };
 }
 
-async function writeCanonicalLayout(
+async function ensureSheet(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
-  sheetName: string,
-  headers: string[],
-  title?: string,
-  dataValues?: (string | number | boolean)[][]
-): Promise<void> {
-  const trimmedTitle = (title ?? "").trim();
-
-  const values: (string | number | boolean)[][] = [
-    [trimmedTitle],
-    [""],
-    headers,
-    ...(dataValues ?? []),
-  ];
-
-  await sheets.spreadsheets.values.update({
+  sheetName: string
+) {
+  const meta = await sheets.spreadsheets.get({
     spreadsheetId,
-    range: `${sheetName}!A1`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values },
+    fields: "sheets(properties(sheetId,title))",
   });
+
+  const existing = meta.data.sheets?.find(
+    (s) => s.properties?.title === sheetName
+  );
+
+  if (existing?.properties?.sheetId) {
+    return existing.properties.sheetId;
+  }
+
+  const resp = await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [{ addSheet: { properties: { title: sheetName } } }],
+    },
+  });
+
+  const sheetId = resp.data.replies?.[0]?.addSheet?.properties?.sheetId;
+
+  if (typeof sheetId !== "number") {
+    throw new Error("Failed to create sheet: sheetId missing in API response");
+  }
+
+  return sheetId;
 }
 
-async function setupCanonicalSheetLayout(params: {
-  sheets: sheets_v4.Sheets;
-  spreadsheetId: string;
-  sheetId: number;
-}) {
-  const { sheets, spreadsheetId, sheetId } = params;
-
+async function setupLayout(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetId: number
+) {
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
@@ -222,9 +120,7 @@ async function setupCanonicalSheetLayout(params: {
           updateSheetProperties: {
             properties: {
               sheetId,
-              gridProperties: {
-                frozenRowCount: 3,
-              },
+              gridProperties: { frozenRowCount: 3 },
             },
             fields: "gridProperties.frozenRowCount",
           },
@@ -235,8 +131,6 @@ async function setupCanonicalSheetLayout(params: {
               sheetId,
               startRowIndex: 2,
               endRowIndex: 3,
-              startColumnIndex: 0,
-              endColumnIndex: 26,
             },
             cell: {
               userEnteredFormat: {
@@ -251,86 +145,75 @@ async function setupCanonicalSheetLayout(params: {
   });
 }
 
-export async function readSheetValues(options: ReadOptions = {}) {
-  const spreadsheetId = getSpreadsheetIdOrThrow(options.spreadsheetId);
-  const sheetName = options.sheetName ?? "Sheet1";
-  const range = options.range ?? "A:Z";
+async function writeLayout(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetName: string,
+  headers: string[],
+  title?: string,
+  values?: (string | number | boolean)[][]
+) {
+  const data = [[title ?? ""], [""], headers, ...(values ?? [])];
 
-  const sheets = await getSheetsClient(
-    "https://www.googleapis.com/auth/spreadsheets.readonly"
-  );
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: data },
+  });
+}
 
+async function getRowCount(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  sheetName: string
+) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!${range}`,
+    range: `${sheetName}!A:A`,
   });
 
-  return res.data.values ?? [];
+  return res.data.values?.length ?? 0;
 }
 
 export async function saveRowsToSheet(
   data: RowData[] | RowData,
-  options: WriteOptions = {}
+  options: Options = {}
 ) {
-  const spreadsheetId = getSpreadsheetIdOrThrow(options.spreadsheetId);
+  const spreadsheetId = getSpreadsheetId(options.spreadsheetId);
   const sheetName = options.sheetName ?? "Sheet1";
-  const clearBeforeWrite = options.clearBeforeWrite ?? false;
-  const title = options.title;
 
   const rows = Array.isArray(data) ? data : [data];
-  if (rows.length === 0) return { written: 0, appended: 0 };
+  if (!rows.length) return;
 
-  const sheets = await getSheetsClient(
+  const sheets = await getSheets(
     "https://www.googleapis.com/auth/spreadsheets"
   );
 
-  const { headers, values } = toValuesWithHeaders(rows);
-  if (headers.length === 0) return { written: 0, appended: 0 };
+  const { headers, values } = toValues(rows);
 
-  const { created, sheetId } = await ensureSheetExists(
-    sheets,
-    spreadsheetId,
-    sheetName
-  );
+  const sheetId = await ensureSheet(sheets, spreadsheetId, sheetName);
 
-  if (clearBeforeWrite) {
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId,
-      range: `${sheetName}!A:Z`,
-    });
+  const rowCount = await getRowCount(sheets, spreadsheetId, sheetName);
 
-    await writeCanonicalLayout(
+  if (options.clearBeforeWrite || rowCount <= 3) {
+    await writeLayout(
       sheets,
       spreadsheetId,
       sheetName,
       headers,
-      title,
+      options.title,
       values
     );
 
-    await setupCanonicalSheetLayout({ sheets, spreadsheetId, sheetId });
+    await setupLayout(sheets, spreadsheetId, sheetId);
 
-    return { cleared: true, written: values.length };
-  }
-
-  if (created) {
-    await writeCanonicalLayout(
-      sheets,
-      spreadsheetId,
-      sheetName,
-      headers,
-      title,
-      values
-    );
-
-    await setupCanonicalSheetLayout({ sheets, spreadsheetId, sheetId });
-
-    return { created: true, appended: values.length };
+    return { written: values.length };
   }
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A4:Z`,
+    range: `${sheetName}!A4`,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
