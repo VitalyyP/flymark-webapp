@@ -598,9 +598,11 @@ export default function HomePage() {
                         <div className="relative w-20 h-20 rounded-[20px] overflow-hidden shadow-inner bg-zinc-100 shrink-0 border border-zinc-200">
                           <Image
                             src={c.CoverPhoto}
-                            alt=""
+                            alt={c.CompetitionName ?? ""}
                             fill
                             className="object-cover"
+                            sizes="78px"
+                            priority={true}
                           />
                         </div>
                         <div className="flex flex-col flex-1 min-w-0 justify-center">
