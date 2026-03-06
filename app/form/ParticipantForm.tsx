@@ -399,8 +399,8 @@ export function ParticipantForm({
                           checked
                             ? "bg-green-50/40 border-[#00a63e] shadow-md shadow-green-900/5"
                             : showValidation && selectedItems.length === 0
-                            ? "bg-white border-red-100 shadow-sm"
-                            : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
+                              ? "bg-white border-red-100 shadow-sm"
+                              : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
                         }
                       `}
                     >
@@ -415,8 +415,8 @@ export function ParticipantForm({
                         >
                           {item.category}
                         </span>
-                        <div className="flex flex-wrap justify-between gap-y-2 gap-x-4">
-                          <div className="flex items-center gap-1.5 py-1 px-2.5 bg-zinc-100 rounded-lg border border-zinc-200/50">
+                        <div className="flex flex-wrap justify-between gap-y-2 gap-x-1">
+                          <div className="flex items-center gap-1.5 py-1 px-2 bg-zinc-100 rounded-lg border border-zinc-200/50">
                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">
                               Програма:
                             </span>
@@ -502,10 +502,10 @@ export function ParticipantForm({
                               regNumberUnknown
                                 ? "bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed"
                                 : isSuccess
-                                ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
-                                : isError
-                                ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
-                                : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
+                                  ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
+                                  : isError
+                                    ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
+                                    : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
                             }
                           `}
                         />
