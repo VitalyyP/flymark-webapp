@@ -25,18 +25,18 @@ export async function GET(req: Request) {
     );
 
     if (!categoryRes.ok) {
-      return NextResponse.json(
-        { error: "Cannot get categoryId" },
-        { status: categoryRes.status }
-      );
+      return NextResponse.json({
+        categoryId: null,
+        details: null,
+      });
     }
 
     const { categoryId } = await categoryRes.json();
     if (!categoryId) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        categoryId: null,
+        details: null,
+      });
     }
 
     const cookieHeader = await getFlymarkCookieHeader();
