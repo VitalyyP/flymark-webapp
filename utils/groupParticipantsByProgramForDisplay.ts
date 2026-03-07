@@ -18,7 +18,7 @@ function norm(s: string) {
 }
 
 function isPremiumOrder(orderType: string) {
-  return norm(orderType).toLowerCase() === "premium";
+  return norm(orderType).toLowerCase() === "*";
 }
 
 export function groupParticipantsByProgramForDisplay(

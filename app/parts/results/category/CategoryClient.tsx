@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, RefreshCw } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
 import {
@@ -41,6 +41,7 @@ function CategoryTable({
   part,
   time,
   roundMap,
+  roundsLoading,
 }: {
   storageKey: string;
   categoryParam: string;
@@ -49,6 +50,7 @@ function CategoryTable({
   part: string;
   time: string;
   roundMap: Record<string, string[]>;
+  roundsLoading: boolean;
 }) {
   const [crossedKeys, setCrossedKeys] = useState<string[]>(() =>
     readCrossedFromStorage(storageKey)
@@ -56,42 +58,49 @@ function CategoryTable({
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
 
-  const groupedByRounds = useMemo<Record<string, DisplayItem[]>>(() => {
-    if (!roundMap || Object.keys(roundMap).length === 0) return {};
-    const byNumber = new Map(participants.map((p) => [p.regNumber, p]));
-    const out: Record<string, DisplayItem[]> = {};
-    for (const round of Object.keys(roundMap)) {
-      out[round] = roundMap[round]
-        .map((num) => byNumber.get(num))
-        .filter(Boolean)
-        .map((p) => ({
-          regNumber: p!.regNumber,
-          isPremium: p!.orderType === "premium",
-          program: p!.program,
-        }));
-    }
-    return out;
-  }, [participants, roundMap]);
-
-  const hasRounds = Object.keys(groupedByRounds).length > 0;
   const groupedByPrograms = useMemo(
     () => groupParticipantsByProgramForDisplay(participants),
     [participants]
   );
 
-  const grouped = hasRounds ? groupedByRounds : groupedByPrograms;
+  const groupedByRounds = useMemo<Record<string, DisplayItem[]>>(() => {
+    if (!roundMap || Object.keys(roundMap).length === 0) return {};
 
-  const rows = useMemo(() => {
-    const keys = Object.keys(grouped);
-    return hasRounds
-      ? keys.sort((a, b) => +a - +b)
-      : keys.sort((a, b) => a.localeCompare(b, "uk", { numeric: true }));
-  }, [grouped, hasRounds]);
+    const byNumber = new Map<string, DisplayItem>();
+    Object.values(groupedByPrograms).forEach((list) => {
+      list.forEach((item) => {
+        if (!byNumber.has(item.regNumber)) {
+          byNumber.set(item.regNumber, item);
+        }
+      });
+    });
 
-  const label = hasRounds ? "Захід" : "Програма";
+    const out: Record<string, DisplayItem[]> = {};
+    for (const round of Object.keys(roundMap)) {
+      out[round] = (roundMap[round] ?? [])
+        .map((num) => byNumber.get(num))
+        .filter((v): v is DisplayItem => Boolean(v));
+    }
+    return out;
+  }, [roundMap, groupedByPrograms]);
+
+  const hasRounds = Object.keys(groupedByRounds).length > 0;
+
+  const programKeys = useMemo(
+    () =>
+      Object.keys(groupedByPrograms).sort((a, b) =>
+        a.localeCompare(b, "uk", { numeric: true })
+      ),
+    [groupedByPrograms]
+  );
+
+  const roundKeys = useMemo(
+    () => Object.keys(groupedByRounds).sort((a, b) => Number(a) - Number(b)),
+    [groupedByRounds]
+  );
 
   return (
-    <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-sm border border-zinc-100 p-3 sm:p-8 flex flex-col">
+    <div className="w-full max-w-2xl bg-white rounded-4xl shadow-sm border border-zinc-100 p-3 sm:p-8 flex flex-col">
       <div className="text-center py-6 mb-4">
         <h1 className="text-[22px] font-black uppercase tracking-tight text-green-600 leading-tight">
           Відділення {part} <span className="text-zinc-300 mx-1">/</span>{" "}
@@ -106,7 +115,7 @@ function CategoryTable({
         <thead>
           <tr className="border-b-2 border-zinc-100">
             <th className="py-3 px-3 text-left text-[13px] font-bold text-zinc-400 uppercase">
-              {label}
+              Програма
             </th>
             <th className="py-3 px-3 text-left text-[13px] font-bold text-zinc-400 uppercase">
               Номери учасників
@@ -114,14 +123,12 @@ function CategoryTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((key) => (
+          {programKeys.map((key) => (
             <tr key={key} className="border-b border-zinc-50 last:border-0">
-              <td className="py-6 px-3 font-bold text-zinc-900">
-                {hasRounds ? `Захід ${key}` : key}
-              </td>
+              <td className="py-6 px-3 font-bold text-zinc-900">{key}</td>
               <td className="py-6 px-3">
                 <div className="flex flex-wrap gap-x-3 gap-y-4">
-                  {(grouped[key] ?? []).map((item, idx) => {
+                  {(groupedByPrograms[key] ?? []).map((item, idx) => {
                     const num = item.regNumber;
                     const crossKey = makeCrossKey(
                       categoryParam,
@@ -148,7 +155,7 @@ function CategoryTable({
                         >
                           {num}
                         </span>
-                        {idx < (grouped[key]?.length ?? 0) - 1 && (
+                        {idx < (groupedByPrograms[key]?.length ?? 0) - 1 && (
                           <span className="text-zinc-400 ml-1">,</span>
                         )}
                       </span>
@@ -160,6 +167,87 @@ function CategoryTable({
           ))}
         </tbody>
       </table>
+
+      {roundsLoading && !hasRounds && (
+        <div className="mt-8 p-6 bg-zinc-50/50 rounded-2xl border border-dashed border-zinc-200 flex justify-center">
+          <span className="text-[13px] font-bold text-[#00a63e] uppercase animate-pulse flex items-center gap-3">
+            <RefreshCw size={16} className="animate-spin" />
+            Оновлення заходів...
+          </span>
+        </div>
+      )}
+
+      {hasRounds && (
+        <div className="mt-10 bg-zinc-50/80 rounded-3xl p-4 sm:p-6 border border-zinc-100 shadow-inner">
+          <div className="text-center mb-6">
+            <h2 className="text-[15px] font-bold text-zinc-500 uppercase tracking-wide">
+              Розподіл по заходах
+            </h2>
+          </div>
+
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-200">
+                <th className="py-2 px-3 text-left text-[11px] font-black uppercase text-zinc-400 tracking-widest">
+                  Захід
+                </th>
+                <th className="py-2 px-3 text-left text-[11px] font-black uppercase text-zinc-400 tracking-widest">
+                  Номери учасників
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {roundKeys.map((key) => (
+                <tr
+                  key={key}
+                  className="border-b border-zinc-100 last:border-0"
+                >
+                  <td className="py-5 px-3 font-bold text-zinc-800 text-[16px]">
+                    {`Захід ${key}`}
+                  </td>
+                  <td className="py-5 px-3">
+                    <div className="flex flex-wrap gap-x-3 gap-y-4">
+                      {(groupedByRounds[key] ?? []).map((item, idx) => {
+                        const num = item.regNumber;
+                        const crossKey = makeCrossKey(
+                          categoryParam,
+                          item.program,
+                          num,
+                          idx
+                        );
+                        const crossed = crossedSet.has(crossKey);
+                        return (
+                          <span
+                            key={crossKey}
+                            className="text-[22px] font-bold cursor-pointer active:scale-90"
+                            onClick={() =>
+                              setCrossedKeys((prev) =>
+                                toggleCrossedKey(prev, crossKey, storageKey)
+                              )
+                            }
+                          >
+                            <span
+                              className={`
+                          ${crossed ? "line-through opacity-30" : ""}
+                          ${item.isPremium ? "text-red-600" : "text-zinc-800"}
+                        `}
+                            >
+                              {num}
+                            </span>
+                            {idx < (groupedByRounds[key]?.length ?? 0) - 1 && (
+                              <span className="text-zinc-300 ml-1">,</span>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="mt-12 mb-4 flex justify-center border-t border-zinc-50 pt-8">
         {renderBackButton(eventParam)}
@@ -189,6 +277,7 @@ export default function CategoryClient() {
 
   const [participants, setParticipants] = useState<Participant[] | null>(null);
   const [roundMap, setRoundMap] = useState<Record<string, string[]>>({});
+  const [roundsLoading, setRoundsLoading] = useState(false);
 
   useEffect(() => {
     if (!eventId || !categoryParam) return;
@@ -210,17 +299,28 @@ export default function CategoryClient() {
     if (!eventId || !categoryParam || !participants?.length) return;
 
     const program = participants[0].program;
+    const ac = new AbortController();
 
-    fetch(
-      `/api/flymark/streamdetails?id=${eventId}` +
-        `&categoryName=${encodeURIComponent(categoryParam)}` +
-        `&programName=${encodeURIComponent(program)}` +
-        `&competitionId=${eventId}`
-    )
-      .then((r) => r.json())
-      .then((data) => {
+    const loadRounds = async () => {
+      try {
+        setRoundsLoading(true);
+
+        const res = await fetch(
+          `/api/flymark/streamdetails?id=${eventId}` +
+            `&categoryName=${encodeURIComponent(categoryParam)}` +
+            `&programName=${encodeURIComponent(program)}` +
+            `&competitionId=${eventId}`,
+          { signal: ac.signal }
+        );
+
+        const data = await res.json();
+        if (ac.signal.aborted) return;
+
         const qualifications = data?.details?.Qualifications;
-        if (!qualifications) return;
+        if (!qualifications) {
+          setRoundMap({});
+          return;
+        }
 
         const rounds: Record<string, string[]> = {};
 
@@ -231,8 +331,20 @@ export default function CategoryClient() {
         }
 
         setRoundMap(rounds);
-      })
-      .catch((err) => console.error("flymark error:", err));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("flymark error:", err);
+        setRoundMap({});
+      } finally {
+        if (!ac.signal.aborted) {
+          setRoundsLoading(false);
+        }
+      }
+    };
+
+    void loadRounds();
+
+    return () => ac.abort();
   }, [eventId, categoryParam, participants]);
 
   if (!decoded || !eventId || !time || !eventParam || !categoryParam) {
@@ -262,6 +374,7 @@ export default function CategoryClient() {
         part={part}
         time={time}
         roundMap={roundMap}
+        roundsLoading={roundsLoading}
       />
     </div>
   );
