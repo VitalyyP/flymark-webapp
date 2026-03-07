@@ -124,7 +124,7 @@ function CrossTable({
                     <Link
                       href={`/parts/results/category?event=${eventParam}&category=${encodeURIComponent(
                         cat
-                      )}`}
+                      )}&program=${encodeURIComponent(prog)}`}
                       className="group flex flex-col decoration-zinc-300 underline-offset-[6px] hover:decoration-green-500 transition-all"
                     >
                       <span className="text-[14px] font-bold text-zinc-800 group-hover:text-green-600 transition-colors leading-snug underline decoration-dotted decoration-1">

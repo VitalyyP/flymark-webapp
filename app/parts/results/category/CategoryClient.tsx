@@ -172,6 +172,7 @@ export default function CategoryClient() {
   const searchParams = useSearchParams();
   const eventParam = searchParams.get("event") ?? "";
   const categoryParam = searchParams.get("category") ?? "";
+  const programParam = searchParams.get("program") ?? "";
 
   const decoded = useMemo(
     () => (eventParam ? decodeEvent(eventParam) : null),
@@ -199,17 +200,19 @@ export default function CategoryClient() {
       .then((r) => r.json())
       .then((data) => {
         const filtered: Participant[] = (data.participants ?? []).filter(
-          (p: Participant) => p.category.trim() === categoryParam.trim()
+          (p: Participant) =>
+            p.category.trim() === categoryParam.trim() &&
+            p.program.trim() === programParam.trim()
         );
         setParticipants(filtered);
       })
       .catch(() => setParticipants([]));
-  }, [eventId, categoryParam, time]);
+  }, [eventId, categoryParam, time, programParam]);
 
   useEffect(() => {
     if (!eventId || !categoryParam || !participants?.length) return;
 
-    const program = participants[0].program;
+    const program = programParam;
 
     fetch(
       `/api/flymark/streamdetails?id=${eventId}` +
@@ -233,9 +236,16 @@ export default function CategoryClient() {
         setRoundMap(rounds);
       })
       .catch((err) => console.error("flymark error:", err));
-  }, [eventId, categoryParam, participants]);
+  }, [eventId, categoryParam, participants, programParam]);
 
-  if (!decoded || !eventId || !time || !eventParam || !categoryParam) {
+  if (
+    !decoded ||
+    !eventId ||
+    !time ||
+    !eventParam ||
+    !categoryParam ||
+    !programParam
+  ) {
     return (
       <div className="flex justify-center p-6 bg-zinc-100 min-h-screen">
         <p className="p-6 text-center text-red-600 bg-white rounded-2xl shadow-sm h-fit">
