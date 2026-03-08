@@ -80,6 +80,8 @@ export default function SelectParticipantPage() {
     ParticipantOption | undefined
   >();
 
+  const [canSubmit, setCanSubmit] = useState(false);
+
   const [loadingEvent, setLoadingEvent] = useState(false);
   const [loadingFast, setLoadingFast] = useState(false);
   const [loadingSlow, setLoadingSlow] = useState(false);
@@ -159,6 +161,7 @@ export default function SelectParticipantPage() {
   const handleSearch = (value: string) => {
     setQuery(value);
     setSelectedParticipant(undefined);
+    setCanSubmit(false);
     setIsFocused(true);
   };
 
@@ -173,6 +176,12 @@ export default function SelectParticipantPage() {
 
     setIsFocused(false);
   };
+
+  useEffect(() => {
+    if (selectedParticipant) {
+      setCanSubmit(true);
+    }
+  }, [selectedParticipant]);
 
   const filtered = useMemo(() => {
     const q = normalizeText(query);
@@ -331,9 +340,9 @@ export default function SelectParticipantPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={!selectedParticipant || loadingFast || loadingSlow}
+              disabled={!canSubmit}
               className={`w-full py-4 rounded-2xl font-semibold text-[17px] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.98] ${
-                selectedParticipant
+                canSubmit
                   ? "bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer"
                   : "bg-zinc-300 text-white cursor-not-allowed shadow-none"
               }`}
@@ -341,7 +350,7 @@ export default function SelectParticipantPage() {
               <span>Продовжити</span>
               <div
                 className={`transition-transform duration-300 ${
-                  selectedParticipant ? "translate-x-1" : ""
+                  canSubmit ? "translate-x-1" : ""
                 }`}
               >
                 <ArrowRight size={20} className="text-white" />
