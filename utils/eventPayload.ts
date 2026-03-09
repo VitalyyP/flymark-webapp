@@ -2,6 +2,7 @@ export type EventPayload = {
   id: string;
   name: string;
   coverUrl: string;
+  dateTo: string;
   time?: string;
   part?: string;
   program?: string;
@@ -61,7 +62,8 @@ function isEventPayload(v: unknown): v is EventPayload {
   if (
     typeof v.id !== "string" ||
     typeof v.name !== "string" ||
-    typeof v.coverUrl !== "string"
+    typeof v.coverUrl !== "string" ||
+    typeof v.dateTo !== "string"
   ) {
     return false;
   }

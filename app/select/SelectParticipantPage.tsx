@@ -68,6 +68,7 @@ export default function SelectParticipantPage() {
 
   const [eventName, setEventName] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const [fastParticipants, setFastParticipants] = useState<ParticipantOption[]>(
     []
@@ -102,6 +103,7 @@ export default function SelectParticipantPage() {
         if (data?.ok) {
           setEventName(data.event.name ?? "");
           setCoverUrl(data.event.coverUrl ?? "");
+          setDateTo(data.event.dateTo ?? "");
         }
       } finally {
         setLoadingEvent(false);
@@ -208,6 +210,7 @@ export default function SelectParticipantPage() {
       id: eventId,
       name: eventName,
       coverUrl,
+      dateTo,
       participant: selectedParticipant,
     });
 

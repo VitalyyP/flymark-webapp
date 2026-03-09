@@ -86,6 +86,7 @@ export default async function Page({ searchParams }: PageProps) {
       results={results}
       eventId={event.id}
       eventName={event.name}
+      eventDate={event.dateTo}
       coverUrl={event.coverUrl}
     />
   );

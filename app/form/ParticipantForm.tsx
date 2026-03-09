@@ -61,6 +61,7 @@ type Props = {
   results: ResultItem[];
   eventId: string;
   eventName: string;
+  eventDate: string;
   coverUrl: string;
 };
 
@@ -69,6 +70,7 @@ export function ParticipantForm({
   results = [],
   eventId,
   eventName,
+  eventDate,
 }: Props) {
   const [regNumber, setRegNumber] = useState("");
   const [regNumberUnknown, setRegNumberUnknown] = useState(false);
@@ -211,6 +213,7 @@ export function ParticipantForm({
     const payload = {
       eventId: Number(eventId),
       eventName,
+      eventDate,
       name: participantName,
       secondName,
       club,
@@ -399,8 +402,8 @@ export function ParticipantForm({
                           checked
                             ? "bg-green-50/40 border-[#00a63e] shadow-md shadow-green-900/5"
                             : showValidation && selectedItems.length === 0
-                              ? "bg-white border-red-100 shadow-sm"
-                              : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
+                            ? "bg-white border-red-100 shadow-sm"
+                            : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
                         }
                       `}
                     >
@@ -502,10 +505,10 @@ export function ParticipantForm({
                               regNumberUnknown
                                 ? "bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed"
                                 : isSuccess
-                                  ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
-                                  : isError
-                                    ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
-                                    : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
+                                ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
+                                : isError
+                                ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
+                                : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
                             }
                           `}
                         />

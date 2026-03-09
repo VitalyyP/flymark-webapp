@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       body.eventId ?? body.eventID ?? body.EventId
     );
     const eventName = toTrimmedString(body.eventName ?? body.EventName);
+    const eventDate = toTrimmedString(body.eventDate ?? body.EventDate);
     const dancerName = toTrimmedString(
       body.name ?? body.DancerName ?? body.dancerName
     );
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
       sheetName: `${eventId}/B`,
       clearBeforeWrite: false,
       title: eventName || undefined,
+      subtitle: eventDate || undefined,
     });
 
     return NextResponse.json({ success: true, written: rows.length });
