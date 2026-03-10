@@ -13,6 +13,7 @@ type Options = {
   sheetName?: string;
   clearBeforeWrite?: boolean;
   title?: string;
+  subtitle?: string;
 };
 
 function getSpreadsheetId(spreadsheetId?: string) {
@@ -151,9 +152,10 @@ async function writeLayout(
   sheetName: string,
   headers: string[],
   title?: string,
+  subtitle?: string,
   values?: (string | number | boolean)[][]
 ) {
-  const data = [[title ?? ""], [""], headers, ...(values ?? [])];
+  const data = [[title ?? ""], [subtitle ?? ""], headers, ...(values ?? [])];
 
   await sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -203,6 +205,7 @@ export async function saveRowsToSheet(
       sheetName,
       headers,
       options.title,
+      options.subtitle,
       values
     );
 

@@ -83,6 +83,7 @@ export default function PartsClient() {
 
   const [eventId, setEventId] = useState("");
   const [eventName, setEventName] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
 
   const [times, setTimes] = useState<TimeItem[]>([]);
@@ -106,6 +107,7 @@ export default function PartsClient() {
           setEventId(json.event.id);
           setEventName(json.event.name);
           setCoverUrl(json.event.coverUrl);
+          setDateTo(json.event.dateTo);
         } else {
           setEventId("");
           setEventName("");
@@ -179,11 +181,11 @@ export default function PartsClient() {
   const handleTimeSelect = (item: TimeItem) => {
     if (!item.enabled) return;
 
-    // ✅ тут лишаємо payload, якщо тебе це влаштовує (внутрішній перехід)
     const encoded = encodeEvent({
       id: eventId,
       name: eventName,
       coverUrl,
+      dateTo,
       time: item.time,
       part: item.part.toString(),
     });

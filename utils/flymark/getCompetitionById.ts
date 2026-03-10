@@ -39,7 +39,10 @@ export async function getCompetitionById(
     `https://flymark.dance/api/competition/${competitionId}?mode=table`,
     {
       cache: "no-store",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "Accept-Language": "uk-UA,uk;q=0.9",
+      },
     }
   );
 
