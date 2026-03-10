@@ -2,7 +2,7 @@ export type EventPayload = {
   id: string;
   name: string;
   coverUrl: string;
-  dateTo?: string;
+  dateTo: string;
   time?: string;
   part?: string;
   program?: string;
