@@ -90,6 +90,8 @@ export default function SelectParticipantPage() {
 
   const requestIdRef = useRef(0);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     if (!eventId) return;
     const run = async () => {
@@ -203,8 +205,10 @@ export default function SelectParticipantPage() {
     !!query && hasFastData && !filtered.length && loadingSlow;
   const showCover = Boolean(coverUrl) && !loadingEvent;
 
-  const handleSubmit = () => {
-    if (!selectedParticipant || !eventId) return;
+  const handleSubmit = async () => {
+    if (!selectedParticipant || !eventId || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     const encoded = encodeEvent({
       id: eventId,
@@ -214,7 +218,7 @@ export default function SelectParticipantPage() {
       participant: selectedParticipant,
     });
 
-    router.push(`/form?event=${encodeURIComponent(encoded)}`);
+    await router.push(`/form?event=${encodeURIComponent(encoded)}`);
   };
 
   return (
@@ -343,21 +347,30 @@ export default function SelectParticipantPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={!canSubmit}
+              disabled={!canSubmit || isSubmitting}
               className={`w-full py-4 rounded-2xl font-semibold text-[17px] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-[0.98] ${
-                canSubmit
+                canSubmit && !isSubmitting
                   ? "bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer"
                   : "bg-zinc-300 text-white cursor-not-allowed shadow-none"
               }`}
             >
-              <span>Продовжити</span>
-              <div
-                className={`transition-transform duration-300 ${
-                  canSubmit ? "translate-x-1" : ""
-                }`}
-              >
-                <ArrowRight size={20} className="text-white" />
-              </div>
+              {isSubmitting ? (
+                <div className="flex items-center gap-3">
+                  <RefreshCw size={20} className="animate-spin text-white" />
+                  <span>Готуємо форму...</span>
+                </div>
+              ) : (
+                <>
+                  <span>Продовжити</span>
+                  <div
+                    className={`transition-transform duration-300 ${
+                      canSubmit ? "translate-x-1" : ""
+                    }`}
+                  >
+                    <ArrowRight size={20} className="text-white" />
+                  </div>
+                </>
+              )}
             </button>
           </div>
         </div>
