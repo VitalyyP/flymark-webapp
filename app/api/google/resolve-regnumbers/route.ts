@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
+import { getCompetitionNumbers } from "@/utils/flymark/getCompetitionNumbers";
+
 export const runtime = "nodejs";
 
 type SheetRow = (string | undefined)[];
@@ -50,12 +52,12 @@ async function getSheetsClient() {
 
   const auth = new google.auth.GoogleAuth({
     credentials: { client_email: clientEmail, private_key: privateKey },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
   return {
     sheets: google.sheets({ version: "v4", auth }),
-    spreadsheetId
+    spreadsheetId,
   };
 }
 
@@ -77,7 +79,7 @@ export async function POST(req: Request) {
     try {
       resp = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A:Z`
+        range: `${sheetName}!A:Z`,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -85,7 +87,7 @@ export async function POST(req: Request) {
       if (message.includes("Unable to parse range")) {
         const body: ApiErr = {
           ok: false,
-          error: `Аркуш ${sheetName} не існує`
+          error: `Аркуш ${sheetName} не існує`,
         };
         return NextResponse.json(body, { status: 404 });
       }
@@ -111,7 +113,7 @@ export async function POST(req: Request) {
       const body: ApiErr = {
         ok: false,
         error: "Required columns not found",
-        details: { idxName, idxReg }
+        details: { idxName, idxReg },
       };
       return NextResponse.json(body, { status: 500 });
     }
@@ -136,46 +138,42 @@ export async function POST(req: Request) {
         ok: true,
         updated: 0,
         checked: dataRows.length,
-        tried: 0
+        tried: 0,
       };
       return NextResponse.json(body, { status: 200 });
     }
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL?.trim() || "http://localhost:3000";
-
     const updates: Array<{ range: string; values: string[][] }> = [];
     const errors: Array<{ name: string; reason: string }> = [];
+    const numbersMap = await getCompetitionNumbers(eventId);
+
+    function normalize(s: string) {
+      return s.trim().normalize("NFC").toLowerCase().replace(/\s+/g, " ");
+    }
 
     for (const t of tasks) {
-      try {
-        const url = `${baseUrl}/api/flymark/find-number-by-name?competitionId=${encodeURIComponent(
-          eventId
-        )}&name=${encodeURIComponent(t.name)}`;
+      const normalized = normalize(t.name);
+      const parts = normalized.split(" ").filter(Boolean);
 
-        const r = await fetch(url, { cache: "no-store" });
-        const j = (await r.json()) as {
-          number?: number | null;
-          error?: string;
-        };
+      let foundNumber: number | undefined;
 
-        if (!r.ok) {
-          errors.push({
-            name: t.name,
-            reason: j.error ?? "Flymark request failed"
-          });
-          continue;
+      for (const [candidate, num] of numbersMap.entries()) {
+        if (parts.every((p) => candidate.includes(p))) {
+          foundNumber = num;
+          break;
         }
+      }
 
-        if (typeof j.number === "number") {
-          updates.push({
-            range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
-            values: [[String(j.number)]]
-          });
-        }
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Unknown error";
-        errors.push({ name: t.name, reason: msg });
+      if (typeof foundNumber === "number") {
+        updates.push({
+          range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
+          values: [[String(foundNumber)]],
+        });
+      } else {
+        errors.push({
+          name: t.name,
+          reason: "Number not found",
+        });
       }
     }
 
@@ -185,7 +183,7 @@ export async function POST(req: Request) {
         updated: 0,
         checked: dataRows.length,
         tried: tasks.length,
-        errors
+        errors,
       };
       return NextResponse.json(body, { status: 200 });
     }
@@ -194,8 +192,8 @@ export async function POST(req: Request) {
       spreadsheetId,
       requestBody: {
         valueInputOption: "RAW",
-        data: updates
-      }
+        data: updates,
+      },
     });
 
     const body: ApiOk = {
@@ -203,7 +201,7 @@ export async function POST(req: Request) {
       updated: updates.length,
       checked: dataRows.length,
       tried: tasks.length,
-      errors
+      errors,
     };
     return NextResponse.json(body, { status: 200 });
   } catch (e) {
