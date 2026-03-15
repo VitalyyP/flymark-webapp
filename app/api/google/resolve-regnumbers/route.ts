@@ -2,6 +2,9 @@ import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import pLimit from "p-limit";
 
+import { findNumberByName } from "@/utils/flymark/findNumberByName";
+import { getFlymarkCookieHeader } from "@/utils/flymarkAuth";
+
 export const runtime = "nodejs";
 
 type SheetRow = (string | undefined)[];
@@ -142,45 +145,30 @@ export async function POST(req: Request) {
       return NextResponse.json(body, { status: 200 });
     }
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL?.trim() || "http://localhost:3000";
-
     const updates: Array<{ range: string; values: string[][] }> = [];
     const errors: Array<{ name: string; reason: string }> = [];
 
     const limit = pLimit(10);
+    const cookieHeader = await getFlymarkCookieHeader();
 
     await Promise.all(
       tasks.map((t) =>
         limit(async () => {
-          try {
-            const url = `${baseUrl}/api/flymark/find-number-by-name?competitionId=${encodeURIComponent(
-              eventId
-            )}&name=${encodeURIComponent(t.name)}`;
+          const j = await findNumberByName(eventId, t.name, cookieHeader);
 
-            const r = await fetch(url, { cache: "no-store" });
-            const j = (await r.json()) as {
-              number?: number | null;
-              error?: string;
-            };
+          if (j.error) {
+            errors.push({
+              name: t.name,
+              reason: j.error,
+            });
+            return;
+          }
 
-            if (!r.ok) {
-              errors.push({
-                name: t.name,
-                reason: j.error ?? "Flymark request failed",
-              });
-              return;
-            }
-
-            if (typeof j.number === "number") {
-              updates.push({
-                range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
-                values: [[String(j.number)]],
-              });
-            }
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : "Unknown error";
-            errors.push({ name: t.name, reason: msg });
+          if (typeof j.number === "number") {
+            updates.push({
+              range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
+              values: [[String(j.number)]],
+            });
           }
         })
       )
