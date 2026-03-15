@@ -1,9 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
-import pLimit from "p-limit";
 
-import { findNumberByName } from "@/utils/flymark/findNumberByName";
-import { getFlymarkCookieHeader } from "@/utils/flymarkAuth";
+import { getCompetitionNumbers } from "@/utils/flymark/getCompetitionNumbers";
 
 export const runtime = "nodejs";
 
@@ -147,32 +145,37 @@ export async function POST(req: Request) {
 
     const updates: Array<{ range: string; values: string[][] }> = [];
     const errors: Array<{ name: string; reason: string }> = [];
+    const numbersMap = await getCompetitionNumbers(eventId);
 
-    const limit = pLimit(10);
-    const cookieHeader = await getFlymarkCookieHeader();
+    function normalize(s: string) {
+      return s.trim().normalize("NFC").toLowerCase().replace(/\s+/g, " ");
+    }
 
-    await Promise.all(
-      tasks.map((t) =>
-        limit(async () => {
-          const j = await findNumberByName(eventId, t.name, cookieHeader);
+    for (const t of tasks) {
+      const normalized = normalize(t.name);
+      const parts = normalized.split(" ").filter(Boolean);
 
-          if (j.error) {
-            errors.push({
-              name: t.name,
-              reason: j.error,
-            });
-            return;
-          }
+      let foundNumber: number | undefined;
 
-          if (typeof j.number === "number") {
-            updates.push({
-              range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
-              values: [[String(j.number)]],
-            });
-          }
-        })
-      )
-    );
+      for (const [candidate, num] of numbersMap.entries()) {
+        if (parts.every((p) => candidate.includes(p))) {
+          foundNumber = num;
+          break;
+        }
+      }
+
+      if (typeof foundNumber === "number") {
+        updates.push({
+          range: `${sheetName}!${regColA1}${t.rowNumberInSheet}`,
+          values: [[String(foundNumber)]],
+        });
+      } else {
+        errors.push({
+          name: t.name,
+          reason: "Number not found",
+        });
+      }
+    }
 
     if (updates.length === 0) {
       const body: ApiOk = {
