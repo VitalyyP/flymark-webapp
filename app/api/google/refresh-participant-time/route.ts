@@ -204,89 +204,85 @@ export async function POST(req: Request) {
     if (rows.length < 3)
       return NextResponse.json({ ok: true, updated: 0, tried: 0, checked: 0 });
 
-    const headers = (rows[2] ?? []).map((h) =>
-      typeof h === "string" ? h.trim() : ""
-    );
+    const headers = (rows[2] ?? []).map((h) => toStr(h));
     const idxName = headers.indexOf("DancerName");
     const idxCat = headers.indexOf("Category");
     const idxProg = headers.indexOf("Program");
     const idxTime = headers.indexOf("Time");
-
     const colTime = colToA1(idxTime);
 
     const dancerIndex = await buildDancerIndex(eventId);
+    const dancerMap = new Map(dancerIndex.map((d) => [d.key, d]));
+
     const updates: Array<{ range: string; values: string[][] }> = [];
     const errors: Array<{ row: number; name: string; reason: string }> = [];
     let tried = 0;
 
-    for (let i = 3; i < rows.length; i++) {
-      const row = rows[i];
-      const sheetRow = i + 1;
+    await Promise.allSettled(
+      rows.slice(3).map(async (row, i) => {
+        const sheetRow = i + 4;
+        const name = toStr(row[idxName]);
+        if (!name) return;
+        tried++;
 
-      const name = toStr(row[idxName]);
-      if (!name) continue;
-      tried++;
+        const dancer = dancerMap.get(normKey(name));
+        if (!dancer) {
+          errors.push({ row: sheetRow, name, reason: "Dancer not found" });
+          return;
+        }
 
-      const found = dancerIndex.find((d) => d.key === normKey(name));
-      if (!found) {
-        errors.push({ row: sheetRow, name, reason: "Dancer not found" });
-        continue;
-      }
-      const dancerId = found.id;
+        const rowCat = toStr(row[idxCat]);
+        const rowProg = toStr(row[idxProg]);
 
-      const rowCat = toStr(row[idxCat]);
-      const rowProg = toStr(row[idxProg]);
+        const url = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
+          eventId
+        )}/0?dancerId=${encodeURIComponent(dancer.id)}`;
+        const catsResp = await fetchJson(url);
+        const cats = parseCats(catsResp.data);
+        if (!cats.length) return;
 
-      const url = `https://flymark.dance/api/competitionStream/${encodeURIComponent(
-        eventId
-      )}/0?dancerId=${encodeURIComponent(dancerId)}`;
-      const catsResp = await fetchJson(url);
-      const cats = parseCats(catsResp.data);
+        const matchedCat = pickStrictFlyCat(rowCat, rowProg, cats);
+        if (!matchedCat) {
+          const catMatch = cats.some(
+            (c) => cleanForMatch(c.CategoryName) === cleanForMatch(rowCat)
+          );
+          const progMatch = cats.some(
+            (c) => cleanForMatch(c.ResultProgramName) === cleanForMatch(rowProg)
+          );
+          const reason =
+            !catMatch && !progMatch
+              ? `Category + Program mismatches ('${rowCat}' / '${rowProg}')`
+              : !catMatch
+              ? `Category mismatches ('${rowCat}')`
+              : !progMatch
+              ? `Program mismatches ('${rowProg}')`
+              : `Category + Program mismatch (strict)`;
 
-      if (!cats.length) continue;
+          errors.push({ row: sheetRow, name, reason });
+          return;
+        }
 
-      const matchedCat = pickStrictFlyCat(rowCat, rowProg, cats);
+        let newTime = "";
+        if (matchedCat.SectionId !== null) {
+          const rSec = await fetchJson(
+            `https://flymark.dance/api/competitionStream/${encodeURIComponent(
+              eventId
+            )}/${matchedCat.SectionId}`
+          );
+          const secs = parseSections(rSec.data);
+          newTime = secs.find((s) => s.Id === matchedCat.SectionId)?.Name ?? "";
+        }
 
-      if (!matchedCat) {
-        const catMatch = cats.some(
-          (c) => cleanForMatch(c.CategoryName) === cleanForMatch(rowCat)
-        );
-        const progMatch = cats.some(
-          (c) => cleanForMatch(c.ResultProgramName) === cleanForMatch(rowProg)
-        );
-
-        let reason = "";
-        if (!catMatch && !progMatch)
-          reason = `Category mismatches ('${rowCat}') and Program mismatches ('${rowProg}')`;
-        else if (!catMatch) reason = `Category mismatches ('${rowCat}')`;
-        else if (!progMatch) reason = `Program mismatches ('${rowProg}')`;
-        else reason = `Category + Program mismatch (strict)`;
-
-        errors.push({ row: sheetRow, name, reason });
-        continue;
-      }
-
-      let newTime = "";
-      if (matchedCat.SectionId !== null) {
-        const rSec = await fetchJson(
-          `https://flymark.dance/api/competitionStream/${encodeURIComponent(
-            eventId
-          )}/${matchedCat.SectionId}`
-        );
-        const secs = parseSections(rSec.data);
-        newTime = secs.find((s) => s.Id === matchedCat.SectionId)?.Name ?? "";
-      }
-
-      const oldTime = normalizeTime(row[idxTime]);
-      newTime = normalizeTime(newTime);
-
-      if (oldTime !== newTime && newTime) {
-        updates.push({
-          range: `${sheetName}!${colTime}${sheetRow}`,
-          values: [[newTime]],
-        });
-      }
-    }
+        newTime = normalizeTime(newTime);
+        const oldTime = normalizeTime(row[idxTime]);
+        if (oldTime !== newTime && newTime) {
+          updates.push({
+            range: `${sheetName}!${colTime}${sheetRow}`,
+            values: [[newTime]],
+          });
+        }
+      })
+    );
 
     if (updates.length) {
       await sheets.spreadsheets.values.batchUpdate({

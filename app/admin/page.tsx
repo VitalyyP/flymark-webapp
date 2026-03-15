@@ -441,9 +441,7 @@ export default function HomePage() {
         [competitionId]: {
           statusText: null,
           foundCount: resolveData.updated,
-          findError: resolveData.errors?.length
-            ? `Не вдалося знайти номер для ${resolveData.errors.length} учасників`
-            : null,
+          findError: null,
         },
       }));
 
