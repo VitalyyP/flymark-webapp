@@ -594,14 +594,20 @@ export default function HomePage() {
 
                       <div className="flex gap-4 mb-5">
                         <div className="relative w-20 h-20 rounded-[20px] overflow-hidden shadow-inner bg-zinc-100 shrink-0 border border-zinc-200">
-                          <Image
-                            src={c.CoverPhoto}
-                            alt={c.CompetitionName ?? ""}
-                            fill
-                            className="object-cover"
-                            sizes="78px"
-                            priority={true}
-                          />
+                          {c.CoverPhoto ? (
+                            <Image
+                              src={c.CoverPhoto}
+                              alt={c.CompetitionName ?? ""}
+                              fill
+                              className="object-cover"
+                              sizes="78px"
+                              priority={true}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center text-zinc-400 text-xs">
+                              No image
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col flex-1 min-w-0 justify-center">
                           <h2 className="font-extrabold text-zinc-900 text-base md:text-xl leading-snug truncate">
