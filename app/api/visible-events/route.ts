@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { google, sheets_v4 } from "googleapis";
+import { sheets_v4 } from "googleapis";
+
+import { getSheetsClient } from "@/utils/googleSheets";
 
 export const runtime = "nodejs";
 
@@ -8,36 +10,6 @@ const SHEET_NAME = process.env.VISIBLE_EVENTS_SHEET ?? "visibleEvents";
 type VisibleEventsPayload = {
   ids: Array<string | number>;
 };
-
-function normalizePrivateKey(key?: string): string | undefined {
-  if (!key) return key;
-  return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
-}
-
-function getSpreadsheetIdOrThrow(spreadsheetId?: string): string {
-  const resolvedId = spreadsheetId ?? process.env.SHEET_ID;
-  if (!resolvedId) throw new Error("SHEET_ID required");
-  return resolvedId;
-}
-
-async function getSheetsClient(): Promise<sheets_v4.Sheets> {
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
-
-  if (!clientEmail || !privateKey) {
-    throw new Error("Missing GOOGLE_CLIENT_EMAIL or GOOGLE_PRIVATE_KEY");
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-
-  return google.sheets({ version: "v4", auth });
-}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -111,8 +83,8 @@ async function writeWholeSheet(
 
 export async function GET() {
   try {
-    const spreadsheetId = getSpreadsheetIdOrThrow();
-    const sheets = await getSheetsClient();
+    const { sheets, spreadsheetId: defaultId } = await getSheetsClient("write");
+    const spreadsheetId = process.env.SHEET_ID ?? defaultId;
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
@@ -120,7 +92,6 @@ export async function GET() {
     });
 
     const rows = res.data.values ?? [];
-
     const ids: string[] = rows
       .map((r) => normalizeId(r?.[0]))
       .filter((v) => v.length > 0 && v !== "CompetitionId");
@@ -153,11 +124,10 @@ export async function PUT(req: Request) {
       .map(normalizeId)
       .filter((v) => v.length > 0 && v !== "CompetitionId");
 
-    const spreadsheetId = getSpreadsheetIdOrThrow();
-    const sheets = await getSheetsClient();
+    const { sheets, spreadsheetId: defaultId } = await getSheetsClient("write");
+    const spreadsheetId = process.env.SHEET_ID ?? defaultId;
 
     await ensureSheetExists(sheets, spreadsheetId, SHEET_NAME);
-
     await clearWholeSheet(sheets, spreadsheetId, SHEET_NAME);
     await writeWholeSheet(sheets, spreadsheetId, SHEET_NAME, ids);
 

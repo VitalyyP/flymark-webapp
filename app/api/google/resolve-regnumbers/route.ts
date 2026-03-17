@@ -1,7 +1,7 @@
-import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
 import { getCompetitionNumbers } from "@/utils/flymark/getCompetitionNumbers";
+import { getSheetsClient } from "@/utils/googleSheets";
 
 export const runtime = "nodejs";
 
@@ -41,26 +41,6 @@ function colToA1(colIndex0: number) {
   return s;
 }
 
-async function getSheetsClient() {
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
-  const spreadsheetId = process.env.SHEET_ID;
-
-  if (!clientEmail || !privateKey || !spreadsheetId) {
-    throw new Error("Missing Google Sheets environment variables");
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials: { client_email: clientEmail, private_key: privateKey },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-
-  return {
-    sheets: google.sheets({ version: "v4", auth }),
-    spreadsheetId,
-  };
-}
-
 export async function POST(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -73,7 +53,7 @@ export async function POST(req: Request) {
 
     const sheetName = `${eventId}/B`;
 
-    const { sheets, spreadsheetId } = await getSheetsClient();
+    const { sheets, spreadsheetId } = await getSheetsClient("write");
 
     let resp;
     try {
