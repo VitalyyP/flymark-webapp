@@ -1,8 +1,7 @@
 import { google, sheets_v4 } from "googleapis";
 
 function normalizePrivateKey(key?: string) {
-  if (!key) return key;
-  return key.replace(/\\n/g, "\n");
+  return key?.replace(/\\n/g, "\n");
 }
 
 type CellValue = string | number | boolean | null;
@@ -16,22 +15,44 @@ type Options = {
   subtitle?: string;
 };
 
-function getSpreadsheetId(spreadsheetId?: string) {
-  const id = spreadsheetId ?? process.env.SHEET_ID;
-  if (!id) throw new Error("SHEET_ID required");
-  return id;
-}
+type Scope = "read" | "write";
 
-async function getSheets(scope: string): Promise<sheets_v4.Sheets> {
+const clientsCache: Partial<
+  Record<Scope, { sheets: sheets_v4.Sheets; spreadsheetId: string }>
+> = {};
+
+export async function getSheetsClient(
+  scope: Scope = "write"
+): Promise<{ sheets: sheets_v4.Sheets; spreadsheetId: string }> {
+  if (clientsCache[scope]) {
+    return clientsCache[scope]!;
+  }
+
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
+  const spreadsheetId = process.env.SHEET_ID;
+
+  if (!clientEmail || !privateKey || !spreadsheetId) {
+    throw new Error("Missing Google Sheets env");
+  }
+
   const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY),
-    },
-    scopes: [scope],
+    credentials: { client_email: clientEmail, private_key: privateKey },
+    scopes: [
+      scope === "read"
+        ? "https://www.googleapis.com/auth/spreadsheets.readonly"
+        : "https://www.googleapis.com/auth/spreadsheets",
+    ],
   });
 
-  return google.sheets({ version: "v4", auth });
+  const client = {
+    sheets: google.sheets({ version: "v4", auth }),
+    spreadsheetId,
+  };
+
+  clientsCache[scope] = client;
+
+  return client;
 }
 
 function unique(items: string[]) {
@@ -182,15 +203,13 @@ export async function saveRowsToSheet(
   data: RowData[] | RowData,
   options: Options = {}
 ) {
-  const spreadsheetId = getSpreadsheetId(options.spreadsheetId);
   const sheetName = options.sheetName ?? "Sheet1";
 
   const rows = Array.isArray(data) ? data : [data];
   if (!rows.length) return;
 
-  const sheets = await getSheets(
-    "https://www.googleapis.com/auth/spreadsheets"
-  );
+  const { sheets, spreadsheetId: defaultId } = await getSheetsClient("write");
+  const spreadsheetId = options.spreadsheetId ?? defaultId;
 
   const { headers, values } = toValues(rows);
 
