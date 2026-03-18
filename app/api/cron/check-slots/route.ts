@@ -8,9 +8,17 @@ const executedKeys = new Set<string>();
 export async function GET(req: Request) {
   try {
     const auth = req.headers.get("authorization");
+
+    console.log("AUTH HEADER:", auth);
+    console.log("EXPECTED:", `Bearer ${process.env.CRON_SECRET}`);
+    console.log("SECRET LENGTH:", process.env.CRON_SECRET?.length);
+
     if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+      console.log("❌ AUTH FAILED");
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    console.log("✅ AUTH PASSED");
 
     const { sheets, spreadsheetId } = await getSheetsClient("read");
 
@@ -32,6 +40,8 @@ export async function GET(req: Request) {
           : "";
 
       if (message.includes("Requested entity was not found")) {
+        console.error("❌ visibleEvents sheet NOT FOUND");
+
         return NextResponse.json(
           { ok: false, error: "visibleEvents sheet not found" },
           { status: 200 }
