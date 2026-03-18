@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import { getSheetsClient } from "@/utils/googleSheets";
 import { runUpdate } from "@/utils/runUpdate";
 
@@ -7,23 +6,19 @@ const executedKeys = new Set<string>();
 
 export async function GET(req: Request) {
   try {
-    const auth = req.headers.get("authorization");
+    const authHeader = req.headers.get("authorization");
+    const authQuery = new URL(req.url).searchParams.get("authorization");
 
-    console.log("AUTH HEADER:", auth);
-    console.log("EXPECTED:", `Bearer ${process.env.CRON_SECRET}`);
-    console.log("SECRET LENGTH:", process.env.CRON_SECRET?.length);
-
-    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.log("❌ AUTH FAILED");
+    if (
+      authHeader !== `Bearer ${process.env.CRON_SECRET}` &&
+      authQuery !== process.env.CRON_SECRET
+    ) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
-
-    console.log("✅ AUTH PASSED");
 
     const { sheets, spreadsheetId } = await getSheetsClient("read");
 
     let rows: string[][] = [];
-
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId,
@@ -40,8 +35,6 @@ export async function GET(req: Request) {
           : "";
 
       if (message.includes("Requested entity was not found")) {
-        console.error("❌ visibleEvents sheet NOT FOUND");
-
         return NextResponse.json(
           { ok: false, error: "visibleEvents sheet not found" },
           { status: 200 }
@@ -56,17 +49,14 @@ export async function GET(req: Request) {
 
     for (const row of rows) {
       const [eventId, date, ...times] = row;
-
       if (!eventId || !date) continue;
 
       for (const time of times.filter(Boolean)) {
         const slotDate = parseDateTime(date, time);
-
         const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000);
 
         if ([10, 5, 0].includes(diff)) {
           const key = `${eventId}_${time}_${diff}`;
-
           if (executedKeys.has(key)) continue;
 
           console.log("RUN UPDATE:", { eventId, time, diff });
