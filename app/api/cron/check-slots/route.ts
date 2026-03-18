@@ -5,6 +5,7 @@ import { runUpdate } from "@/utils/runUpdate";
 const executedKeys = new Set<string>();
 
 export async function GET(req: Request) {
+  console.log("CRON HIT", new Date().toISOString());
   try {
     const authHeader = req.headers.get("authorization");
     const authQuery = new URL(req.url).searchParams.get("authorization");
