@@ -7,8 +7,13 @@ export const runtime = "nodejs";
 
 const SHEET_NAME = process.env.VISIBLE_EVENTS_SHEET ?? "visibleEvents";
 
+type VisibleEvent = {
+  id: string | number;
+  date: string;
+};
+
 type VisibleEventsPayload = {
-  ids: Array<string | number>;
+  events: VisibleEvent[];
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -16,7 +21,20 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 function isVisibleEventsPayload(v: unknown): v is VisibleEventsPayload {
-  return isRecord(v) && Array.isArray(v.ids);
+  if (!isRecord(v)) return false;
+
+  if (!("events" in v) || !Array.isArray(v.events)) return false;
+
+  return v.events.every((e) => {
+    if (!isRecord(e)) return false;
+
+    const hasValidId =
+      "id" in e && (typeof e.id === "string" || typeof e.id === "number");
+
+    const hasValidDate = "date" in e && typeof e.date === "string";
+
+    return hasValidId && hasValidDate;
+  });
 }
 
 function normalizeId(value: unknown): string {
@@ -64,13 +82,13 @@ async function writeWholeSheet(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string,
-  ids: string[]
+  events: { id: string; date: string }[]
 ): Promise<void> {
   const values: (string | number | boolean)[][] = [
-    [""], // A1 spacer
-    [""], // A2 spacer
-    ["CompetitionId"], // A3 header
-    ...ids.map((id) => [id]), // A4+
+    ["", ""],
+    ["", ""],
+    ["CompetitionId", "Date"],
+    ...events.map((e) => [e.id, e.date]),
   ];
 
   await sheets.spreadsheets.values.update({
@@ -88,22 +106,26 @@ export async function GET() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${SHEET_NAME}!A4:A`,
+      range: `${SHEET_NAME}!A4:B`,
     });
 
     const rows = res.data.values ?? [];
-    const ids: string[] = rows
-      .map((r) => normalizeId(r?.[0]))
-      .filter((v) => v.length > 0 && v !== "CompetitionId");
+
+    const events = rows
+      .map((r) => ({
+        id: normalizeId(r?.[0]),
+        date: typeof r?.[1] === "string" ? r[1] : "",
+      }))
+      .filter((e) => e.id.length > 0 && e.id !== "CompetitionId");
 
     return NextResponse.json(
-      { ids },
+      { events },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
     console.error("GET /api/visible-events error:", error);
     return NextResponse.json(
-      { ids: [] },
+      { events: [] },
       { status: 200, headers: { "Cache-Control": "no-store" } }
     );
   }
@@ -120,19 +142,22 @@ export async function PUT(req: Request) {
       );
     }
 
-    const ids: string[] = body.ids
-      .map(normalizeId)
-      .filter((v) => v.length > 0 && v !== "CompetitionId");
+    const events = body.events
+      .map((e) => ({
+        id: normalizeId(e.id),
+        date: e.date,
+      }))
+      .filter((e) => e.id.length > 0 && e.id !== "CompetitionId");
 
     const { sheets, spreadsheetId: defaultId } = await getSheetsClient("write");
     const spreadsheetId = process.env.SHEET_ID ?? defaultId;
 
     await ensureSheetExists(sheets, spreadsheetId, SHEET_NAME);
     await clearWholeSheet(sheets, spreadsheetId, SHEET_NAME);
-    await writeWholeSheet(sheets, spreadsheetId, SHEET_NAME, ids);
+    await writeWholeSheet(sheets, spreadsheetId, SHEET_NAME, events);
 
     return NextResponse.json(
-      { ok: true, ids },
+      { ok: true, events },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
