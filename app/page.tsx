@@ -15,7 +15,10 @@ import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import type { Competition } from "@/utils/normalizeCompetition";
 
 type VisibleEventsResponse = {
-  ids?: unknown;
+  events?: Array<{
+    id: string;
+    date: string;
+  }>;
 };
 
 const BRAND_GREEN = "#00a63e";
@@ -83,9 +86,12 @@ export default function HomePage() {
 
         const data: VisibleEventsResponse = await r.json();
 
-        const raw = data?.ids;
-        const ids: string[] = Array.isArray(raw)
-          ? raw.map((x) => toTrimmedString(x)).filter(Boolean)
+        const eventsRaw = data?.events;
+
+        const ids: string[] = Array.isArray(eventsRaw)
+          ? eventsRaw
+              .map((e) => (e && typeof e.id === "string" ? e.id.trim() : ""))
+              .filter(Boolean)
           : [];
 
         setVisibleEvents(new Set(ids));

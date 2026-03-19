@@ -23,7 +23,10 @@ import {
 } from "@/utils/normalizeCompetition";
 
 type VisibleEventsResponse = {
-  ids?: unknown;
+  events?: Array<{
+    id: string;
+    date: string;
+  }>;
 };
 
 type ResolveRegnumbersOk = {
@@ -70,11 +73,12 @@ export default function HomePage() {
     return localStorage.getItem("hideMarked") === "true";
   });
 
-  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
+  const [visibleEvents, setVisibleEvents] = useState<
+    Map<string, { date?: string }>
+  >(new Map());
+
   const [visibleLoading, setVisibleLoading] = useState(true);
-
   const [savingCount, setSavingCount] = useState(0);
-
   const [findingId, setFindingId] = useState<string | null>(null);
 
   const [findUi, setFindUi] = useState<
@@ -130,9 +134,9 @@ export default function HomePage() {
           results.push(...list);
         }
 
-        results.sort((a, b) => {
-          return new Date(a.DateTo).getTime() - new Date(b.DateTo).getTime();
-        });
+        results.sort(
+          (a, b) => new Date(a.DateTo).getTime() - new Date(b.DateTo).getTime()
+        );
 
         setCompetitions(results);
       } finally {
@@ -157,25 +161,30 @@ export default function HomePage() {
   const loadVisibleEvents = async () => {
     setVisibleLoading(true);
     try {
-      const res = await fetch("/api/visible-events", { cache: "no-store" });
+      const res = await fetch("/api/visible-events", {
+        cache: "no-store",
+      });
+
       const data: VisibleEventsResponse = await res.json();
 
-      const idsRaw = data?.ids;
-      const ids: string[] = Array.isArray(idsRaw)
-        ? idsRaw
-            .map((x) =>
-              typeof x === "string"
-                ? x.trim()
-                : typeof x === "number"
-                ? String(x)
-                : ""
-            )
-            .filter(Boolean)
-        : [];
+      const map = new Map<string, { date?: string }>();
 
-      setVisibleEvents(new Set(ids));
+      if (Array.isArray(data?.events)) {
+        for (const e of data.events) {
+          if (!e || typeof e.id !== "string") continue;
+
+          const id = e.id.trim();
+          if (!id) continue;
+
+          map.set(id, {
+            date: typeof e.date === "string" ? e.date : undefined,
+          });
+        }
+      }
+
+      setVisibleEvents(map);
     } catch {
-      setVisibleEvents(new Set());
+      setVisibleEvents(new Map());
     } finally {
       setVisibleLoading(false);
     }
@@ -232,13 +241,19 @@ export default function HomePage() {
     });
   };
 
-  const persistVisibleEvents = async (next: Set<string>) => {
+  const persistVisibleEvents = async (next: Map<string, { date?: string }>) => {
     setSavingCount((c) => c + 1);
+
     try {
       const res = await fetch("/api/visible-events", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(next) }),
+        body: JSON.stringify({
+          events: Array.from(next.entries()).map(([id, v]) => ({
+            id,
+            date: v.date ?? "",
+          })),
+        }),
       });
 
       if (res.status === 401) {
@@ -263,9 +278,21 @@ export default function HomePage() {
 
   const toggleVisible = (competitionId: string) => {
     setVisibleEvents((prev) => {
-      const next = new Set(prev);
-      if (next.has(competitionId)) next.delete(competitionId);
-      else next.add(competitionId);
+      const next = new Map(prev);
+
+      if (next.has(competitionId)) {
+        next.delete(competitionId);
+      } else {
+        const comp = competitions.find(
+          (c) => String(c.CompetitionId).trim() === competitionId
+        );
+
+        next.set(competitionId, {
+          date: comp?.DateTo
+            ? new Date(comp.DateTo).toISOString().split("T")[0]
+            : "",
+        });
+      }
 
       void persistVisibleEvents(next);
 
