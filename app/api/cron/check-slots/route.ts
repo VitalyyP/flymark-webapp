@@ -6,6 +6,7 @@ const executedKeys = new Set<string>();
 
 export async function GET(req: Request) {
   console.log("CRON HIT", new Date().toISOString());
+
   try {
     const authHeader = req.headers.get("authorization");
     const authQuery = new URL(req.url).searchParams.get("authorization");
@@ -25,7 +26,6 @@ export async function GET(req: Request) {
         spreadsheetId,
         range: `visibleEvents!A2:Z`,
       });
-
       rows = (res.data.values ?? []) as string[][];
     } catch (e: unknown) {
       const message =
@@ -41,7 +41,6 @@ export async function GET(req: Request) {
           { status: 200 }
         );
       }
-
       throw e;
     }
 
@@ -49,28 +48,33 @@ export async function GET(req: Request) {
     console.log("CRON RUN:", now.toISOString());
 
     for (const row of rows) {
-      const [eventId, date, ...times] = row;
-      if (!eventId || !date) continue;
+      const [eventId, ...sections] = row;
+      if (!eventId) continue;
 
-      for (const time of times.filter(Boolean)) {
-        const slotDate = parseDateTime(date, time);
-        const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000);
+      for (const sectionDateStr of sections.filter(Boolean)) {
+        const slotDate = new Date(sectionDateStr);
+        const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000); // хвилини
 
-        if ([10, 5, 0].includes(diff)) {
-          const key = `${eventId}_${time}_${diff}`;
-          if (executedKeys.has(key)) continue;
+        let range: string | null = null;
+        if (diff < 3) range = "less3";
+        else if (diff < 10) range = "less10";
+        else if (diff < 15) range = "less15";
 
-          console.log("RUN UPDATE:", { eventId, time, diff });
+        if (!range) continue;
 
-          try {
-            await runUpdate(eventId);
-          } catch (err) {
-            console.warn(`runUpdate failed for event ${eventId}`, err);
-            continue;
-          }
+        const key = `${eventId}_${sectionDateStr}_${range}`;
+        if (executedKeys.has(key)) continue;
 
-          executedKeys.add(key);
+        console.log("RUN UPDATE:", { eventId, sectionDateStr, diff, range });
+
+        try {
+          await runUpdate(eventId);
+        } catch (err) {
+          console.warn(`runUpdate failed for event ${eventId}`, err);
+          continue;
         }
+
+        executedKeys.add(key);
       }
     }
 
@@ -79,9 +83,4 @@ export async function GET(req: Request) {
     console.error("[CRON ERROR]", e);
     return NextResponse.json({ ok: false });
   }
-}
-
-function parseDateTime(date: string, time: string): Date {
-  const [day, month, year] = date.split(".");
-  return new Date(`${year}-${month}-${day}T${time}:00`);
 }

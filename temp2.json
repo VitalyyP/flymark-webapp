@@ -1,0 +1,1963 @@
+{
+  "Id": 5629,
+  "CoverPhoto": "https://cdn.flymark.dance/competition/5629/cover/full/835537f0-482d-4bfb-a8a1-e023ea675709.jpg",
+  "CompetitionTypeText": "Рейтингові змагання УСТС ",
+  "Name": "Dance challenge",
+  "DateFrom": "21.03.2026",
+  "DateTo": "21.03.2026",
+  "FullDate": "21 бер. 2026",
+  "RegistrationEndDate": "19.03.2026",
+  "CityName": "Київ",
+  "CountryName": "Україна",
+  "Buttons": [
+    {
+      "Key": "Інформація",
+      "Value": "https://flymark.blob.core.windows.net/competition/5629/%20Dance%20challenge%202026%20-3.pdf"
+    },
+    {
+      "Key": "Стилісти",
+      "Value": "https://flymark.blob.core.windows.net/competition/5629/%20Inspiration_20260309_112616_0000.pdf"
+    },
+    {
+      "Key": "План столів",
+      "Value": "https://flymark.blob.core.windows.net/competition/5629/%20Vip%20zone_20260227_172639_0000.pdf"
+    }
+  ],
+  "Address": " м.Київ, просп. Степана Бандери 23, ТЦ  «ГОРОДОК»,   «Pochayna Event Hall» ",
+  "Latitude": "50.49061206575",
+  "Longitude": "30.496054268012934",
+  "RatingFeedback": 0.0,
+  "Feedback1": 0.0,
+  "Feedback2": 0.0,
+  "Feedback3": 0.0,
+  "Feedback4": 0.0,
+  "Feedback5": 0.0,
+  "Organisation": {
+    "Title": "УСТС",
+    "Id": 89
+  },
+  "Organizer": "Константинов Дмитро",
+  "Sections": [],
+  "Referees": [
+    {
+      "FirstName": "Марія",
+      "LastName": "Ларіна",
+      "InternationalLastName": "Larina",
+      "InternationalFirstName": "Mariya",
+      "Birthday": "1988-11-25T00:00:00",
+      "Id": 47886,
+      "City": {
+        "CountryId": 1,
+        "Country": {
+          "Name": "Україна",
+          "EnglishName": "Ukraine",
+          "Id": 1,
+          "Flag": "https://cdn.flymark.dance/flags/ua.png",
+          "NameTranslated": "Україна",
+          "Code": "UA",
+          "Phone": "380"
+        },
+        "Name": "Глеваха",
+        "EnglishName": "Glevaha",
+        "Id": 268,
+        "NameTranslated": "Глеваха"
+      },
+      "HasOwner": true,
+      "Avatar": "https://cdn.flymark.dance/trainers/1738/Avatar/homepage/c939362d-d706-48ca-920c-0f3d4df91100.jpg",
+      "Sex": "Male",
+      "FullName": "Ларіна Марія",
+      "EnglishFullName": "Larina Mariya",
+      "Category": "2",
+      "Comment": "",
+      "Clubs": [],
+      "Sections": [null, null, null],
+      "TrainerId": 1738,
+      "FullNameTranslated": "Ларіна Марія"
+    },
+    {
+      "FirstName": "Юлія",
+      "LastName": "Олефір",
+      "InternationalLastName": "Olefir",
+      "InternationalFirstName": "Yuliya",
+      "Id": 47716,
+      "City": {
+        "CountryId": 1,
+        "Country": {
+          "Name": "Україна",
+          "EnglishName": "Ukraine",
+          "Id": 1,
+          "Flag": "https://cdn.flymark.dance/flags/ua.png",
+          "NameTranslated": "Україна",
+          "Code": "UA",
+          "Phone": "380"
+        },
+        "Name": "Одеса",
+        "EnglishName": "Odesa",
+        "Id": 5,
+        "NameTranslated": "Одеса"
+      },
+      "HasOwner": true,
+      "Avatar": "https://cdn.flymark.dance/trainers/3405/Avatar/homepage/b8c7616c-c4d6-4c5f-9ae3-f511b51255f3.png",
+      "Sex": "Female",
+      "FullName": "Олефір Юлія",
+      "EnglishFullName": "Olefir Yuliya",
+      "Category": "Вища категорія ",
+      "Comment": "",
+      "Clubs": [],
+      "Sections": [null],
+      "TrainerId": 3405,
+      "FullNameTranslated": "Олефір Юлія"
+    },
+    {
+      "FirstName": "Дар’я ",
+      "LastName": "Олійник",
+      "InternationalLastName": "Oliynik",
+      "InternationalFirstName": "Dar'ya ",
+      "Birthday": "2005-08-20T00:00:00",
+      "Id": 47536,
+      "City": {
+        "CountryId": 1,
+        "Country": {
+          "Name": "Україна",
+          "EnglishName": "Ukraine",
+          "Id": 1,
+          "Flag": "https://cdn.flymark.dance/flags/ua.png",
+          "NameTranslated": "Україна",
+          "Code": "UA",
+          "Phone": "380"
+        },
+        "Name": "Київ",
+        "EnglishName": "Kyiv",
+        "Id": 1,
+        "NameTranslated": "Київ"
+      },
+      "HasOwner": true,
+      "Avatar": "https://cdn.flymark.dance/trainers/20851/Avatar/homepage/eb89067f-ddde-4314-8614-3232cc8d85ed.jpeg",
+      "Sex": "Female",
+      "FullName": "Олійник Дар’я ",
+      "EnglishFullName": "Oliynik Dar'ya ",
+      "Category": "Суддя Другої категорії ",
+      "Comment": "",
+      "Clubs": [],
+      "Sections": [null, null],
+      "TrainerId": 20851,
+      "FullNameTranslated": "Олійник Дар’я "
+    },
+    {
+      "FirstName": "Ілона",
+      "LastName": "Поворознюк",
+      "InternationalLastName": "Povorozniuk",
+      "InternationalFirstName": "Ilona",
+      "Id": 47734,
+      "City": {
+        "CountryId": 1,
+        "Country": {
+          "Name": "Україна",
+          "EnglishName": "Ukraine",
+          "Id": 1,
+          "Flag": "https://cdn.flymark.dance/flags/ua.png",
+          "NameTranslated": "Україна",
+          "Code": "UA",
+          "Phone": "380"
+        },
+        "Name": "Київ",
+        "EnglishName": "Kyiv",
+        "Id": 1,
+        "NameTranslated": "Київ"
+      },
+      "HasOwner": true,
+      "Avatar": "https://cdn.flymark.dance/trainers/1709/Avatar/homepage/e5ea2120-ddde-4623-b314-60ac6bb6a808.jpeg",
+      "Sex": "Female",
+      "FullName": "Поворознюк Ілона",
+      "EnglishFullName": "Povorozniuk Ilona",
+      "Category": "1",
+      "Comment": "",
+      "Clubs": [],
+      "Sections": [null, null, null],
+      "TrainerId": 1709,
+      "FullNameTranslated": "Поворознюк Ілона"
+    },
+    {
+      "FirstName": "Олег",
+      "LastName": "Супрунчук ",
+      "InternationalLastName": "Suprunchuk",
+      "InternationalFirstName": "Oleg",
+      "Birthday": "1986-06-20T00:00:00",
+      "Id": 47900,
+      "City": {
+        "CountryId": 1,
+        "Country": {
+          "Name": "Україна",
+          "EnglishName": "Ukraine",
+          "Id": 1,
+          "Flag": "https://cdn.flymark.dance/flags/ua.png",
+          "NameTranslated": "Україна",
+          "Code": "UA",
+          "Phone": "380"
+        },
+        "Name": "Оліївська громада",
+        "EnglishName": "Oliivska gromada",
+        "Id": 1136,
+        "NameTranslated": "Оліївська громада"
+      },
+      "HasOwner": true,
+      "Avatar": "https://flymark.dance/content/default_male.jpg",
+      "Sex": "Male",
+      "FullName": "Супрунчук  Олег",
+      "EnglishFullName": "Suprunchuk Oleg",
+      "Category": "1",
+      "Comment": "",
+      "Clubs": [],
+      "Sections": [null, null, null, null],
+      "TrainerId": 11648,
+      "FullNameTranslated": "Супрунчук  Олег"
+    },
+    {
+      "FirstName": "Денис",
+      "LastName": "Хвіст",
+      "InternationalLastName": "Khvist",
+      "InternationalFirstName": "Denis",
+      "Birthday": "2005-01-29T00:00:00",
+      "Id": 47537,
+      "City": {
+        "CountryId": 1,
+        "Country": {
+          "Name": "Україна",
+          "EnglishName": "Ukraine",
+          "Id": 1,
+          "Flag": "https://cdn.flymark.dance/flags/ua.png",
+          "NameTranslated": "Україна",
+          "Code": "UA",
+          "Phone": "380"
+        },
+        "Name": "Київ",
+        "EnglishName": "Kyiv",
+        "Id": 1,
+        "NameTranslated": "Київ"
+      },
+      "HasOwner": true,
+      "Avatar": "https://cdn.flymark.dance/trainers/13480/Avatar/homepage/8deb9e93-8877-48ed-a2ae-6ffd78d71cc4.jpeg",
+      "Sex": "Male",
+      "FullName": "Хвіст Денис",
+      "EnglishFullName": "Khvist Denis",
+      "Category": "Суддя другої категорії ",
+      "Comment": "",
+      "Clubs": [],
+      "Sections": [null, null],
+      "TrainerId": 13480,
+      "FullNameTranslated": "Хвіст Денис"
+    }
+  ],
+  "State": "Closed",
+  "CanLeaveFeedback": false,
+  "CanLeaveComment": false,
+  "TotalRegistrationStats": {
+    "CompetitionId": 5629,
+    "DancersCount": 656,
+    "Pairs": 115,
+    "Solos": 467,
+    "Registrations": 1321,
+    "ProamRegistrations": 0
+  },
+  "ShowStats": true,
+  "TotalFeedbacks": 0,
+  "IsAuthenticated": true,
+  "IsHaveResultSections": false,
+  "FeedbackSettings": "Allow",
+  "CanViewResults": false,
+  "ShowRegisterButton": false,
+  "JudgeRegistrationEnabled": false,
+  "ShowProductsButton": false,
+  "ShowProamButton": false,
+  "HasHeats": false,
+  "Clubs": [
+    {
+      "Id": 304,
+      "Name": "Стиль",
+      "CityName": "Коцюбинське",
+      "CountryName": "Україна",
+      "DancersCount": 48,
+      "PairsCount": 40,
+      "Registrations": 85,
+      "Avatar": "https://cdn.flymark.dance/clubs/304/Avatar/homepage/b0faac99-c28a-4fa0-be5b-e63eefdad919.jpeg"
+    },
+    {
+      "Id": 127,
+      "Name": "StarWay",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 17,
+      "PairsCount": 16,
+      "Registrations": 63,
+      "Avatar": "https://cdn.flymark.dance/clubs/127/Avatar/homepage/8782987a-fecf-4843-a4aa-17ab9849f8ca.jpeg"
+    },
+    {
+      "Id": 12811,
+      "Name": "Dancelife",
+      "CityName": "Березань",
+      "CountryName": "Україна",
+      "DancersCount": 15,
+      "PairsCount": 15,
+      "Registrations": 63,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 812,
+      "Name": "Ренессанс",
+      "CityName": "Вишневе",
+      "CountryName": "Україна",
+      "DancersCount": 40,
+      "PairsCount": 36,
+      "Registrations": 61,
+      "Avatar": "https://cdn.flymark.dance/clubs/812/Avatar/homepage/78e5c92d-03f3-44ee-b4f7-940c6060d3e9.jpeg"
+    },
+    {
+      "Id": 356,
+      "Name": "Dancelife",
+      "CityName": "Переяслав",
+      "CountryName": "Україна",
+      "DancersCount": 12,
+      "PairsCount": 12,
+      "Registrations": 55,
+      "Avatar": "https://cdn.flymark.dance/clubs/356/Avatar/homepage/184ef38b-f1d3-4ad9-8263-da933adf5275.jpg"
+    },
+    {
+      "Id": 100,
+      "Name": "Чемпіон",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 33,
+      "PairsCount": 30,
+      "Registrations": 50,
+      "Avatar": "https://cdn.flymark.dance/clubs/100/Avatar/homepage/ada3fb10-78e3-4198-ad09-b9958f2a5481.jpeg"
+    },
+    {
+      "Id": 677,
+      "Name": "Love-Dance",
+      "CityName": "Вишгород",
+      "CountryName": "Україна",
+      "DancersCount": 18,
+      "PairsCount": 17,
+      "Registrations": 49,
+      "Avatar": "https://cdn.flymark.dance/clubs/677/Avatar/homepage/486dc99b-1e73-4752-86a5-1b14b50ee46f.jpeg"
+    },
+    {
+      "Id": 768,
+      "Name": "Batakada Dance House",
+      "CityName": "Бориспіль",
+      "CountryName": "Україна",
+      "DancersCount": 10,
+      "PairsCount": 10,
+      "Registrations": 41,
+      "Avatar": "https://cdn.flymark.dance/clubs/768/Avatar/homepage/095c83f8-3308-4891-92ed-06f4d8c34464.jpeg"
+    },
+    {
+      "Id": 11176,
+      "Name": "A- style",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 15,
+      "PairsCount": 16,
+      "Registrations": 40,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 4693,
+      "Name": "ProArt",
+      "CityName": "Бровари",
+      "CountryName": "Україна",
+      "DancersCount": 21,
+      "PairsCount": 18,
+      "Registrations": 38,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 141,
+      "Name": "DC-75",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 11,
+      "PairsCount": 11,
+      "Registrations": 35,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 13069,
+      "Name": "VivaDance ",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 13,
+      "PairsCount": 13,
+      "Registrations": 33,
+      "Avatar": "https://cdn.flymark.dance/clubs/13069/Avatar/homepage/87a5dd59-e1ea-4d5c-a42c-57651366b3b6.png"
+    },
+    {
+      "Id": 2422,
+      "Name": "CARPE DIEM",
+      "CityName": "Конотоп",
+      "CountryName": "Україна",
+      "DancersCount": 19,
+      "PairsCount": 20,
+      "Registrations": 33,
+      "Avatar": "https://cdn.flymark.dance/clubs/2422/Avatar/homepage/95e2ca6d-c426-4227-a273-47fc7aec7493.jpg"
+    },
+    {
+      "Id": 6760,
+      "Name": "StarWay",
+      "CityName": "Васильків",
+      "CountryName": "Україна",
+      "DancersCount": 25,
+      "PairsCount": 22,
+      "Registrations": 32,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 956,
+      "Name": "FantaZirky",
+      "CityName": "Богуслав",
+      "CountryName": "Україна",
+      "DancersCount": 17,
+      "PairsCount": 17,
+      "Registrations": 31,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 10564,
+      "Name": "Eridan",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 14,
+      "PairsCount": 13,
+      "Registrations": 31,
+      "Avatar": "https://cdn.flymark.dance/clubs/10564/Avatar/homepage/b8ec9bba-8d34-4e15-b16a-1cc8f32bb3f1.jpeg"
+    },
+    {
+      "Id": 361,
+      "Name": "Данс-Сфера",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 17,
+      "PairsCount": 16,
+      "Registrations": 29,
+      "Avatar": "https://cdn.flymark.dance/clubs/361/Avatar/homepage/07b591e1-fca6-4af8-a825-feb057a3787f.jpg"
+    },
+    {
+      "Id": 2872,
+      "Name": "Rhythm",
+      "CityName": "Боярка",
+      "CountryName": "Україна",
+      "DancersCount": 14,
+      "PairsCount": 13,
+      "Registrations": 28,
+      "Avatar": "https://cdn.flymark.dance/clubs/2872/Avatar/homepage/1cae10c4-11e8-4a3e-a305-adb6713b8742.png"
+    },
+    {
+      "Id": 2075,
+      "Name": "Vida Dance",
+      "CityName": "Калинівка",
+      "CountryName": "Україна",
+      "DancersCount": 16,
+      "PairsCount": 14,
+      "Registrations": 27,
+      "Avatar": "https://cdn.flymark.dance/clubs/2075/Avatar/homepage/7b6009db-3ffd-4a92-99d1-7a0932d288b7.jpeg"
+    },
+    {
+      "Id": 2718,
+      "Name": "Lucky Dance Hall",
+      "CityName": "Ромни",
+      "CountryName": "Україна",
+      "DancersCount": 19,
+      "PairsCount": 14,
+      "Registrations": 27,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 802,
+      "Name": "Шарм",
+      "CityName": "Бориспіль",
+      "CountryName": "Україна",
+      "DancersCount": 18,
+      "PairsCount": 18,
+      "Registrations": 25,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 9661,
+      "Name": "Life Dance",
+      "CityName": "Біла Церква",
+      "CountryName": "Україна",
+      "DancersCount": 11,
+      "PairsCount": 11,
+      "Registrations": 23,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 15538,
+      "Name": "DIM",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 6,
+      "PairsCount": 6,
+      "Registrations": 23,
+      "Avatar": "https://cdn.flymark.dance/clubs/15538/Avatar/homepage/12dd9614-307c-4adb-ae9b-e21349cc3276.jpeg"
+    },
+    {
+      "Id": 10271,
+      "Name": "Фараон",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 6,
+      "Registrations": 23,
+      "Avatar": "https://cdn.flymark.dance/clubs/10271/Avatar/homepage/4b1389e6-0f36-4023-be34-cb96986e34f0.jpg"
+    },
+    {
+      "Id": 774,
+      "Name": "ExcellentDance",
+      "CityName": "Бориспіль",
+      "CountryName": "Україна",
+      "DancersCount": 12,
+      "PairsCount": 9,
+      "Registrations": 22,
+      "Avatar": "https://cdn.flymark.dance/clubs/774/Avatar/homepage/26a44ed7-64f9-4da7-ab9e-600d1b3b0c08.png"
+    },
+    {
+      "Id": 619,
+      "Name": "DanceHall",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 13,
+      "PairsCount": 8,
+      "Registrations": 19,
+      "Avatar": "https://cdn.flymark.dance/clubs/619/Avatar/homepage/505d7ee1-1a76-4b6c-83cd-f36d4b4af122.jpeg"
+    },
+    {
+      "Id": 15687,
+      "Name": "StArt",
+      "CityName": "Дніпро",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 2,
+      "Registrations": 18,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 2433,
+      "Name": "Dance Line",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 7,
+      "PairsCount": 7,
+      "Registrations": 17,
+      "Avatar": "https://cdn.flymark.dance/clubs/2433/Avatar/homepage/1a6b720b-b498-4561-9e80-6b3af2110053.png"
+    },
+    {
+      "Id": 15318,
+      "Name": "ND-Стиль",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 7,
+      "Registrations": 16,
+      "Avatar": "https://cdn.flymark.dance/clubs/15318/Avatar/homepage/09ff1931-f150-44a1-ae60-fa996d398dd5.jpg"
+    },
+    {
+      "Id": 1014,
+      "Name": "Данс Майстер",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 11,
+      "PairsCount": 11,
+      "Registrations": 16,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 658,
+      "Name": "TORNADO",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 7,
+      "PairsCount": 4,
+      "Registrations": 15,
+      "Avatar": "https://cdn.flymark.dance/clubs/658/Avatar/homepage/fc4f33a6-8753-4445-a9cd-880f145dea07.jpg"
+    },
+    {
+      "Id": 902,
+      "Name": "Family",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 8,
+      "Registrations": 15,
+      "Avatar": "https://cdn.flymark.dance/clubs/902/Avatar/homepage/a874cb93-9355-4885-b1ac-4d7ab16bd086.jpeg"
+    },
+    {
+      "Id": 836,
+      "Name": "ДАНАТА-ДЕНС",
+      "CityName": "Глеваха",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 8,
+      "Registrations": 15,
+      "Avatar": "https://cdn.flymark.dance/clubs/836/Avatar/homepage/13eb8261-9053-4bfc-9abb-42b06614c08a.jpeg"
+    },
+    {
+      "Id": 137,
+      "Name": "Серпантин",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 4,
+      "PairsCount": 4,
+      "Registrations": 14,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 716,
+      "Name": "Едельвейс",
+      "CityName": "Українка",
+      "CountryName": "Україна",
+      "DancersCount": 12,
+      "PairsCount": 8,
+      "Registrations": 14,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 389,
+      "Name": "Антарес",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 9,
+      "PairsCount": 7,
+      "Registrations": 14,
+      "Avatar": "https://cdn.flymark.dance/clubs/389/Avatar/homepage/be4686fb-5237-484c-8dd9-b61a99d10f31.jpg"
+    },
+    {
+      "Id": 3290,
+      "Name": "Фієста",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 7,
+      "PairsCount": 7,
+      "Registrations": 13,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 16928,
+      "Name": "DANCE SPACE",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 11,
+      "PairsCount": 10,
+      "Registrations": 12,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 286,
+      "Name": "Елеріна",
+      "CityName": "Бровари",
+      "CountryName": "Україна",
+      "DancersCount": 9,
+      "PairsCount": 7,
+      "Registrations": 12,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 15479,
+      "Name": "Triumph",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 5,
+      "PairsCount": 5,
+      "Registrations": 11,
+      "Avatar": "https://cdn.flymark.dance/clubs/15479/Avatar/homepage/0d438b6d-9aed-47d3-badf-3f7f6474a6bb.png"
+    },
+    {
+      "Id": 16849,
+      "Name": "Freedom Space",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 3,
+      "PairsCount": 4,
+      "Registrations": 11,
+      "Avatar": "https://cdn.flymark.dance/clubs/16849/Avatar/homepage/265ae659-429a-45bf-982c-fddefb723b9b.jpeg"
+    },
+    {
+      "Id": 324,
+      "Name": "ENERGY",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 9,
+      "PairsCount": 8,
+      "Registrations": 11,
+      "Avatar": "https://cdn.flymark.dance/clubs/324/Avatar/homepage/9f6e62d1-df78-4b21-8b80-0f5e9c0a612e.jpg"
+    },
+    {
+      "Id": 14623,
+      "Name": "Грація",
+      "CityName": "Ірпінь",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 6,
+      "Registrations": 11,
+      "Avatar": "https://cdn.flymark.dance/clubs/14623/Avatar/homepage/e3142155-3d9d-4026-a9ee-c360e426d4b5.jpeg"
+    },
+    {
+      "Id": 1027,
+      "Name": "OLTEX",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 6,
+      "Registrations": 10,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 18288,
+      "Name": "DanSence Studio ",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 2,
+      "Registrations": 10,
+      "Avatar": "https://cdn.flymark.dance/clubs/18288/Avatar/homepage/58e18846-1918-4601-9852-60d5a9fbf1c6.jpeg"
+    },
+    {
+      "Id": 14943,
+      "Name": "Danceria_studio",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 2,
+      "Registrations": 10,
+      "Avatar": "https://cdn.flymark.dance/clubs/14943/Avatar/homepage/1783088d-5016-476c-b038-5ef653be8bef.jpeg"
+    },
+    {
+      "Id": 417,
+      "Name": "Діамант-Еліт",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 7,
+      "PairsCount": 4,
+      "Registrations": 9,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 810,
+      "Name": "Crystal",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 8,
+      "PairsCount": 7,
+      "Registrations": 8,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 2945,
+      "Name": "Lucky Step",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 1,
+      "PairsCount": 1,
+      "Registrations": 7,
+      "Avatar": "https://cdn.flymark.dance/clubs/2945/Avatar/homepage/5bd27126-44c1-4b2b-baad-3957458e23cf.jpeg"
+    },
+    {
+      "Id": 8182,
+      "Name": "Dance Team",
+      "CityName": "Одеса",
+      "CountryName": "Україна",
+      "DancersCount": 6,
+      "PairsCount": 3,
+      "Registrations": 6,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 858,
+      "Name": "Олімп",
+      "CityName": "Фастів",
+      "CountryName": "Україна",
+      "DancersCount": 4,
+      "PairsCount": 3,
+      "Registrations": 6,
+      "Avatar": "https://cdn.flymark.dance/clubs/858/Avatar/homepage/82f14e56-8676-4b07-a7dc-f4f3edcc8092.jpeg"
+    },
+    {
+      "Id": 2612,
+      "Name": "Аурум",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 7,
+      "PairsCount": 6,
+      "Registrations": 6,
+      "Avatar": "https://cdn.flymark.dance/clubs/2612/Avatar/homepage/f0d73959-0abd-470e-93d8-3cf037748cf1.jpg"
+    },
+    {
+      "Id": 12286,
+      "Name": "Dream Dance Academy",
+      "CityName": "Бориспіль",
+      "CountryName": "Україна",
+      "DancersCount": 1,
+      "PairsCount": 1,
+      "Registrations": 4,
+      "Avatar": "https://cdn.flymark.dance/clubs/12286/Avatar/homepage/f345eb48-e1a2-4398-b672-3b4f542f5eed.jpeg"
+    },
+    {
+      "Id": 2244,
+      "Name": "Чарівність",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 2,
+      "Registrations": 4,
+      "Avatar": "https://cdn.flymark.dance/clubs/2244/Avatar/homepage/879b50b6-e3f9-4dbc-b4a4-3f962ad40b71.jpeg"
+    },
+    {
+      "Id": 942,
+      "Name": "FENIX Dance School",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 3,
+      "PairsCount": 2,
+      "Registrations": 3,
+      "Avatar": "https://cdn.flymark.dance/clubs/942/Avatar/homepage/3f143440-84b6-44b8-892a-152d11c73e76.jpeg"
+    },
+    {
+      "Id": 15398,
+      "Name": "Amore Dance Space",
+      "CityName": "Одеса",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 1,
+      "Registrations": 3,
+      "Avatar": "https://cdn.flymark.dance/clubs/15398/Avatar/homepage/2565f1f2-e9a2-451e-a054-675cbd786d59.jpeg"
+    },
+    {
+      "Id": 2649,
+      "Name": "Старт",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 1,
+      "PairsCount": 1,
+      "Registrations": 3,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 18579,
+      "Name": "ПЕРЛИНА-TRIADA",
+      "CityName": "Волочиськ- Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 1,
+      "Registrations": 3,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 2370,
+      "Name": "Sky Dance",
+      "CityName": "Богуслав",
+      "CountryName": "Україна",
+      "DancersCount": 1,
+      "PairsCount": 1,
+      "Registrations": 2,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 1009,
+      "Name": "Меридіан",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 1,
+      "Registrations": 2,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 909,
+      "Name": "Synergy",
+      "CityName": "Вінниця",
+      "CountryName": "Україна",
+      "DancersCount": 1,
+      "PairsCount": 1,
+      "Registrations": 1,
+      "Avatar": "https://cdn.flymark.dance/clubs/909/Avatar/homepage/930dfe4d-a2b9-4e8c-a113-fd54eba0ff43.jpg"
+    },
+    {
+      "Id": 12887,
+      "Name": "Premium",
+      "CityName": "Чернігів",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 1,
+      "Registrations": 1,
+      "Avatar": "https://cdn.flymark.dance/clubs/12887/Avatar/homepage/1d0a538c-d276-40bc-9118-7ef8f689a72b.jpeg"
+    },
+    {
+      "Id": 2206,
+      "Name": "Позитив Данс",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 1,
+      "Registrations": 1,
+      "Avatar": "https://flymark.dance/content/club.png"
+    },
+    {
+      "Id": 10965,
+      "Name": "Клуб - МРІЯ",
+      "CityName": "Київ",
+      "CountryName": "Україна",
+      "DancersCount": 2,
+      "PairsCount": 1,
+      "Registrations": 1,
+      "Avatar": "https://flymark.dance/content/club.png"
+    }
+  ],
+  "CompetitionLevel": "Country",
+  "Categories": {
+    "DateGroups": [
+      {
+        "Date": "21 бер. 2026",
+        "Sections": [
+          {
+            "Id": 14562,
+            "Name": "09:00",
+            "Date": "21 бер. 2026"
+          },
+          {
+            "Id": 14563,
+            "Name": "12:00",
+            "Date": "21 бер. 2026"
+          },
+          {
+            "Id": 14564,
+            "Name": "15:30",
+            "Date": "21 бер. 2026"
+          },
+          {
+            "Id": 14565,
+            "Name": "19:00",
+            "Date": "21 бер. 2026"
+          }
+        ]
+      }
+    ],
+    "Categories": [
+      {
+        "Id": 193344,
+        "Name": "Baby Дебют",
+        "Order": 0,
+        "Total": 4,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 4
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193334,
+        "Name": "Baby Соло Дебют",
+        "Order": 1,
+        "Total": 31,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 31
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193371,
+        "Name": "Baby Соло Школа",
+        "Order": 2,
+        "Total": 6,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 6
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193332,
+        "Name": "Діти Дебют",
+        "Order": 3,
+        "Total": 12,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 12
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193333,
+        "Name": "Діти Соло Дебют",
+        "Order": 4,
+        "Total": 55,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 55
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193354,
+        "Name": "Діти Школа",
+        "Order": 5,
+        "Total": 9,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 9
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193355,
+        "Name": "Діти Соло Школа",
+        "Order": 6,
+        "Total": 46,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 46
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193347,
+        "Name": "Діти Соло Н",
+        "Order": 7,
+        "Total": 29,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 29
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193379,
+        "Name": "Діти Е",
+        "Order": 8,
+        "Total": 6,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 3
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 3
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193346,
+        "Name": "Діти Н",
+        "Order": 8,
+        "Total": 6,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 6
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193372,
+        "Name": "Діти Соло Е",
+        "Order": 8,
+        "Total": 11,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 5
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 6
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193380,
+        "Name": "Діти Соло Кубок одного танцю",
+        "Order": 8,
+        "Total": 47,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37821,
+              "Name": "W",
+              "Count": 11
+            },
+            {
+              "Id": 37822,
+              "Name": "Q",
+              "Count": 7
+            },
+            {
+              "Id": 37823,
+              "Name": "Ch",
+              "Count": 17
+            },
+            {
+              "Id": 37824,
+              "Name": "J",
+              "Count": 12
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193374,
+        "Name": "Star Mix Бебі-Діти",
+        "Order": 8,
+        "Total": 13,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 13
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193362,
+        "Name": "Ювенали 1+2 Дебют",
+        "Order": 10,
+        "Total": 9,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 9
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193336,
+        "Name": "Ювенали 1 Соло Школа",
+        "Order": 11,
+        "Total": 53,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 53
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193350,
+        "Name": "Ювенали 1+2 Соло Дебют",
+        "Order": 11,
+        "Total": 47,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37816,
+              "Name": "W-C",
+              "Count": 47
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193381,
+        "Name": "Ювенали 2 Соло Школа",
+        "Order": 12,
+        "Total": 55,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 55
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193335,
+        "Name": "Ювенали 1+2 Школа",
+        "Order": 13,
+        "Total": 20,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 20
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193337,
+        "Name": "Ювенали 1 Н",
+        "Order": 17,
+        "Total": 9,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 9
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193353,
+        "Name": "Ювенали 1 Соло Н",
+        "Order": 18,
+        "Total": 38,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 38
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193338,
+        "Name": "Ювенали 2 Н",
+        "Order": 18,
+        "Total": 7,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 7
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193339,
+        "Name": "Ювенали 2 Соло Н",
+        "Order": 19,
+        "Total": 40,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 40
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193351,
+        "Name": "Юніори 1+2 Н",
+        "Order": 20,
+        "Total": 9,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 9
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193373,
+        "Name": "Юніори 1+2 Школа",
+        "Order": 20,
+        "Total": 3,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 3
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193369,
+        "Name": "Юніори 1+2 Соло Школа",
+        "Order": 21,
+        "Total": 24,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37817,
+              "Name": "W-C-J",
+              "Count": 24
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193357,
+        "Name": "Юніори 1+2 Соло Н",
+        "Order": 22,
+        "Total": 32,
+        "SectionData": {
+          "14562": [
+            {
+              "Id": 37818,
+              "Name": "W-Q-C-J",
+              "Count": 32
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193340,
+        "Name": "Ювенали 1 Е",
+        "Order": 22,
+        "Total": 2,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 1
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 1
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193341,
+        "Name": "Ювенали 2 Е",
+        "Order": 23,
+        "Total": 18,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 9
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 9
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193365,
+        "Name": "Ювенали 1 Соло Е",
+        "Order": 24,
+        "Total": 34,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 15
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 19
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193349,
+        "Name": "Ювенали 2 Соло Е",
+        "Order": 25,
+        "Total": 39,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 17
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 22
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193345,
+        "Name": "Юніори 1+2 Е",
+        "Order": 26,
+        "Total": 22,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 10
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 12
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193358,
+        "Name": "Ювенали 1+2 Соло Д",
+        "Order": 26,
+        "Total": 32,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 13
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 19
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193384,
+        "Name": "Ювенали 1+2 Соло Open",
+        "Order": 26,
+        "Total": 8,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 3
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 5
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193370,
+        "Name": "Кубок одного танцю Ювенали 1+2 Соло",
+        "Order": 27,
+        "Total": 94,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37821,
+              "Name": "W",
+              "Count": 17
+            },
+            {
+              "Id": 37825,
+              "Name": "T",
+              "Count": 11
+            },
+            {
+              "Id": 37822,
+              "Name": "Q",
+              "Count": 16
+            },
+            {
+              "Id": 37823,
+              "Name": "Ch",
+              "Count": 22
+            },
+            {
+              "Id": 37827,
+              "Name": "S",
+              "Count": 11
+            },
+            {
+              "Id": 37824,
+              "Name": "J",
+              "Count": 17
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193375,
+        "Name": "Юніори 1 Соло Е",
+        "Order": 28,
+        "Total": 62,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 25
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 37
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193352,
+        "Name": "Юніори 2 Соло Е",
+        "Order": 29,
+        "Total": 48,
+        "SectionData": {
+          "14563": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 24
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 24
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193356,
+        "Name": "Lady Freestyle (4 танці)",
+        "Order": 30,
+        "Total": 47,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 17
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 30
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193364,
+        "Name": "Lady Freestyle (5 танців)",
+        "Order": 31,
+        "Total": 30,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 10
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 20
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193367,
+        "Name": "Кубок одного танцю Леді Соло Freestyle",
+        "Order": 32,
+        "Total": 80,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37821,
+              "Name": "W",
+              "Count": 10
+            },
+            {
+              "Id": 37825,
+              "Name": "T",
+              "Count": 7
+            },
+            {
+              "Id": 37826,
+              "Name": "VW",
+              "Count": 6
+            },
+            {
+              "Id": 37829,
+              "Name": "F",
+              "Count": 4
+            },
+            {
+              "Id": 37822,
+              "Name": "Q",
+              "Count": 7
+            },
+            {
+              "Id": 37823,
+              "Name": "Ch",
+              "Count": 12
+            },
+            {
+              "Id": 37827,
+              "Name": "S",
+              "Count": 8
+            },
+            {
+              "Id": 37828,
+              "Name": "R",
+              "Count": 12
+            },
+            {
+              "Id": 37830,
+              "Name": "PD",
+              "Count": 6
+            },
+            {
+              "Id": 37824,
+              "Name": "J",
+              "Count": 8
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193359,
+        "Name": "Ювенали 1+2 Д",
+        "Order": 33,
+        "Total": 12,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 6
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 6
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193376,
+        "Name": "Юніори 1 Соло Д",
+        "Order": 33,
+        "Total": 36,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 14
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 22
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193377,
+        "Name": "Юніори 2 Соло Д",
+        "Order": 33,
+        "Total": 28,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 12
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 16
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193366,
+        "Name": "Юніори 1+2 Соло Open",
+        "Order": 35,
+        "Total": 16,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 7
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 9
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193342,
+        "Name": "Юніори 1 Д",
+        "Order": 36,
+        "Total": 4,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 1
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 3
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193343,
+        "Name": "Юніори 2 Д",
+        "Order": 37,
+        "Total": 5,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 3
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 2
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193361,
+        "Name": "Юніори 1+2 С",
+        "Order": 38,
+        "Total": 13,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 5
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 8
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193348,
+        "Name": "Юніори 1+2 RS",
+        "Order": 39,
+        "Total": 9,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 3
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 6
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193360,
+        "Name": "Молодь 1+2 С",
+        "Order": 40,
+        "Total": 22,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 6
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 16
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193378,
+        "Name": "Молодь 1 RS",
+        "Order": 53,
+        "Total": 11,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 3
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 8
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193363,
+        "Name": "Молодь 2+Дорослі RS",
+        "Order": 54,
+        "Total": 4,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 1
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 3
+            }
+          ]
+        }
+      },
+      {
+        "Id": 195561,
+        "Name": "Молодь 1+2 Д",
+        "Order": 54,
+        "Total": 7,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 3
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 4
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193385,
+        "Name": "Кубок Українських  нагород Юніори Freestyle Соло",
+        "Order": 55,
+        "Total": 16,
+        "SectionData": {
+          "14564": [
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 16
+            }
+          ]
+        }
+      },
+      {
+        "Id": 193382,
+        "Name": "Молодь+Дорослі С",
+        "Order": 59,
+        "Total": 1,
+        "SectionData": {
+          "14565": [
+            {
+              "Id": 37820,
+              "Name": "ST",
+              "Count": 0
+            },
+            {
+              "Id": 37819,
+              "Name": "LA",
+              "Count": 1
+            }
+          ]
+        }
+      }
+    ],
+    "SectionTotals": {
+      "14562": 334,
+      "14563": 331,
+      "14564": 446,
+      "14565": 210
+    }
+  }
+}
