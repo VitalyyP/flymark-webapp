@@ -47,6 +47,7 @@ type CompetitionTableResponse = {
 
   Categories?: {
     DateGroups?: Array<{
+      Date?: string;
       Sections?: Array<{
         Id: number;
         Name: string;
@@ -69,6 +70,38 @@ const api = axios.create({
   },
 });
 
+function convertUaDateToISO(dateStr: string): string {
+  const months: Record<string, string> = {
+    "січ.": "01",
+    "лют.": "02",
+    "бер.": "03",
+    "квіт.": "04",
+    "трав.": "05",
+    "черв.": "06",
+    "лип.": "07",
+    "серп.": "08",
+    "вер.": "09",
+    "жовт.": "10",
+    "лист.": "11",
+    "груд.": "12",
+  };
+
+  const [day, monthRaw, year] = dateStr.split(" ");
+  const month = months[monthRaw];
+
+  if (!day || !month || !year) return "";
+
+  return `${year}-${month}-${day.padStart(2, "0")}`;
+}
+
+function buildLocalISO(dateISO: string, time: string): string {
+  const [hours, minutes] = time.split(":");
+
+  if (!dateISO || !hours || !minutes) return "";
+
+  return `${dateISO}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`;
+}
+
 async function fetchRegistrations(
   eventId: number,
   categoryId: number
@@ -83,10 +116,24 @@ async function fetchRegistrations(
   return response.data.Registration ?? [];
 }
 
+const cache = new Map<
+  number,
+  { data: { rows: PerformanceRow[]; eventName: string }; ts: number }
+>();
+
+const CACHE_TTL = 1000 * 60 * 5;
+
 export async function parseEvent(eventId: number): Promise<{
   rows: PerformanceRow[];
   eventName: string;
 }> {
+  const now = Date.now();
+
+  const cached = cache.get(eventId);
+  if (cached && now - cached.ts < CACHE_TTL) {
+    return cached.data;
+  }
+
   const response = await api.get<CompetitionTableResponse>(
     `/competition/${eventId}?mode=table`
   );
@@ -99,9 +146,18 @@ export async function parseEvent(eventId: number): Promise<{
   const dateGroups = data.Categories?.DateGroups ?? [];
 
   for (const dateGroup of dateGroups) {
+    const rawDate = dateGroup.Date ?? "";
+    const isoDate = convertUaDateToISO(rawDate);
+
     const sections = dateGroup.Sections ?? [];
+
     for (const section of sections) {
-      sectionMap.set(section.Id, section.Name);
+      const time = normalizeTime(section.Name);
+      const isoDateTime = buildLocalISO(isoDate, time);
+
+      if (!isoDateTime) continue;
+
+      sectionMap.set(section.Id, isoDateTime);
     }
   }
 
@@ -127,9 +183,7 @@ export async function parseEvent(eventId: number): Promise<{
         if (!matchedEntry) continue;
 
         const sectionIdString = matchedEntry[0];
-        const sectionTimeRaw = sectionMap.get(Number(sectionIdString)) ?? "";
-
-        const sectionTime = normalizeTime(sectionTimeRaw);
+        const sectionTime = sectionMap.get(Number(sectionIdString)) ?? "";
 
         rows.push({
           SectionTime: sectionTime,
@@ -146,5 +200,9 @@ export async function parseEvent(eventId: number): Promise<{
     }
   }
 
-  return { rows, eventName };
+  const result = { rows, eventName };
+
+  cache.set(eventId, { data: result, ts: now });
+
+  return result;
 }

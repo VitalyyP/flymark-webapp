@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import { sheets_v4 } from "googleapis";
 
 import { getSheetsClient } from "@/utils/googleSheets";
+import { parseEvent } from "@/utils/parseEvent";
 
 export const runtime = "nodejs";
 
 const SHEET_NAME = process.env.VISIBLE_EVENTS_SHEET ?? "visibleEvents";
 
 type VisibleEvent = {
-  id: string | number;
-  date: string;
+  id: string;
+  sections: string[];
 };
 
 type VisibleEventsPayload = {
-  events: VisibleEvent[];
+  events: { id: string | number }[];
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -22,18 +23,11 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function isVisibleEventsPayload(v: unknown): v is VisibleEventsPayload {
   if (!isRecord(v)) return false;
-
   if (!("events" in v) || !Array.isArray(v.events)) return false;
 
   return v.events.every((e) => {
     if (!isRecord(e)) return false;
-
-    const hasValidId =
-      "id" in e && (typeof e.id === "string" || typeof e.id === "number");
-
-    const hasValidDate = "date" in e && typeof e.date === "string";
-
-    return hasValidId && hasValidDate;
+    return "id" in e && (typeof e.id === "string" || typeof e.id === "number");
   });
 }
 
@@ -82,13 +76,20 @@ async function writeWholeSheet(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
   sheetName: string,
-  events: { id: string; date: string }[]
+  events: VisibleEvent[]
 ): Promise<void> {
-  const values: (string | number | boolean)[][] = [
-    ["", ""],
-    ["", ""],
-    ["CompetitionId", "Date"],
-    ...events.map((e) => [e.id, e.date]),
+  const maxSections = Math.max(0, ...events.map((e) => e.sections.length));
+
+  const header = [
+    "CompetitionId",
+    ...Array.from({ length: maxSections }, (_, i) => `Section ${i + 1}`),
+  ];
+
+  const values: (string | number)[][] = [
+    [""],
+    [""],
+    header,
+    ...events.map((e) => [e.id, ...e.sections]),
   ];
 
   await sheets.spreadsheets.values.update({
@@ -106,15 +107,17 @@ export async function GET() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${SHEET_NAME}!A4:B`,
+      range: `${SHEET_NAME}!A4:Z`,
     });
 
     const rows = res.data.values ?? [];
 
-    const events = rows
+    const events: VisibleEvent[] = rows
       .map((r) => ({
         id: normalizeId(r?.[0]),
-        date: typeof r?.[1] === "string" ? r[1] : "",
+        sections: (r?.slice(1) ?? []).filter(
+          (v): v is string => typeof v === "string" && v.length > 0
+        ),
       }))
       .filter((e) => e.id.length > 0 && e.id !== "CompetitionId");
 
@@ -142,12 +145,22 @@ export async function PUT(req: Request) {
       );
     }
 
-    const events = body.events
-      .map((e) => ({
-        id: normalizeId(e.id),
-        date: e.date,
-      }))
-      .filter((e) => e.id.length > 0 && e.id !== "CompetitionId");
+    const events: VisibleEvent[] = await Promise.all(
+      body.events.map(async (e) => {
+        const eventId = Number(e.id);
+
+        const { rows } = await parseEvent(eventId);
+
+        const sectionTimes = Array.from(
+          new Set(rows.map((r) => r.SectionTime).filter(Boolean))
+        ).sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+
+        return {
+          id: normalizeId(e.id),
+          sections: sectionTimes,
+        };
+      })
+    );
 
     const { sheets, spreadsheetId: defaultId } = await getSheetsClient("write");
     const spreadsheetId = process.env.SHEET_ID ?? defaultId;
