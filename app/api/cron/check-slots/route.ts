@@ -73,6 +73,7 @@ export async function GET(req: Request) {
         console.log("CHECK SLOT:", {
           eventId,
           sectionDateStr,
+          slotDate,
           diff,
         });
 
