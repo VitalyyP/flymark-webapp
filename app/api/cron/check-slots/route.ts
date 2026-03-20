@@ -70,6 +70,16 @@ export async function GET(req: Request) {
         else if (diff < 10) range = "less10";
         else if (diff < 15) range = "less15";
 
+        console.log("CHECK SLOT:", {
+          eventId,
+          sectionDateStr,
+          diff,
+        });
+
+        console.log("ROWS COUNT:", rows.length);
+
+        console.log("DATA ROWS COUNT:", dataRows.length);
+
         if (!range) continue;
 
         const key = `${eventId}_${sectionDateStr}_${range}`;
