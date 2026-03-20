@@ -186,19 +186,6 @@ async function writeLayout(
   });
 }
 
-async function getRowCount(
-  sheets: sheets_v4.Sheets,
-  spreadsheetId: string,
-  sheetName: string
-) {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${sheetName}!A:A`,
-  });
-
-  return res.data.values?.length ?? 0;
-}
-
 export async function saveRowsToSheet(
   data: RowData[] | RowData,
   options: Options = {}
@@ -215,9 +202,7 @@ export async function saveRowsToSheet(
 
   const sheetId = await ensureSheet(sheets, spreadsheetId, sheetName);
 
-  const rowCount = await getRowCount(sheets, spreadsheetId, sheetName);
-
-  if (options.clearBeforeWrite || rowCount <= 3) {
+  if (options.clearBeforeWrite) {
     await writeLayout(
       sheets,
       spreadsheetId,
