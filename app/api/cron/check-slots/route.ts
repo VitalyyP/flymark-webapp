@@ -57,7 +57,11 @@ export async function GET(req: Request) {
       if (!eventId) continue;
 
       for (const sectionDateStr of sections.filter(Boolean)) {
-        const slotDate = new Date(sectionDateStr + "+02:00");
+        const slotDate = new Date(
+          new Date(sectionDateStr).toLocaleString("en-US", {
+            timeZone: "Europe/Kyiv",
+          })
+        );
 
         if (isNaN(slotDate.getTime())) continue;
 
@@ -77,21 +81,12 @@ export async function GET(req: Request) {
           diff,
         });
 
-        console.log("ROWS COUNT:", rows.length);
-
-        console.log("DATA ROWS COUNT:", dataRows.length);
-
         if (!range) continue;
 
         const key = `${eventId}_${sectionDateStr}_${range}`;
         if (executedKeys.has(key)) continue;
 
-        console.log("RUN UPDATE:", {
-          eventId,
-          sectionDateStr,
-          diff,
-          range,
-        });
+        console.log("RUN UPDATE");
 
         try {
           await runUpdate(eventId);
