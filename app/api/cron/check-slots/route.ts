@@ -57,7 +57,7 @@ export async function GET(req: Request) {
       if (!eventId) continue;
 
       for (const sectionDateStr of sections.filter(Boolean)) {
-        const slotDate = new Date(sectionDateStr);
+        const slotDate = new Date(sectionDateStr + "+02:00");
 
         if (isNaN(slotDate.getTime())) continue;
 
