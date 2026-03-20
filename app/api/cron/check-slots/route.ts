@@ -1,34 +1,15 @@
 import { NextResponse } from "next/server";
+
+import { DateTime } from "luxon";
+
 import { getSheetsClient } from "@/utils/googleSheets";
 import { runUpdate } from "@/utils/runUpdate";
 
 const executedKeys = new Set<string>();
 
-function parseKyivDate(dateStr: string) {
-  const date = new Date(dateStr);
-
-  const options: Intl.DateTimeFormatOptions = {
-    timeZone: "Europe/Kiev",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  };
-
-  const formatter = new Intl.DateTimeFormat("en-GB", options);
-  const parts = formatter.formatToParts(date).reduce((acc, p) => {
-    acc[p.type] = p.value;
-    return acc;
-  }, {} as Record<string, string>);
-
-  const { year, month, day, hour, minute, second } = parts;
-
-  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+function parseKyivDate(dateStr: string): Date {
+  return DateTime.fromISO(dateStr, { zone: "Europe/Kiev" }).toJSDate();
 }
-
 export async function GET(req: Request) {
   console.log("CRON HIT", new Date().toISOString());
 
@@ -95,12 +76,7 @@ export async function GET(req: Request) {
         else if (diff < 10) range = "less10";
         else if (diff < 15) range = "less15";
 
-        console.log("CHECK SLOT:", {
-          eventId,
-          sectionDateStr,
-          slotDate: slotDate.toISOString(),
-          diff,
-        });
+        console.log("CHECK SLOT:", { eventId, sectionDateStr, slotDate, diff });
 
         if (!range) continue;
 
