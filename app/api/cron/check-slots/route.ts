@@ -24,8 +24,9 @@ export async function GET(req: Request) {
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `visibleEvents!A2:Z`,
+        range: `visibleEvents!A1:Z`,
       });
+
       rows = (res.data.values ?? []) as string[][];
     } catch (e: unknown) {
       const message =
@@ -41,19 +42,28 @@ export async function GET(req: Request) {
           { status: 200 }
         );
       }
+
       throw e;
     }
 
     const now = new Date();
     console.log("CRON RUN:", now.toISOString());
 
-    for (const row of rows) {
+    const dataRows = rows.slice(3);
+
+    for (const row of dataRows) {
       const [eventId, ...sections] = row;
+
       if (!eventId) continue;
 
       for (const sectionDateStr of sections.filter(Boolean)) {
         const slotDate = new Date(sectionDateStr);
-        const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000); // хвилини
+
+        if (isNaN(slotDate.getTime())) continue;
+
+        const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000);
+
+        if (diff < 0) continue;
 
         let range: string | null = null;
         if (diff < 3) range = "less3";
@@ -65,7 +75,12 @@ export async function GET(req: Request) {
         const key = `${eventId}_${sectionDateStr}_${range}`;
         if (executedKeys.has(key)) continue;
 
-        console.log("RUN UPDATE:", { eventId, sectionDateStr, diff, range });
+        console.log("RUN UPDATE:", {
+          eventId,
+          sectionDateStr,
+          diff,
+          range,
+        });
 
         try {
           await runUpdate(eventId);
