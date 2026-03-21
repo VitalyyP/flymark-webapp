@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, RefreshCw } from "lucide-react";
@@ -22,6 +22,11 @@ type Participant = {
   orderType: string;
   category: string;
   program: string;
+};
+
+type StageData = {
+  rounds: Record<string, string[]>;
+  winners: string[];
 };
 
 const renderBackButton = (eventParam: string) => (
@@ -49,7 +54,7 @@ function CategoryTable({
   eventParam: string;
   part: string;
   time: string;
-  roundMap: Record<string, string[]>;
+  roundMap: Record<string, StageData>;
   roundsLoading: boolean;
 }) {
   const [crossedKeys, setCrossedKeys] = useState<string[]>(() =>
@@ -57,32 +62,156 @@ function CategoryTable({
   );
 
   const crossedSet = useMemo(() => new Set(crossedKeys), [crossedKeys]);
-
   const groupedByPrograms = useMemo(
     () => groupParticipantsByProgramForDisplay(participants),
     [participants]
   );
+  const stageOrder = useMemo(() => ["1/8F", "1/4F", "1/2F", "F"], []);
 
-  const groupedByRounds = useMemo<Record<string, DisplayItem[]>>(() => {
+  const groupedByRounds = useMemo<
+    Record<string, { items: DisplayItem[] | "empty"; hasRealRounds: boolean }>
+  >(() => {
     if (!roundMap || Object.keys(roundMap).length === 0) return {};
 
     const byNumber = new Map<string, DisplayItem>();
-    Object.values(groupedByPrograms).forEach((list) => {
-      list.forEach((item) => {
-        if (!byNumber.has(item.regNumber)) {
-          byNumber.set(item.regNumber, item);
+    Object.values(groupedByPrograms).forEach((list) =>
+      list.forEach((item) => byNumber.set(item.regNumber, item))
+    );
+
+    const out: Record<
+      string,
+      { items: DisplayItem[] | "empty"; hasRealRounds: boolean }
+    > = {};
+    const sortedStages = Object.keys(roundMap).sort(
+      (a, b) => stageOrder.indexOf(a) - stageOrder.indexOf(b)
+    );
+
+    let emptyNextStages = false;
+
+    for (let i = 0; i < sortedStages.length; i++) {
+      const stage = sortedStages[i];
+      const current = roundMap[stage];
+      const hasRounds = Object.keys(current.rounds).length > 0;
+
+      if (i > 0) {
+        const prevStage = sortedStages[i - 1];
+        const prevWinners = roundMap[prevStage]?.winners ?? [];
+
+        if (!prevWinners.length) {
+          continue;
         }
+
+        const byNumber = new Map<string, DisplayItem>();
+        Object.values(groupedByPrograms).forEach((list) =>
+          list.forEach((item) => byNumber.set(item.regNumber, item))
+        );
+
+        if (hasRounds) {
+          for (const [roundKey, numbers] of Object.entries(current.rounds)) {
+            const items = numbers
+              .filter((num) => prevWinners.includes(num) && byNumber.has(num))
+              .map((num) => byNumber.get(num)!);
+
+            out[`${stage}-${roundKey}`] =
+              items.length > 0
+                ? { items, hasRealRounds: true }
+                : { items: "empty", hasRealRounds: true };
+
+            if (items.length === 0) emptyNextStages = true;
+          }
+        } else {
+          const items = prevWinners
+            .filter((num) => byNumber.has(num))
+            .map((num) => byNumber.get(num)!);
+
+          out[`${stage}-all`] =
+            items.length > 0
+              ? { items, hasRealRounds: false }
+              : { items: "empty", hasRealRounds: false };
+
+          if (items.length === 0) emptyNextStages = true;
+        }
+
+        if (emptyNextStages) {
+          for (let j = i + 1; j < sortedStages.length; j++) {
+            const nextStage = sortedStages[j];
+            const next = roundMap[nextStage];
+            const nextHasRounds = Object.keys(next.rounds).length > 0;
+
+            if (nextHasRounds) {
+              for (const roundKey of Object.keys(next.rounds)) {
+                out[`${nextStage}-${roundKey}`] = {
+                  items: "empty",
+                  hasRealRounds: true,
+                };
+              }
+            } else {
+              out[`${nextStage}-all`] = {
+                items: "empty",
+                hasRealRounds: false,
+              };
+            }
+          }
+          break;
+        }
+
+        continue;
+      }
+
+      let stageItems: DisplayItem[] = [];
+      if (hasRounds) {
+        for (const numbers of Object.values(current.rounds)) {
+          numbers.forEach((num) => {
+            if (
+              byNumber.has(num) &&
+              !stageItems.find((i) => i.regNumber === num)
+            ) {
+              stageItems.push(byNumber.get(num)!);
+            }
+          });
+        }
+        for (const [roundKey, numbers] of Object.entries(current.rounds)) {
+          const items = numbers
+            .filter((num) => byNumber.has(num))
+            .map((num) => byNumber.get(num)!);
+
+          out[`${stage}-${roundKey}`] =
+            items.length > 0
+              ? { items, hasRealRounds: true }
+              : { items: "empty", hasRealRounds: true };
+
+          if (items.length === 0) emptyNextStages = true;
+        }
+      } else {
+        stageItems = Array.from(byNumber.values());
+        out[`${stage}-all`] =
+          stageItems.length > 0
+            ? { items: stageItems, hasRealRounds: false }
+            : { items: "empty", hasRealRounds: false };
+
+        if (stageItems.length === 0) emptyNextStages = true;
+      }
+    }
+
+    return out;
+  }, [roundMap, groupedByPrograms, stageOrder]);
+
+  const groupedByStageForRender = useMemo(() => {
+    const out: Record<
+      string,
+      { key: string; items: DisplayItem[] | "empty"; hasRealRounds: boolean }[]
+    > = {};
+    Object.entries(groupedByRounds).forEach(([key, value]) => {
+      const [stage] = key.split("-");
+      if (!out[stage]) out[stage] = [];
+      out[stage].push({
+        key,
+        items: value.items,
+        hasRealRounds: value.hasRealRounds,
       });
     });
-
-    const out: Record<string, DisplayItem[]> = {};
-    for (const round of Object.keys(roundMap)) {
-      out[round] = (roundMap[round] ?? [])
-        .map((num) => byNumber.get(num))
-        .filter((v): v is DisplayItem => Boolean(v));
-    }
     return out;
-  }, [roundMap, groupedByPrograms]);
+  }, [groupedByRounds]);
 
   const hasRounds = Object.keys(groupedByRounds).length > 0;
 
@@ -92,11 +221,6 @@ function CategoryTable({
         a.localeCompare(b, "uk", { numeric: true })
       ),
     [groupedByPrograms]
-  );
-
-  const roundKeys = useMemo(
-    () => Object.keys(groupedByRounds).sort((a, b) => Number(a) - Number(b)),
-    [groupedByRounds]
   );
 
   return (
@@ -148,10 +272,11 @@ function CategoryTable({
                         }
                       >
                         <span
-                          className={`
-                            ${crossed ? "line-through opacity-30" : ""}
-                            ${item.isPremium ? "text-red-600" : "text-zinc-800"}
-                          `}
+                          className={`${
+                            crossed ? "line-through opacity-30" : ""
+                          } ${
+                            item.isPremium ? "text-red-600" : "text-zinc-800"
+                          }`}
                         >
                           {num}
                         </span>
@@ -186,65 +311,103 @@ function CategoryTable({
           </div>
 
           <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-zinc-200">
-                <th className="py-2 px-3 text-left text-[11px] font-black uppercase text-zinc-400 tracking-widest">
-                  Захід
-                </th>
-                <th className="py-2 px-3 text-left text-[11px] font-black uppercase text-zinc-400 tracking-widest">
-                  Номери учасників
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {roundKeys.map((key) => (
-                <tr
-                  key={key}
-                  className="border-b border-zinc-100 last:border-0"
-                >
-                  <td className="py-5 px-3 font-bold text-zinc-800 text-[16px]">
-                    {`Захід ${key}`}
-                  </td>
-                  <td className="py-5 px-3">
-                    <div className="flex flex-wrap gap-x-3 gap-y-4">
-                      {(groupedByRounds[key] ?? []).map((item, idx) => {
-                        const num = item.regNumber;
-                        const crossKey = makeCrossKey(
-                          categoryParam,
-                          item.program,
-                          num,
-                          idx
-                        );
-                        const crossed = crossedSet.has(crossKey);
-                        return (
-                          <span
-                            key={crossKey}
-                            className="text-[22px] font-bold cursor-pointer active:scale-90"
-                            onClick={() =>
-                              setCrossedKeys((prev) =>
-                                toggleCrossedKey(prev, crossKey, storageKey)
-                              )
-                            }
-                          >
-                            <span
-                              className={`
-                          ${crossed ? "line-through opacity-30" : ""}
-                          ${item.isPremium ? "text-red-600" : "text-zinc-800"}
-                        `}
-                            >
-                              {num}
-                            </span>
-                            {idx < (groupedByRounds[key]?.length ?? 0) - 1 && (
-                              <span className="text-zinc-300 ml-1">,</span>
-                            )}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </td>
-                </tr>
+            {Object.entries(groupedByStageForRender)
+              .sort(([a], [b]) => {
+                const ai = stageOrder.indexOf(a);
+                const bi = stageOrder.indexOf(b);
+                if (ai === -1 && bi === -1) return a.localeCompare(b);
+                if (ai === -1) return 1;
+                if (bi === -1) return -1;
+                return ai - bi;
+              })
+              .map(([stage, rounds]) => (
+                <tbody key={stage}>
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="py-4 px-3 text-center font-black text-green-600 text-[15px]"
+                    >
+                      {stage}
+                    </td>
+                  </tr>
+
+                  {rounds
+                    .sort((a, b) =>
+                      a.key.endsWith("-all")
+                        ? -1
+                        : b.key.endsWith("-all")
+                        ? 1
+                        : 0
+                    )
+                    .map(({ key, items, hasRealRounds }) => {
+                      const [, round] = key.split("-");
+                      return (
+                        <tr
+                          key={key}
+                          className="border-b border-zinc-100 last:border-0"
+                        >
+                          <td className="py-5 px-3 font-bold text-zinc-800 text-[16px]">
+                            {hasRealRounds ? `Захід ${round}` : ""}
+                          </td>
+                          <td className="py-5 px-3">
+                            <div className="flex flex-wrap gap-x-3 gap-y-4">
+                              {items === "empty" ? (
+                                <span className="text-zinc-400 italic">
+                                  Замовлень не існує
+                                </span>
+                              ) : (
+                                items.map((item, idx) => {
+                                  const num = item.regNumber;
+                                  const crossKey = makeCrossKey(
+                                    categoryParam,
+                                    item.program,
+                                    num,
+                                    idx
+                                  );
+                                  const crossed = crossedSet.has(crossKey);
+                                  return (
+                                    <span
+                                      key={crossKey}
+                                      className="text-[22px] font-bold cursor-pointer active:scale-90"
+                                      onClick={() =>
+                                        setCrossedKeys((prev) =>
+                                          toggleCrossedKey(
+                                            prev,
+                                            crossKey,
+                                            storageKey
+                                          )
+                                        )
+                                      }
+                                    >
+                                      <span
+                                        className={`${
+                                          crossed
+                                            ? "line-through opacity-30"
+                                            : ""
+                                        } ${
+                                          item.isPremium
+                                            ? "text-red-600"
+                                            : "text-zinc-800"
+                                        }`}
+                                      >
+                                        {num}
+                                      </span>
+                                      {idx < items.length - 1 && (
+                                        <span className="text-zinc-300 ml-1">
+                                          ,
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
               ))}
-            </tbody>
           </table>
         </div>
       )}
@@ -266,7 +429,6 @@ export default function CategoryClient() {
     () => (eventParam ? decodeEvent(eventParam) : null),
     [eventParam]
   );
-
   const eventId = decoded?.id ?? "";
   const part = decoded?.part ?? "";
   const time = decoded?.time ?? "";
@@ -277,8 +439,11 @@ export default function CategoryClient() {
   }, [eventId, time]);
 
   const [participants, setParticipants] = useState<Participant[] | null>(null);
-  const [roundMap, setRoundMap] = useState<Record<string, string[]>>({});
+  const [roundMap, setRoundMap] = useState<Record<string, StageData>>({});
   const [roundsLoading, setRoundsLoading] = useState(false);
+
+  const finishedRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!eventId || !categoryParam) return;
@@ -301,17 +466,17 @@ export default function CategoryClient() {
   useEffect(() => {
     if (!eventId || !categoryParam || !participants?.length) return;
 
-    const program = programParam;
+    finishedRef.current = false;
     const ac = new AbortController();
 
-    const loadRounds = async () => {
+    const loadRounds = async (withLoading = false) => {
       try {
-        setRoundsLoading(true);
+        if (withLoading) setRoundsLoading(true);
 
         const res = await fetch(
           `/api/flymark/streamdetails?id=${eventId}` +
             `&categoryName=${encodeURIComponent(categoryParam)}` +
-            `&programName=${encodeURIComponent(program)}` +
+            `&programName=${encodeURIComponent(programParam)}` +
             `&competitionId=${eventId}`,
           { signal: ac.signal }
         );
@@ -321,58 +486,74 @@ export default function CategoryClient() {
 
         const qualifications = data?.details?.Qualifications;
         if (!qualifications) {
-          setRoundMap({});
+          setRoundMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
           return;
         }
 
-        const rounds: Record<string, string[]> = {};
-
+        const stages: Record<string, StageData> = {};
         for (const q of qualifications) {
+          const stageTitle = q?.Title;
+          if (!stageTitle) continue;
+
+          const stageRounds: Record<string, string[]> = {};
           for (const r of q?.Rounds ?? []) {
-            Object.assign(rounds, r?.Rounds ?? {});
+            for (const [roundKey, numbers] of Object.entries(r?.Rounds ?? {})) {
+              if (!stageRounds[roundKey]) stageRounds[roundKey] = [];
+              stageRounds[roundKey].push(...(numbers as string[]));
+            }
           }
+
+          const winners =
+            q?.Winners?.map((w: { Number: number }) => String(w.Number)) ?? [];
+          stages[stageTitle] = { rounds: stageRounds, winners };
         }
 
-        setRoundMap(rounds);
+        const participantSet = new Set(participants.map((p) => p.regNumber));
+        if (stages["F"]?.winners?.length) {
+          finishedRef.current = true;
+        } else {
+          const hasAnyRelevant = Object.values(stages).some((stage) =>
+            stage.winners.some((num) => participantSet.has(num))
+          );
+          if (!hasAnyRelevant) finishedRef.current = true;
+        }
+
+        setRoundMap((prev) => {
+          const isSame = JSON.stringify(prev) === JSON.stringify(stages);
+          return isSame ? prev : stages;
+        });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         console.error("flymark error:", err);
-        setRoundMap({});
       } finally {
-        if (!ac.signal.aborted) {
-          setRoundsLoading(false);
-        }
+        if (withLoading && !ac.signal.aborted) setRoundsLoading(false);
       }
     };
 
-    void loadRounds();
+    loadRounds(true);
 
-    return () => ac.abort();
-  }, [eventId, categoryParam, participants, programParam]);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      if (finishedRef.current) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        return;
+      }
+      loadRounds(false);
+    }, 2 * 60 * 1000);
 
-  if (
-    !decoded ||
-    !eventId ||
-    !time ||
-    !eventParam ||
-    !categoryParam ||
-    !programParam
-  ) {
-    return (
-      <div className="flex justify-center p-6 bg-zinc-100 min-h-screen">
-        <p className="p-6 text-center text-red-600 bg-white rounded-2xl shadow-sm h-fit">
-          Помилка: некоректні дані турніру
-        </p>
-      </div>
-    );
-  }
+    return () => {
+      ac.abort();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [eventId, categoryParam, programParam, participants?.length]);
 
-  if (!participants)
+  if (!participants) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-zinc-50">
         <div className="w-8 h-8 border-4 border-zinc-200 border-t-green-600 rounded-full animate-spin" />
       </div>
     );
+  }
 
   return (
     <div className="flex justify-center bg-zinc-100 min-h-screen p-3 sm:p-6 font-sans">

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+
 import { getFlymarkCookieHeader } from "@/utils/flymarkAuth";
+// import { mockQualifications } from "@/mocks/mockQualifications";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -57,25 +59,10 @@ export async function GET(req: Request) {
 
     const text = await res.text();
 
-    // const mock = {
-    //   "Qualifications": [
-    //     {
-    //       "Rounds": [
-    //         {
-    //           "Rounds": {
-    //             "1": ["40", "49", "57", "68", "90", "94", "109", "123", "148"],
-    //             "2": ["37", "50", "55", "56", "60", "61", "100"],
-    //           },
-    //         },
-    //       ],
-    //     },
-    //   ],
-    // };
-
     return NextResponse.json({
       categoryId,
       details: JSON.parse(text),
-      //   details: mock,
+      // details: mockQualifications,
     });
   } catch (e) {
     console.error("💥 error:", e);
