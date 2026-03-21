@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
 function normalizePrivateKey(key?: string): string | undefined {
   if (!key) return key;
@@ -20,6 +21,12 @@ function uniqNonEmptySorted(items: string[]) {
   return Array.from(new Set(items.map((x) => x.trim()).filter(Boolean))).sort(
     (a, b) => a.localeCompare(b, "uk", { numeric: true })
   );
+}
+
+function timeToMinutes(t: string): number {
+  const m = t.match(/^(\d{2}):(\d{2})$/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  return Number(m[1]) * 60 + Number(m[2]);
 }
 
 async function getSectionTimesFast(eventId: string): Promise<string[]> {
@@ -48,23 +55,58 @@ async function getSectionTimesFast(eventId: string): Promise<string[]> {
     const dateGroups = cats["DateGroups"];
     if (!Array.isArray(dateGroups)) return [];
 
+    const monthMap: Record<string, string> = {
+      "січ": "01",
+      "лют": "02",
+      "бер": "03",
+      "кві": "04",
+      "трав": "05",
+      "чер": "06",
+      "лип": "07",
+      "сер": "08",
+      "вер": "09",
+      "жов": "10",
+      "лис": "11",
+      "гру": "12",
+    };
+
     const times: string[] = [];
 
-    for (const g of dateGroups) {
-      if (!isRecord(g)) continue;
+    for (const group of dateGroups) {
+      if (!isRecord(group)) continue;
 
-      const sections = g["Sections"];
+      const groupDateStr = group["Date"];
+      if (typeof groupDateStr !== "string") continue;
+
+      const m = groupDateStr.match(/(\d{2})\s*([а-яА-Я]{3})\.\s*(\d{4})/i);
+      let normalizedDate = groupDateStr;
+      if (m) {
+        const day = m[1].padStart(2, "0");
+        const month = monthMap[m[2].toLowerCase()] || "01";
+        const year = m[3];
+        normalizedDate = `${year}:${month}:${day}`;
+      }
+
+      const sections = group["Sections"];
       if (!Array.isArray(sections)) continue;
 
       for (const s of sections) {
         if (!isRecord(s)) continue;
-
         const name = typeof s["Name"] === "string" ? s["Name"].trim() : "";
-        if (name) times.push(name);
+        if (!name) continue;
+
+        const time = name.replace(".", ":").padStart(5, "0");
+        times.push(`${normalizedDate} ${time}`);
       }
     }
 
-    return uniqNonEmptySorted(times);
+    const uniqTimes = Array.from(new Set(times)).sort((a, b) => {
+      const [ad, at] = a.split(" ");
+      const [bd, bt] = b.split(" ");
+      return ad.localeCompare(bd) || timeToMinutes(at) - timeToMinutes(bt);
+    });
+
+    return uniqTimes;
   } catch {
     return [];
   }
@@ -93,7 +135,6 @@ async function getSectionTimesFromSheets(eventId: string): Promise<string[]> {
 
   const headers = values[2] ?? [];
   const sectionTimeIndex = headers.findIndex((h) => toStr(h) === "SectionTime");
-
   if (sectionTimeIndex === -1) return [];
 
   const timesRaw = values
@@ -115,12 +156,11 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get("event");
+    if (!eventId) return NextResponse.json({ times: [] });
 
-    if (!eventId) {
-      return NextResponse.json({ times: [] });
-    }
+    const timesRaw = await getSectionTimes(eventId);
 
-    const times = await getSectionTimes(eventId);
+    const times = timesRaw.map((t) => normalizeTimeUniversal(t));
 
     return NextResponse.json({ times });
   } catch (error) {

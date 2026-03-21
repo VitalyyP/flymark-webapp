@@ -1,5 +1,5 @@
 import axios from "axios";
-import { normalizeTime } from "./normalizeTime";
+import { normalizeTimeUniversal } from "./normalizeTime";
 
 export type Dancer = {
   Id: number;
@@ -152,7 +152,7 @@ export async function parseEvent(eventId: number): Promise<{
     const sections = dateGroup.Sections ?? [];
 
     for (const section of sections) {
-      const time = normalizeTime(section.Name);
+      const time = normalizeTimeUniversal(section.Name);
       const isoDateTime = buildLocalISO(isoDate, time);
 
       if (!isoDateTime) continue;

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
-import { normalizeTime } from "@/utils/normalizeTime";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 import {
   groupParticipantsByProgramForDisplay,
   type DisplayItem,
@@ -198,7 +198,7 @@ export default function ResultsClient() {
   const timeRaw = decoded?.time ?? "";
   const part = decoded?.part ?? "";
 
-  const time = useMemo(() => normalizeTime(timeRaw), [timeRaw]);
+  const time = useMemo(() => normalizeTimeUniversal(timeRaw), [timeRaw]);
 
   const storageKey = useMemo(() => {
     if (!eventId || !time) return "";
