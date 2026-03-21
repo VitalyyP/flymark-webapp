@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { normalizeTime } from "@/utils/normalizeTime";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
 function normalizePrivateKey(key?: string): string | undefined {
   if (!key) return key;
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const eventId = (searchParams.get("event") ?? "").trim();
     const timeParamRaw = (searchParams.get("time") ?? "").trim();
-    const timeParam = normalizeTime(timeParamRaw);
+    const timeParam = normalizeTimeUniversal(timeParamRaw);
 
     if (!eventId) {
       return NextResponse.json(
@@ -91,7 +91,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ headers, rows });
     }
 
-    const filtered = rows.filter((r) => normalizeTime(r.Time) === timeParam);
+    const filtered = rows.filter(
+      (r) => normalizeTimeUniversal(r.Time) === timeParam
+    );
 
     const participants = filtered.map((p) => ({
       regNumber: p.RegNumber,

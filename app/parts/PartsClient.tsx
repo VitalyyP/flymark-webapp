@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Clock, Calendar, ChevronRight, Loader2, Camera } from "lucide-react";
 
 import { encodeEvent } from "@/utils/eventPayload";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
 type SheetRow = {
   Time: string;
@@ -20,25 +21,6 @@ type TimeItem = {
   time: string;
   enabled: boolean;
 };
-
-function normalizeTime(raw: unknown): string {
-  if (raw === null || raw === undefined) return "";
-
-  let s = String(raw).trim();
-  if (!s) return "";
-
-  // 09.00 -> 09:00
-  s = s.replace(".", ":");
-
-  // 9:0, 09:0, 9:00, 09:00 -> 09:00
-  const m = s.match(/^(\d{1,2}):(\d{1,2})$/);
-  if (!m) return s;
-
-  const hh = m[1].padStart(2, "0");
-  const mm = m[2].padStart(2, "0");
-
-  return `${hh}:${mm}`;
-}
 
 function timeToMinutes(t: string): number {
   const m = t.match(/^(\d{2}):(\d{2})$/);
@@ -147,16 +129,23 @@ export default function PartsClient() {
 
         const sheetTimes = new Set(
           (sheetData.rows ?? [])
-            .map((r) => normalizeTime(r.Time))
+            .map((r) => normalizeTimeUniversal(r.Time))
             .filter(Boolean)
         );
 
         const flyTimes = (flymarkData.times ?? [])
-          .map((t) => normalizeTime(t))
+          .map((t) => normalizeTimeUniversal(t))
           .filter(Boolean);
 
         const allTimes = Array.from(new Set([...flyTimes, ...sheetTimes])).sort(
-          (a, b) => timeToMinutes(a) - timeToMinutes(b)
+          (a, b) => {
+            const [dateA, timeA] = a.split(" ");
+            const [dateB, timeB] = b.split(" ");
+            return (
+              dateA.localeCompare(dateB) ||
+              timeToMinutes(timeA) - timeToMinutes(timeB)
+            );
+          }
         );
 
         const merged: TimeItem[] = allTimes.map((time, index) => ({
@@ -177,7 +166,6 @@ export default function PartsClient() {
     void load();
     return () => ac.abort();
   }, [eventId]);
-
   const handleTimeSelect = (item: TimeItem) => {
     if (!item.enabled) return;
 

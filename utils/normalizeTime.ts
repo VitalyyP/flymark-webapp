@@ -1,33 +1,25 @@
-export function normalizeTime(raw: unknown): string {
-  if (raw === null || raw === undefined) return "";
+export const normalizeTimeUniversal = (raw?: string): string => {
+  if (!raw) return "";
 
-  let s = String(raw).trim();
-  if (!s) return "";
+  // Google Sheets "YYYY-MM-DD HH:MM:SS" / "YYYY-MM-DD H:MM:SS"
+  if (/^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}(:\d{2})?$/.test(raw)) {
+    const [datePart, timePart] = raw.split(" ");
+    const dateNormalized = datePart.replace(/-/g, ":");
+    const lastColon = timePart.lastIndexOf(":");
+    let timeNormalized =
+      lastColon > 0 ? timePart.slice(0, lastColon) : timePart;
 
-  s = s.replace(/^'+/, "").trim();
+    const [hh, mm] = timeNormalized.split(":");
+    timeNormalized = `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
 
-  // 09.00 / 09-00 -> 09:00
-  s = s.replace(/[.\-]/g, ":").trim();
-
-  // 3:00 PM / 3:00:00 PM / 15:00 / 08:30 / 11:00:00 AM
-  const m = s.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)?$/i);
-  if (!m) return s;
-
-  let hh = Number(m[1]);
-  const mmNum = Number(m[2]);
-  const ap = (m[4] ?? "").toUpperCase();
-
-  if (!Number.isFinite(hh) || !Number.isFinite(mmNum)) return s;
-  if (hh < 0 || hh > 23) return s;
-  if (mmNum < 0 || mmNum > 59) return s;
-
-  if (ap === "AM") {
-    if (hh === 12) hh = 0;
-  } else if (ap === "PM") {
-    if (hh !== 12) hh += 12;
+    return `${dateNormalized} ${timeNormalized}`;
   }
 
-  const HH = String(hh).padStart(2, "0");
-  const MM = String(mmNum).padStart(2, "0");
-  return `${HH}:${MM}`;
-}
+  // Flymark "HH.MM"
+  if (/^\d{1,2}\.\d{1,2}$/.test(raw)) {
+    const [hh, mm] = raw.split(".");
+    return `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
+  }
+
+  return raw;
+};

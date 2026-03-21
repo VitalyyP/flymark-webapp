@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { normalizeTime } from "@/utils/normalizeTime";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 import { getSheetsClient } from "@/utils/googleSheets";
 
 export const runtime = "nodejs";
 
 type SheetRow = (string | number | boolean | null | undefined)[];
-
-function normalizePrivateKey(key?: string): string | undefined {
-  if (!key) return undefined;
-  return key.includes("\\n") ? key.replace(/\\n/g, "\n") : key;
-}
 
 function toStr(v: unknown): string {
   if (typeof v === "string") return v.trim();
@@ -254,8 +249,8 @@ export async function POST(req: Request) {
           newTime = secs.find((s) => s.Id === matchedCat.SectionId)?.Name ?? "";
         }
 
-        newTime = normalizeTime(newTime);
-        const oldTime = normalizeTime(row[idxTime]);
+        newTime = normalizeTimeUniversal(toStr(newTime));
+        const oldTime = normalizeTimeUniversal(toStr(row[idxTime]));
         if (oldTime !== newTime && newTime) {
           updates.push({
             range: `${sheetName}!${colTime}${sheetRow}`,
