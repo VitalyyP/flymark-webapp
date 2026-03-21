@@ -74,7 +74,7 @@ export const mockQualifications = {
           },
         },
       ],
-      "Rounds": [],
+      // "Rounds": [],
       "_Kolo": 3,
       get "Kolo"() {
         return this["_Kolo"];
@@ -114,7 +114,7 @@ export const mockQualifications = {
           },
         },
       ],
-      "Rounds": [],
+      // "Rounds": [],
       "Kolo": 2,
     },
     {
