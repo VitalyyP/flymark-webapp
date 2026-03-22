@@ -98,9 +98,6 @@ export async function GET(request: Request) {
     const clubIdx = headers.indexOf("DancingClub");
     const cityIdx = headers.indexOf("City");
 
-    const dancer1IdIdx = headers.indexOf("Dancer1Id");
-    const dancer2IdIdx = headers.indexOf("Dancer2Id");
-
     const required = [
       dancer1NameIdx,
       categoryIdx,
@@ -133,31 +130,10 @@ export async function GET(request: Request) {
 
         if (!category) return null;
 
-        if (dancerId) {
-          const d1id = safeCell(row, dancer1IdIdx);
-          const d2id = safeCell(row, dancer2IdIdx);
-
-          const matchesById =
-            normalizeText(d1id) === dancerId ||
-            normalizeText(d2id) === dancerId;
-          if (!matchesById) return null;
-
-          return {
-            category,
-            time,
-            dancer1Name,
-            dancer2Name,
-            program,
-            club,
-            city,
-          };
-        }
-
         const matchesByName = [dancer1Name, dancer2Name].some((d) => {
           const nd = normalizeText(d);
           return nameParts.every((part) => nd.includes(part));
         });
-
         if (!matchesByName) return null;
 
         return {

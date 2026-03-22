@@ -69,9 +69,10 @@ export default async function Page({ searchParams }: PageProps) {
       fetchJson<ResultItem[]>(slowUrl),
     ]);
 
-    if (fast?.ok && isSufficient(fast.results)) {
-      results = fast.results;
-    } else if (slow?.ok && isSufficient(slow.results)) {
+    // if (fast?.ok && isSufficient(fast.results)) {
+    //   results = fast.results;
+    // } else
+    if (slow?.ok && isSufficient(slow.results)) {
       results = slow.results;
     }
   } catch (e) {
