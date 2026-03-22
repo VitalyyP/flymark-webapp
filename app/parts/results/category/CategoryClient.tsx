@@ -97,7 +97,9 @@ function CategoryTable({
         const prevStage = sortedStages[i - 1];
         const prevWinners = roundMap[prevStage]?.winners ?? [];
 
-        if (!prevWinners.length) {
+        const hasRounds = Object.keys(current.rounds).length > 0;
+
+        if (!prevWinners.length && !hasRounds) {
           continue;
         }
 
