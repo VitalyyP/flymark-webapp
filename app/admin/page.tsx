@@ -434,34 +434,34 @@ export default function HomePage() {
         },
       }));
 
-      const refreshRes = await fetch(
-        `/api/google/refresh-participant-time?eventId=${encodeURIComponent(
-          competitionId
-        )}`,
-        {
-          method: "POST",
-          cache: "no-store",
-        }
-      );
+      // const refreshRes = await fetch(
+      //   `/api/google/refresh-participant-time?eventId=${encodeURIComponent(
+      //     competitionId
+      //   )}`,
+      //   {
+      //     method: "POST",
+      //     cache: "no-store",
+      //   }
+      // );
 
-      if (!refreshRes.ok) {
-        const refreshText = await safeReadText(refreshRes);
-        setFindUi((prev) => ({
-          ...prev,
-          [competitionId]: {
-            ...(prev[competitionId] ?? {
-              statusText: null,
-              foundCount: null,
-              findError: null,
-            }),
-            statusText: null,
-            findError:
-              refreshText ||
-              `Resolve ок, але refresh впав (${refreshRes.status})`,
-          },
-        }));
-        return;
-      }
+      // if (!refreshRes.ok) {
+      //   const refreshText = await safeReadText(refreshRes);
+      //   setFindUi((prev) => ({
+      //     ...prev,
+      //     [competitionId]: {
+      //       ...(prev[competitionId] ?? {
+      //         statusText: null,
+      //         foundCount: null,
+      //         findError: null,
+      //       }),
+      //       statusText: null,
+      //       findError:
+      //         refreshText ||
+      //         `Resolve ок, але refresh впав (${refreshRes.status})`,
+      //     },
+      //   }));
+      //   return;
+      // }
 
       setFindUi((prev) => ({
         ...prev,
