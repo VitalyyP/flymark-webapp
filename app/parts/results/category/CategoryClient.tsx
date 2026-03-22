@@ -99,7 +99,12 @@ function CategoryTable({
 
         const hasRounds = Object.keys(current.rounds).length > 0;
 
-        if (!prevWinners.length && !hasRounds) {
+        const nextStage = sortedStages[i + 1];
+        const nextHasRounds =
+          nextStage &&
+          Object.keys(roundMap[nextStage]?.rounds ?? {}).length > 0;
+
+        if (!prevWinners.length && !hasRounds && !nextHasRounds) {
           continue;
         }
 
@@ -110,8 +115,16 @@ function CategoryTable({
 
         if (hasRounds) {
           for (const [roundKey, numbers] of Object.entries(current.rounds)) {
-            const items = numbers
-              .filter((num) => prevWinners.includes(num) && byNumber.has(num))
+            let sourceNumbers: string[];
+
+            if (prevWinners.length > 0) {
+              sourceNumbers = numbers.filter((n) => prevWinners.includes(n));
+            } else {
+              sourceNumbers = numbers;
+            }
+
+            const items = sourceNumbers
+              .filter((num) => byNumber.has(num))
               .map((num) => byNumber.get(num)!);
 
             out[`${stage}-${roundKey}`] =
@@ -119,7 +132,18 @@ function CategoryTable({
                 ? { items, hasRealRounds: true }
                 : { items: "empty", hasRealRounds: true };
 
-            if (items.length === 0) emptyNextStages = true;
+            if (
+              shouldMarkEmptyNextStages({
+                prevWinners,
+                itemsLength: items.length,
+                nextStage: sortedStages[i + 1],
+                roundMap,
+                sortedStages,
+                currentIndex: i,
+              })
+            ) {
+              emptyNextStages = true;
+            }
           }
         } else {
           const items = prevWinners
@@ -131,7 +155,18 @@ function CategoryTable({
               ? { items, hasRealRounds: false }
               : { items: "empty", hasRealRounds: false };
 
-          if (items.length === 0) emptyNextStages = true;
+          if (
+            shouldMarkEmptyNextStages({
+              prevWinners,
+              itemsLength: items.length,
+              nextStage: sortedStages[i + 1],
+              roundMap,
+              sortedStages,
+              currentIndex: i,
+            })
+          ) {
+            emptyNextStages = true;
+          }
         }
 
         if (emptyNextStages) {
@@ -181,8 +216,6 @@ function CategoryTable({
             items.length > 0
               ? { items, hasRealRounds: true }
               : { items: "empty", hasRealRounds: true };
-
-          if (items.length === 0) emptyNextStages = true;
         }
       } else {
         stageItems = Array.from(byNumber.values());
@@ -571,4 +604,22 @@ export default function CategoryClient() {
       />
     </div>
   );
+}
+
+function shouldMarkEmptyNextStages(params: {
+  prevWinners: string[];
+  itemsLength: number;
+  nextStage?: string;
+  roundMap: Record<string, StageData>;
+  sortedStages: string[];
+  currentIndex: number;
+}) {
+  const { prevWinners, itemsLength, nextStage, roundMap } = params;
+
+  const nextHasRounds =
+    nextStage && Object.keys(roundMap[nextStage]?.rounds ?? {}).length > 0;
+
+  const isRealElimination = prevWinners.length > 0 && itemsLength === 0;
+
+  return isRealElimination && !nextHasRounds;
 }
