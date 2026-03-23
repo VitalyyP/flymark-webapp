@@ -102,15 +102,21 @@ function buildLocalISO(dateISO: string, time: string): string {
   return `${dateISO}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`;
 }
 
+export const formatForSheet = (isoTime: string): string => {
+  if (!isoTime) return "";
+  const [datePart, timePart] = isoTime.split("T");
+  if (!timePart) return isoTime.replace(/-/g, ":");
+  const [hh, mm] = timePart.split(":");
+  return `${datePart.replace(/-/g, ":")} ${hh}:${mm}`;
+};
+
 async function fetchRegistrations(
   eventId: number,
   categoryId: number
 ): Promise<Registration[]> {
   const response = await api.get<{ Registration?: Registration[] }>(
     "/registration",
-    {
-      params: { competitionId: eventId, categoryId },
-    }
+    { params: { competitionId: eventId, categoryId } }
   );
 
   return response.data.Registration ?? [];
@@ -152,12 +158,11 @@ export async function parseEvent(eventId: number): Promise<{
     const sections = dateGroup.Sections ?? [];
 
     for (const section of sections) {
-      const time = normalizeTimeUniversal(section.Name);
-      const isoDateTime = buildLocalISO(isoDate, time);
-
+      const normalizedTime = normalizeTimeUniversal(section.Name);
+      const isoDateTime = buildLocalISO(isoDate, normalizedTime);
       if (!isoDateTime) continue;
 
-      sectionMap.set(section.Id, isoDateTime);
+      sectionMap.set(section.Id, formatForSheet(isoDateTime));
     }
   }
 
