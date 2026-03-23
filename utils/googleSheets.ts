@@ -110,7 +110,7 @@ async function ensureSheet(
   );
 
   if (existing?.properties?.sheetId) {
-    return existing.properties.sheetId;
+    return { sheetId: existing.properties.sheetId, isNew: false };
   }
 
   const resp = await sheets.spreadsheets.batchUpdate({
@@ -123,21 +123,23 @@ async function ensureSheet(
   const sheetId = resp.data.replies?.[0]?.addSheet?.properties?.sheetId;
 
   if (typeof sheetId !== "number") {
-    throw new Error("Failed to create sheet: sheetId missing in API response");
+    throw new Error("Failed to create sheet");
   }
 
-  return sheetId;
+  return { sheetId, isNew: true };
 }
 
 async function setupLayout(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
-  sheetId: number
+  sheetId: number,
+  columnCount: number
 ) {
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
       requests: [
+        // freeze 3 rows
         {
           updateSheetProperties: {
             properties: {
@@ -147,12 +149,16 @@ async function setupLayout(
             fields: "gridProperties.frozenRowCount",
           },
         },
+
+        // headers bold
         {
           repeatCell: {
             range: {
               sheetId,
               startRowIndex: 2,
               endRowIndex: 3,
+              startColumnIndex: 0,
+              endColumnIndex: columnCount,
             },
             cell: {
               userEnteredFormat: {
@@ -181,7 +187,7 @@ async function writeLayout(
   await sheets.spreadsheets.values.update({
     spreadsheetId,
     range: `${sheetName}!A1`,
-    valueInputOption: "USER_ENTERED",
+    valueInputOption: "RAW",
     requestBody: { values: data },
   });
 }
@@ -200,7 +206,11 @@ export async function saveRowsToSheet(
 
   const { headers, values } = toValues(rows);
 
-  const sheetId = await ensureSheet(sheets, spreadsheetId, sheetName);
+  const { sheetId, isNew } = await ensureSheet(
+    sheets,
+    spreadsheetId,
+    sheetName
+  );
 
   if (options.clearBeforeWrite) {
     await writeLayout(
@@ -213,18 +223,66 @@ export async function saveRowsToSheet(
       values
     );
 
-    await setupLayout(sheets, spreadsheetId, sheetId);
-
+    await setupLayout(sheets, spreadsheetId, sheetId, headers.length);
     return { written: values.length };
   }
 
-  await sheets.spreadsheets.values.append({
+  if (isNew) {
+    await writeLayout(
+      sheets,
+      spreadsheetId,
+      sheetName,
+      headers,
+      options.title,
+      options.subtitle
+    );
+
+    await setupLayout(sheets, spreadsheetId, sheetId, headers.length);
+  }
+
+  const appendRes = await sheets.spreadsheets.values.append({
     spreadsheetId,
     range: `${sheetName}!A4`,
-    valueInputOption: "USER_ENTERED",
+    valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
   });
+
+  const updatedRange = appendRes.data.updates?.updatedRange;
+
+  if (updatedRange) {
+    const match = updatedRange.match(/!(?:[A-Z]+)(\d+):[A-Z]+(\d+)/);
+
+    if (match) {
+      const startRow = Number(match[1]) - 1;
+      const endRow = Number(match[2]);
+
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              repeatCell: {
+                range: {
+                  sheetId,
+                  startRowIndex: startRow,
+                  endRowIndex: endRow,
+                  startColumnIndex: 0,
+                  endColumnIndex: headers.length,
+                },
+                cell: {
+                  userEnteredFormat: {
+                    textFormat: { bold: false },
+                  },
+                },
+                fields: "userEnteredFormat.textFormat.bold",
+              },
+            },
+          ],
+        },
+      });
+    }
+  }
 
   return { appended: values.length };
 }

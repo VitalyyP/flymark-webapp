@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { saveRowsToSheet, RowData } from "@/utils/googleSheets";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
 type FormItem = {
   category: string;
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
       DancerName: dancerName,
       Category: item.category,
       Program: item.program,
-      Time: item.time,
+      Time: normalizeTimeUniversal(item.time),
       RegNumber: regNumber,
       OrderType: orderType,
       Phone: phone,

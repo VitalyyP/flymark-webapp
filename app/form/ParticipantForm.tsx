@@ -7,6 +7,7 @@ import { User, Award, Clock, Fingerprint, Loader2 } from "lucide-react";
 
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
 type CustomPhoneInputProps = {
   value: string;
@@ -207,7 +208,7 @@ export function ParticipantForm({
       .map(({ item }) => ({
         category: item.category,
         program: item.program,
-        time: item.time,
+        time: normalizeTimeUniversal(item.time),
       }));
 
     const payload = {
