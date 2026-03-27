@@ -24,35 +24,83 @@ export const normalizeTimeUniversal = (raw?: string): string => {
   return raw;
 };
 
+type ParsedStart = {
+  y: number;
+  mo: number;
+  d: number;
+  hh: number;
+  min: number;
+};
+
+function parseTournamentStartDateTime(raw: string): ParsedStart | null {
+  const trimmed = raw.trim();
+
+  const colon =
+    /^(\d{4}):(\d{2}):(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  if (colon) {
+    const [, y, mo, d, hh, mm] = colon;
+    return {
+      y: Number(y),
+      mo: Number(mo),
+      d: Number(d),
+      hh: Number(hh),
+      min: Number(mm),
+    };
+  }
+
+  const dash =
+    /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  if (dash) {
+    const [, y, mo, d, hh, mm] = dash;
+    return {
+      y: Number(y),
+      mo: Number(mo),
+      d: Number(d),
+      hh: Number(hh),
+      min: Number(mm),
+    };
+  }
+
+  return null;
+}
+
 /** UI: "09:30, 28 березня" (uk-UA). Accepts sheet / normalized / Flymark time strings. */
 export function formatTournamentStartDisplay(raw?: string): string {
   if (!raw) return "";
 
   const trimmed = raw.trim();
-
-  const withColonDate =
-    /^(\d{4}):(\d{2}):(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
-  if (withColonDate) {
-    const [, y, mo, d, hh, mm] = withColonDate;
+  const parsed = parseTournamentStartDateTime(trimmed);
+  if (parsed) {
     return formatUkTimeAndDate(
-      Number(y),
-      Number(mo),
-      Number(d),
-      Number(hh),
-      Number(mm)
+      parsed.y,
+      parsed.mo,
+      parsed.d,
+      parsed.hh,
+      parsed.min
     );
   }
 
-  const withDashDate =
-    /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
-  if (withDashDate) {
-    const [, y, mo, d, hh, mm] = withDashDate;
-    return formatUkTimeAndDate(
-      Number(y),
-      Number(mo),
-      Number(d),
-      Number(hh),
-      Number(mm)
+  if (/^\d{1,2}\.\d{1,2}$/.test(trimmed)) {
+    const [hh, mm] = trimmed.split(".");
+    return `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
+  }
+
+  return trimmed;
+}
+
+/** UI: "28 березня, 09:30" (uk-UA). Same inputs as formatTournamentStartDisplay. */
+export function formatTournamentStartDisplayDateFirst(raw?: string): string {
+  if (!raw) return "";
+
+  const trimmed = raw.trim();
+  const parsed = parseTournamentStartDateTime(trimmed);
+  if (parsed) {
+    return formatUkDateAndTime(
+      parsed.y,
+      parsed.mo,
+      parsed.d,
+      parsed.hh,
+      parsed.min
     );
   }
 
@@ -81,4 +129,23 @@ function formatUkTimeAndDate(
   }).format(date);
   const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
   return `${timePart}, ${datePart}`;
+}
+
+function formatUkDateAndTime(
+  y: number,
+  mo: number,
+  d: number,
+  hh: number,
+  min: number
+): string {
+  const date = new Date(y, mo - 1, d);
+  if (Number.isNaN(date.getTime())) {
+    return `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+  }
+  const datePart = new Intl.DateTimeFormat("uk-UA", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+  return `${datePart}, ${timePart}`;
 }
