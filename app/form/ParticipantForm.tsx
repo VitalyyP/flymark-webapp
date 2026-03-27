@@ -86,6 +86,9 @@ export function ParticipantForm({
   const phoneRef = useRef<HTMLDivElement>(null);
 
   const [showValidation, setShowValidation] = useState(false);
+  const [error, setError] = useState(false);
+
+  const errorRef = useRef<HTMLDivElement>(null);
 
   const scrollToError = () => {
     setShowValidation(true);
@@ -148,6 +151,15 @@ export function ParticipantForm({
     }
   }, [success]);
 
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [error]);
+
   const participantName = participant.name;
 
   const getItemKey = (item: ResultItem, index: number) =>
@@ -196,6 +208,7 @@ export function ParticipantForm({
     if (!canSubmit) return;
 
     setSending(true);
+    setError(false);
     setSuccess(false);
 
     const selected = results
@@ -225,20 +238,30 @@ export function ParticipantForm({
       phone,
     };
 
-    const response = await fetch("/api/save-form", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const response = await fetch("/api/save-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    setSending(false);
+      const data = await response.json();
 
-    if (response.ok) {
-      setSuccess(true);
-      setRegNumber("");
-      setRegNumberUnknown(false);
-      setPhone("");
-      setSelectedItems([]);
+      if (response.ok && data.success) {
+        setSuccess(true);
+        setRegNumber("");
+        setRegNumberUnknown(false);
+        setPhone("");
+        setSelectedItems([]);
+      } else {
+        console.log(data.error);
+        setError(true);
+      }
+    } catch {
+      console.log("Something went wrong");
+      setError(true);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -731,19 +754,19 @@ export function ParticipantForm({
             </div>
 
             <div
-              className="w-full -mt-6"
+              className="w-full flex flex-col gap-3 mt-6"
               onClickCapture={!canSubmit ? scrollToError : undefined}
             >
               <button
                 onClick={handleSubmit}
                 disabled={sending}
                 className={`w-full py-4 rounded-[22px] font-semibold text-[17px] transition-all duration-200 cursor-pointer disabled:cursor-not-allowed
-                  ${
-                    sending || !canSubmit
-                      ? "bg-zinc-200 text-zinc-400"
-                      : "bg-[#00a63e] text-white active:scale-[0.98] shadow-md shadow-green-900/10"
-                  }
-                `}
+      ${
+        sending || !canSubmit
+          ? "bg-zinc-200 text-zinc-400"
+          : "bg-[#00a63e] text-white active:scale-[0.98] shadow-md shadow-green-900/10"
+      }
+    `}
               >
                 <div className="flex items-center justify-center gap-2">
                   {sending && <Loader2 size={20} className="animate-spin" />}
@@ -752,6 +775,30 @@ export function ParticipantForm({
                   </span>
                 </div>
               </button>
+
+              {error && (
+                <div
+                  ref={errorRef}
+                  className="w-full bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3"
+                >
+                  <svg
+                    className="w-5 h-5 text-red-500 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"
+                    />
+                  </svg>
+                  <span className="text-red-700 text-sm sm:text-base">
+                    Сталася помилка при відправці форми. Спробуйте ще раз.
+                  </span>
+                </div>
+              )}
             </div>
           </>
         )}
