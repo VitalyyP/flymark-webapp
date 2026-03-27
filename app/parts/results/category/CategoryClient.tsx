@@ -489,9 +489,11 @@ export default function CategoryClient() {
   }, [eventId, time]);
 
   const [participants, setParticipants] = useState<Participant[] | null>(null);
-  const [roundMap, setRoundMap] = useState<Record<string, StageData>>({});
-  const [stageOrder, setStageOrder] = useState<string[]>([]);
   const [roundsLoading, setRoundsLoading] = useState(false);
+  const [roundData, setRoundData] = useState<{
+    roundMap: Record<string, StageData>;
+    stageOrder: string[];
+  }>({ roundMap: {}, stageOrder: [] });
 
   const finishedRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -538,8 +540,6 @@ export default function CategoryClient() {
         const qualifications: FlymarkQualification[] =
           data?.details?.Qualifications ?? [];
 
-        setStageOrder(qualifications.map((q) => q.Title));
-
         const stages: Record<string, StageData> = {};
         for (const q of qualifications) {
           const stageTitle = q?.Title;
@@ -568,9 +568,9 @@ export default function CategoryClient() {
           if (!hasAnyRelevant) finishedRef.current = true;
         }
 
-        setRoundMap((prev) => {
-          const isSame = JSON.stringify(prev) === JSON.stringify(stages);
-          return isSame ? prev : stages;
+        setRoundData({
+          roundMap: stages,
+          stageOrder: qualifications.map((q) => q.Title),
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -614,9 +614,9 @@ export default function CategoryClient() {
         eventParam={eventParam}
         part={part}
         time={time}
-        roundMap={roundMap}
+        roundMap={roundData.roundMap}
         roundsLoading={roundsLoading}
-        stageOrder={stageOrder}
+        stageOrder={roundData.stageOrder}
       />
     </div>
   );
