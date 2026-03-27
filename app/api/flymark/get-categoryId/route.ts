@@ -101,7 +101,7 @@ export async function GET(req: Request) {
       );
 
       if (found) {
-        console.log("✅ Found target category:", found);
+        console.log("✅ Found target category");
         return NextResponse.json({ categoryId: found.Id });
       } else {
         console.log(`❌ Target category not found in section ${sectionId}`);
