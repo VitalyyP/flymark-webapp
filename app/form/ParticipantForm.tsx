@@ -7,7 +7,10 @@ import { User, Award, Clock, Fingerprint, Loader2 } from "lucide-react";
 
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
-import { normalizeTimeUniversal } from "@/utils/normalizeTime";
+import {
+  formatTournamentStartDisplay,
+  normalizeTimeUniversal,
+} from "@/utils/normalizeTime";
 
 type CustomPhoneInputProps = {
   value: string;
@@ -456,7 +459,7 @@ export function ParticipantForm({
                             <span className="text-[13px] font-medium">
                               Початок о{" "}
                               <span className="font-bold text-zinc-700">
-                                {item.time}
+                                {formatTournamentStartDisplay(item.time)}
                               </span>
                             </span>
                           </div>
