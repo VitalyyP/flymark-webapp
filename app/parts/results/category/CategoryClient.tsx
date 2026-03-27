@@ -29,6 +29,12 @@ type StageData = {
   winners: string[];
 };
 
+type FlymarkQualification = {
+  Title: string;
+  Rounds?: { Rounds?: Record<string, string[]> }[];
+  Winners?: { Number: number }[];
+};
+
 const renderBackButton = (eventParam: string) => (
   <Link
     href={`/parts/results?event=${eventParam}`}
@@ -47,6 +53,7 @@ function CategoryTable({
   time,
   roundMap,
   roundsLoading,
+  stageOrder,
 }: {
   storageKey: string;
   categoryParam: string;
@@ -56,6 +63,7 @@ function CategoryTable({
   time: string;
   roundMap: Record<string, StageData>;
   roundsLoading: boolean;
+  stageOrder: string[];
 }) {
   const [crossedKeys, setCrossedKeys] = useState<string[]>(() =>
     readCrossedFromStorage(storageKey)
@@ -66,7 +74,6 @@ function CategoryTable({
     () => groupParticipantsByProgramForDisplay(participants),
     [participants]
   );
-  const stageOrder = useMemo(() => ["1/8F", "1/4F", "1/2F", "F"], []);
 
   const groupedByRounds = useMemo<
     Record<string, { items: DisplayItem[] | "empty"; hasRealRounds: boolean }>
@@ -82,9 +89,17 @@ function CategoryTable({
       string,
       { items: DisplayItem[] | "empty"; hasRealRounds: boolean }
     > = {};
-    const sortedStages = Object.keys(roundMap).sort(
-      (a, b) => stageOrder.indexOf(a) - stageOrder.indexOf(b)
-    );
+
+    const sortedStages = Object.keys(roundMap).sort((a, b) => {
+      const ai = stageOrder.indexOf(a);
+      const bi = stageOrder.indexOf(b);
+
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+
+      return ai - bi;
+    });
 
     let emptyNextStages = false;
 
@@ -474,8 +489,11 @@ export default function CategoryClient() {
   }, [eventId, time]);
 
   const [participants, setParticipants] = useState<Participant[] | null>(null);
-  const [roundMap, setRoundMap] = useState<Record<string, StageData>>({});
   const [roundsLoading, setRoundsLoading] = useState(false);
+  const [roundData, setRoundData] = useState<{
+    roundMap: Record<string, StageData>;
+    stageOrder: string[];
+  }>({ roundMap: {}, stageOrder: [] });
 
   const finishedRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -519,11 +537,8 @@ export default function CategoryClient() {
         const data = await res.json();
         if (ac.signal.aborted) return;
 
-        const qualifications = data?.details?.Qualifications;
-        if (!qualifications) {
-          setRoundMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
-          return;
-        }
+        const qualifications: FlymarkQualification[] =
+          data?.details?.Qualifications ?? [];
 
         const stages: Record<string, StageData> = {};
         for (const q of qualifications) {
@@ -553,9 +568,9 @@ export default function CategoryClient() {
           if (!hasAnyRelevant) finishedRef.current = true;
         }
 
-        setRoundMap((prev) => {
-          const isSame = JSON.stringify(prev) === JSON.stringify(stages);
-          return isSame ? prev : stages;
+        setRoundData({
+          roundMap: stages,
+          stageOrder: qualifications.map((q) => q.Title),
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -580,7 +595,7 @@ export default function CategoryClient() {
       ac.abort();
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [eventId, categoryParam, programParam, participants?.length]);
+  }, [eventId, categoryParam, programParam, participants]);
 
   if (!participants) {
     return (
@@ -599,8 +614,9 @@ export default function CategoryClient() {
         eventParam={eventParam}
         part={part}
         time={time}
-        roundMap={roundMap}
+        roundMap={roundData.roundMap}
         roundsLoading={roundsLoading}
+        stageOrder={roundData.stageOrder}
       />
     </div>
   );
