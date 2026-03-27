@@ -184,3 +184,41 @@ function formatUkDateAndTime(
   const { datePart, timePart } = getUkDateAndTimeParts(y, mo, d, hh, min);
   return datePart ? `${datePart}, ${timePart}` : timePart;
 }
+
+export type TournamentStartDisplayModel =
+  | { mode: "split"; time: string; date: string }
+  | { mode: "timeOnly"; time: string }
+  | { mode: "plain"; text: string };
+
+/** For UI that shows time and date separately (e.g. FormattedTime). Mirrors formatTournamentStartDisplay parsing. */
+export function getTournamentStartDisplayModel(
+  raw?: string
+): TournamentStartDisplayModel | null {
+  if (!raw?.trim()) return null;
+
+  const trimmed = raw.trim();
+  const parsed = parseTournamentStartDateTime(trimmed);
+  if (parsed) {
+    const { datePart, timePart } = getUkDateAndTimeParts(
+      parsed.y,
+      parsed.mo,
+      parsed.d,
+      parsed.hh,
+      parsed.min
+    );
+    if (datePart) {
+      return { mode: "split", time: timePart, date: datePart };
+    }
+    return { mode: "timeOnly", time: timePart };
+  }
+
+  if (/^\d{1,2}\.\d{1,2}$/.test(trimmed)) {
+    const [hh, mm] = trimmed.split(".");
+    return {
+      mode: "timeOnly",
+      time: `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`,
+    };
+  }
+
+  return { mode: "plain", text: trimmed };
+}
