@@ -112,6 +112,28 @@ export function formatTournamentStartDisplayDateFirst(raw?: string): string {
   return trimmed;
 }
 
+function getUkDateAndTimeParts(
+  y: number,
+  mo: number,
+  d: number,
+  hh: number,
+  min: number
+): { datePart: string; timePart: string } {
+  const date = new Date(y, mo - 1, d);
+  const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+
+  if (Number.isNaN(date.getTime())) {
+    return { datePart: "", timePart };
+  }
+
+  const datePart = new Intl.DateTimeFormat("uk-UA", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+
+  return { datePart, timePart };
+}
+
 function formatUkTimeAndDate(
   y: number,
   mo: number,
@@ -119,16 +141,8 @@ function formatUkTimeAndDate(
   hh: number,
   min: number
 ): string {
-  const date = new Date(y, mo - 1, d);
-  if (Number.isNaN(date.getTime())) {
-    return `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-  }
-  const datePart = new Intl.DateTimeFormat("uk-UA", {
-    day: "numeric",
-    month: "long",
-  }).format(date);
-  const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-  return `${timePart}, ${datePart}`;
+  const { datePart, timePart } = getUkDateAndTimeParts(y, mo, d, hh, min);
+  return datePart ? `${timePart}, ${datePart}` : timePart;
 }
 
 function formatUkDateAndTime(
@@ -138,14 +152,6 @@ function formatUkDateAndTime(
   hh: number,
   min: number
 ): string {
-  const date = new Date(y, mo - 1, d);
-  if (Number.isNaN(date.getTime())) {
-    return `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-  }
-  const datePart = new Intl.DateTimeFormat("uk-UA", {
-    day: "numeric",
-    month: "long",
-  }).format(date);
-  const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-  return `${datePart}, ${timePart}`;
+  const { datePart, timePart } = getUkDateAndTimeParts(y, mo, d, hh, min);
+  return datePart ? `${datePart}, ${timePart}` : timePart;
 }
