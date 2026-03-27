@@ -6,7 +6,10 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { decodeEvent } from "@/utils/eventPayload";
-import { normalizeTimeUniversal } from "@/utils/normalizeTime";
+import {
+  formatTournamentTimeOnly,
+  normalizeTimeUniversal,
+} from "@/utils/normalizeTime";
 import {
   groupParticipantsByProgramForDisplay,
   type DisplayItem,
@@ -81,7 +84,9 @@ function CrossTable({
           <span className="text-zinc-400 font-light text-base mx-2 items-center">
             /
           </span>{" "}
-          <span className="text-zinc-900">{time}</span>
+          <span className="text-zinc-900">
+            {formatTournamentTimeOnly(time)}
+          </span>
         </h1>
       </div>
 

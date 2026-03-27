@@ -64,6 +64,35 @@ function parseTournamentStartDateTime(raw: string): ParsedStart | null {
   return null;
 }
 
+/** UI: "09:30" only (no date). Accepts sheet / normalized / Flymark time strings. */
+export function formatTournamentTimeOnly(raw?: string): string {
+  if (!raw) return "";
+
+  const trimmed = raw.trim();
+  const parsed = parseTournamentStartDateTime(trimmed);
+  if (parsed) {
+    return `${String(parsed.hh).padStart(2, "0")}:${String(parsed.min).padStart(2, "0")}`;
+  }
+
+  if (/^\d{1,2}\.\d{1,2}$/.test(trimmed)) {
+    const [hh, mm] = trimmed.split(".");
+    return `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
+  }
+
+  const normalized = normalizeTimeUniversal(trimmed);
+  const parsedNorm = parseTournamentStartDateTime(normalized);
+  if (parsedNorm) {
+    return `${String(parsedNorm.hh).padStart(2, "0")}:${String(parsedNorm.min).padStart(2, "0")}`;
+  }
+
+  const hm = /^(\d{1,2}):(\d{2})$/.exec(trimmed);
+  if (hm) {
+    return `${hm[1].padStart(2, "0")}:${hm[2]}`;
+  }
+
+  return trimmed;
+}
+
 /** UI: "09:30, 28 березня" (uk-UA). Accepts sheet / normalized / Flymark time strings. */
 export function formatTournamentStartDisplay(raw?: string): string {
   if (!raw) return "";

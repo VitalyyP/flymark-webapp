@@ -16,6 +16,7 @@ import {
   groupParticipantsByProgramForDisplay,
   type DisplayItem,
 } from "@/utils/groupParticipantsByProgramForDisplay";
+import { formatTournamentTimeOnly } from "@/utils/normalizeTime";
 
 type Participant = {
   regNumber: string;
@@ -278,7 +279,9 @@ function CategoryTable({
       <div className="text-center py-6 mb-4">
         <h1 className="text-[22px] font-black uppercase tracking-tight text-green-600 leading-tight">
           Відділення {part} <span className="text-zinc-300 mx-1">/</span>{" "}
-          <span className="text-zinc-900">{time}</span>
+          <span className="text-zinc-900">
+            {formatTournamentTimeOnly(time)}
+          </span>
         </h1>
         <div className="text-[17px] font-bold text-zinc-500 uppercase mt-2 px-4 leading-snug">
           {categoryParam}
