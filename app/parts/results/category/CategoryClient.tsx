@@ -357,7 +357,7 @@ function CategoryTable({
 
       {hasRounds && (
         <div className="mt-10 bg-zinc-50/80 rounded-3xl p-4 sm:p-6 border border-zinc-100 shadow-inner">
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 border-b border-zinc-200 pb-2">
             <h2 className="text-[15px] font-bold text-zinc-500 uppercase tracking-wide">
               Розподіл по заходах
             </h2>
@@ -378,9 +378,11 @@ function CategoryTable({
                   <tr>
                     <td
                       colSpan={2}
-                      className="py-4 px-3 text-center font-black text-green-600 text-[15px]"
+                      className="py-2 px-3 text-center align-middle"
                     >
-                      {stage}
+                      <div className="inline-block bg-green-600 text-white font-black text-[16px] px-6 py-2 rounded-full shadow-md uppercase tracking-wider">
+                        {stage}
+                      </div>
                     </td>
                   </tr>
 
@@ -389,8 +391,8 @@ function CategoryTable({
                       a.key.endsWith("-all")
                         ? -1
                         : b.key.endsWith("-all")
-                        ? 1
-                        : 0
+                          ? 1
+                          : 0
                     )
                     .map(({ key, items, hasRealRounds }) => {
                       const [, round] = key.split("-");
@@ -399,7 +401,7 @@ function CategoryTable({
                           key={key}
                           className="border-b border-zinc-100 last:border-0"
                         >
-                          <td className="py-5 px-3 font-bold text-zinc-800 text-[16px]">
+                          <td className="py-5 px-3 font-medium text-zinc-600 text-[16px]">
                             {hasRealRounds ? `Захід ${round}` : ""}
                           </td>
                           <td className="py-5 px-3">
@@ -586,13 +588,16 @@ export default function CategoryClient() {
     loadRounds(true);
 
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      if (finishedRef.current) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        return;
-      }
-      loadRounds(false);
-    }, 2 * 60 * 1000);
+    intervalRef.current = setInterval(
+      () => {
+        if (finishedRef.current) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          return;
+        }
+        loadRounds(false);
+      },
+      2 * 60 * 1000
+    );
 
     return () => {
       ac.abort();
