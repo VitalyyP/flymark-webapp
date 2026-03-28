@@ -14,6 +14,7 @@ import {
 } from "@/utils/crossedStorage";
 import {
   groupParticipantsByProgramForDisplay,
+  orderVariantTextClass,
   type DisplayItem,
 } from "@/utils/groupParticipantsByProgramForDisplay";
 import { formatTournamentTimeOnly } from "@/utils/normalizeTime";
@@ -327,9 +328,7 @@ function CategoryTable({
                         <span
                           className={`${
                             crossed ? "line-through opacity-30" : ""
-                          } ${
-                            item.isPremium ? "text-red-600" : "text-zinc-800"
-                          }`}
+                          } ${orderVariantTextClass(item.orderVariant)}`}
                         >
                           {num}
                         </span>
@@ -439,11 +438,9 @@ function CategoryTable({
                                           crossed
                                             ? "line-through opacity-30"
                                             : ""
-                                        } ${
-                                          item.isPremium
-                                            ? "text-red-600"
-                                            : "text-zinc-800"
-                                        }`}
+                                        } ${orderVariantTextClass(
+                                          item.orderVariant
+                                        )}`}
                                       >
                                         {num}
                                       </span>

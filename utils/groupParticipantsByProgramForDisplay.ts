@@ -5,9 +5,11 @@ type Participant = {
   program: string;
 };
 
+export type OrderDisplayVariant = "default" | "premium" | "green" | "blue";
+
 export type DisplayItem = {
   regNumber: string;
-  isPremium: boolean;
+  orderVariant: OrderDisplayVariant;
   program: string;
 };
 
@@ -17,8 +19,39 @@ function norm(s: string) {
   return (s ?? "").trim();
 }
 
-function isPremiumOrder(orderType: string) {
-  return norm(orderType).toLowerCase() === "*";
+const VARIANT_RANK: Record<OrderDisplayVariant, number> = {
+  default: 0,
+  blue: 1,
+  green: 2,
+  premium: 3,
+};
+
+function mergeOrderVariants(
+  a: OrderDisplayVariant,
+  b: OrderDisplayVariant
+): OrderDisplayVariant {
+  return VARIANT_RANK[a] >= VARIANT_RANK[b] ? a : b;
+}
+
+function orderTypeToVariant(orderType: string): OrderDisplayVariant {
+  const t = norm(orderType).toLowerCase();
+  if (t === "*") return "premium";
+  if (t === "1") return "green";
+  if (t === "2") return "blue";
+  return "default";
+}
+
+export function orderVariantTextClass(variant: OrderDisplayVariant): string {
+  switch (variant) {
+    case "premium":
+      return "text-red-600";
+    case "green":
+      return "text-green-600";
+    case "blue":
+      return "text-blue-600";
+    default:
+      return "text-zinc-800";
+  }
 }
 
 export function groupParticipantsByProgramForDisplay(
@@ -29,26 +62,27 @@ export function groupParticipantsByProgramForDisplay(
 
   const map: Record<
     string,
-    Record<string, { count: number; anyPremium: boolean }>
+    Record<string, { count: number; variant: OrderDisplayVariant }>
   > = {};
 
-  const unknownPremiumByProgram: Record<string, boolean[]> = {};
+  const unknownVariantByProgram: Record<string, OrderDisplayVariant[]> = {};
 
   for (const p of participants) {
     const prog = norm(p.program) || "Невідома";
     const reg = norm(p.regNumber);
 
     if (!map[prog]) map[prog] = {};
-    if (!map[prog][reg]) map[prog][reg] = { count: 0, anyPremium: false };
+    if (!map[prog][reg]) {
+      map[prog][reg] = { count: 0, variant: "default" };
+    }
 
     map[prog][reg].count += 1;
 
-    const prem = isPremiumOrder(p.orderType);
-
-    if (prem) map[prog][reg].anyPremium = true;
+    const v = orderTypeToVariant(p.orderType);
+    map[prog][reg].variant = mergeOrderVariants(map[prog][reg].variant, v);
 
     if (reg === unknownValue) {
-      (unknownPremiumByProgram[prog] ??= []).push(prem);
+      (unknownVariantByProgram[prog] ??= []).push(v);
     }
   }
 
@@ -62,16 +96,20 @@ export function groupParticipantsByProgramForDisplay(
       const info = byReg[reg];
 
       if (reg === unknownValue) {
-        const flags = unknownPremiumByProgram[prog] ?? [];
+        const flags = unknownVariantByProgram[prog] ?? [];
         for (let i = 0; i < info.count; i++) {
           out.push({
             regNumber: reg,
-            isPremium: flags[i],
+            orderVariant: flags[i] ?? "default",
             program: prog ?? false,
           });
         }
       } else {
-        out.push({ regNumber: reg, isPremium: info.anyPremium, program: prog });
+        out.push({
+          regNumber: reg,
+          orderVariant: info.variant,
+          program: prog,
+        });
       }
     }
 
