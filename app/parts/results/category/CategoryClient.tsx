@@ -564,10 +564,16 @@ export default function CategoryClient() {
         if (stages["F"]?.winners?.length) {
           finishedRef.current = true;
         } else {
+          const hasAnyWinners = Object.values(stages).some(
+            (stage) => stage.winners.length > 0
+          );
+
           const hasAnyRelevant = Object.values(stages).some((stage) =>
             stage.winners.some((num) => participantSet.has(num))
           );
-          if (!hasAnyRelevant) finishedRef.current = true;
+          if (hasAnyWinners && !hasAnyRelevant) {
+            finishedRef.current = true;
+          }
         }
 
         setRoundData({
