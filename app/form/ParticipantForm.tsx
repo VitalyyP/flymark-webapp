@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { CustomCheckbox } from "@/components/CustomCheckbox";
+import { FormattedTime } from "@/components/FormattedTime";
 import { User, Award, Clock, Fingerprint, Loader2 } from "lucide-react";
 
 import PhoneInput from "react-phone-number-input";
@@ -426,8 +427,8 @@ export function ParticipantForm({
                           checked
                             ? "bg-green-50/40 border-[#00a63e] shadow-md shadow-green-900/5"
                             : showValidation && selectedItems.length === 0
-                            ? "bg-white border-red-100 shadow-sm"
-                            : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
+                              ? "bg-white border-red-100 shadow-sm"
+                              : "bg-white border-zinc-100 hover:border-zinc-200 shadow-sm"
                         }
                       `}
                     >
@@ -451,14 +452,13 @@ export function ParticipantForm({
                               {item.program}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-zinc-500">
-                            <Clock size={14} className="text-zinc-400" />
-                            <span className="text-[13px] font-medium">
-                              Початок о{" "}
-                              <span className="font-bold text-zinc-700">
-                                {item.time}
-                              </span>
-                            </span>
+                          <div className="flex items-center text-zinc-500 text-[13px]">
+                            <Clock
+                              size={14}
+                              className="mr-1 text-zinc-400 shrink-0"
+                            />
+                            <span className="font-medium">Початок о</span>
+                            <FormattedTime raw={item.time} />
                           </div>
                         </div>
                       </div>
@@ -529,10 +529,10 @@ export function ParticipantForm({
                               regNumberUnknown
                                 ? "bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed"
                                 : isSuccess
-                                ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
-                                : isError
-                                ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
-                                : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
+                                  ? "bg-white border-[#00a63e] ring-4 ring-green-500/5 text-zinc-800"
+                                  : isError
+                                    ? "bg-white border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 text-zinc-800"
+                                    : "bg-white border-zinc-100 focus:border-[#00a63e] focus:ring-4 focus:ring-green-500/5 text-zinc-800"
                             }
                           `}
                         />
@@ -782,7 +782,7 @@ export function ParticipantForm({
                   className="w-full bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3"
                 >
                   <svg
-                    className="w-5 h-5 text-red-500 flex-shrink-0"
+                    className="w-5 h-5 text-red-500 shrink-0"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2}
