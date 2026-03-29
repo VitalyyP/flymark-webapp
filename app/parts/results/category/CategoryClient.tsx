@@ -14,6 +14,7 @@ import {
 } from "@/utils/crossedStorage";
 import {
   groupParticipantsByProgramForDisplay,
+  orderVariantTextClass,
   type DisplayItem,
 } from "@/utils/groupParticipantsByProgramForDisplay";
 import { formatTournamentTimeOnly } from "@/utils/normalizeTime";
@@ -209,9 +210,7 @@ function CategoryTable({
                         <span
                           className={`${
                             crossed ? "line-through opacity-30" : ""
-                          } ${
-                            item.isPremium ? "text-red-600" : "text-zinc-800"
-                          }`}
+                          } ${orderVariantTextClass(item.orderVariant)}`}
                         >
                           {num}
                         </span>
@@ -239,7 +238,7 @@ function CategoryTable({
 
       {hasAnyRounds && (
         <div className="mt-10 bg-zinc-50/80 rounded-3xl p-4 sm:p-6 border border-zinc-100 shadow-inner">
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 border-b border-zinc-200 pb-2">
             <h2 className="text-[15px] font-bold text-zinc-500 uppercase tracking-wide">
               Розподіл по заходах
             </h2>
@@ -260,9 +259,11 @@ function CategoryTable({
                   <tr>
                     <td
                       colSpan={2}
-                      className="py-4 px-3 text-center font-black text-green-600 text-[15px]"
+                      className="py-2 px-3 text-center align-middle"
                     >
-                      {stage}
+                      <div className="inline-block bg-green-600 text-white font-black text-[16px] px-6 py-2 rounded-full shadow-md uppercase tracking-wider">
+                        {stage}
+                      </div>
                     </td>
                   </tr>
 
@@ -319,11 +320,9 @@ function CategoryTable({
                                           crossed
                                             ? "line-through opacity-30"
                                             : ""
-                                        } ${
-                                          item.isPremium
-                                            ? "text-red-600"
-                                            : "text-zinc-800"
-                                        }`}
+                                        } ${orderVariantTextClass(
+                                          item.orderVariant
+                                        )}`}
                                       >
                                         {num}
                                       </span>

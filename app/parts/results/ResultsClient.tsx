@@ -12,6 +12,7 @@ import {
 } from "@/utils/normalizeTime";
 import {
   groupParticipantsByProgramForDisplay,
+  orderVariantTextClass,
   type DisplayItem,
 } from "@/utils/groupParticipantsByProgramForDisplay";
 import {
@@ -160,11 +161,7 @@ function CrossTable({
                                     ? "line-through opacity-50"
                                     : "opacity-100"
                                 }
-                                ${
-                                  item.isPremium
-                                    ? "text-red-600"
-                                    : "text-zinc-800"
-                                }
+                                ${orderVariantTextClass(item.orderVariant)}
                                 transition-opacity
                               `}
                             >
