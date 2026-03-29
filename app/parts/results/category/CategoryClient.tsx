@@ -78,7 +78,7 @@ function CategoryTable({
   );
 
   const groupedByRounds = useMemo<
-    Record<string, { items: DisplayItem[] | "empty"; hasRealRounds: boolean }>
+    Record<string, { items: DisplayItem[] | "empty" }>
   >(() => {
     if (!roundMap || Object.keys(roundMap).length === 0) return {};
 
@@ -87,161 +87,44 @@ function CategoryTable({
       list.forEach((item) => byNumber.set(item.regNumber, item))
     );
 
-    const out: Record<
-      string,
-      { items: DisplayItem[] | "empty"; hasRealRounds: boolean }
-    > = {};
+    const out: Record<string, { items: DisplayItem[] | "empty" }> = {};
 
-    const sortedStages = Object.keys(roundMap).sort((a, b) => {
-      const ai = stageOrder.indexOf(a);
-      const bi = stageOrder.indexOf(b);
+    const sortedStages = Object.keys(roundMap)
+      .filter((stage) => Object.keys(roundMap[stage].rounds).length > 0)
+      .sort((a, b) => {
+        const ai = stageOrder.indexOf(a);
+        const bi = stageOrder.indexOf(b);
 
-      if (ai === -1 && bi === -1) return a.localeCompare(b);
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
 
-      return ai - bi;
-    });
-
-    let emptyNextStages = false;
+        return ai - bi;
+      });
 
     for (let i = 0; i < sortedStages.length; i++) {
       const stage = sortedStages[i];
       const current = roundMap[stage];
-      const hasRounds = Object.keys(current.rounds).length > 0;
 
-      if (i > 0) {
-        const prevStage = sortedStages[i - 1];
-        const prevWinners = roundMap[prevStage]?.winners ?? [];
+      const stageItems: DisplayItem[] = [];
 
-        const hasRounds = Object.keys(current.rounds).length > 0;
-
-        const nextStage = sortedStages[i + 1];
-        const nextHasRounds =
-          nextStage &&
-          Object.keys(roundMap[nextStage]?.rounds ?? {}).length > 0;
-
-        if (!prevWinners.length && !hasRounds && !nextHasRounds) {
-          continue;
-        }
-
-        const byNumber = new Map<string, DisplayItem>();
-        Object.values(groupedByPrograms).forEach((list) =>
-          list.forEach((item) => byNumber.set(item.regNumber, item))
-        );
-
-        if (hasRounds) {
-          for (const [roundKey, numbers] of Object.entries(current.rounds)) {
-            let sourceNumbers: string[];
-
-            if (prevWinners.length > 0) {
-              sourceNumbers = numbers.filter((n) => prevWinners.includes(n));
-            } else {
-              sourceNumbers = numbers;
-            }
-
-            const items = sourceNumbers
-              .filter((num) => byNumber.has(num))
-              .map((num) => byNumber.get(num)!);
-
-            out[`${stage}-${roundKey}`] =
-              items.length > 0
-                ? { items, hasRealRounds: true }
-                : { items: "empty", hasRealRounds: true };
-
-            if (
-              shouldMarkEmptyNextStages({
-                prevWinners,
-                itemsLength: items.length,
-                nextStage: sortedStages[i + 1],
-                roundMap,
-                sortedStages,
-                currentIndex: i,
-              })
-            ) {
-              emptyNextStages = true;
-            }
-          }
-        } else {
-          const items = prevWinners
-            .filter((num) => byNumber.has(num))
-            .map((num) => byNumber.get(num)!);
-
-          out[`${stage}-all`] =
-            items.length > 0
-              ? { items, hasRealRounds: false }
-              : { items: "empty", hasRealRounds: false };
-
+      for (const numbers of Object.values(current.rounds)) {
+        numbers.forEach((num) => {
           if (
-            shouldMarkEmptyNextStages({
-              prevWinners,
-              itemsLength: items.length,
-              nextStage: sortedStages[i + 1],
-              roundMap,
-              sortedStages,
-              currentIndex: i,
-            })
+            byNumber.has(num) &&
+            !stageItems.find((i) => i.regNumber === num)
           ) {
-            emptyNextStages = true;
+            stageItems.push(byNumber.get(num)!);
           }
-        }
-
-        if (emptyNextStages) {
-          for (let j = i + 1; j < sortedStages.length; j++) {
-            const nextStage = sortedStages[j];
-            const next = roundMap[nextStage];
-            const nextHasRounds = Object.keys(next.rounds).length > 0;
-
-            if (nextHasRounds) {
-              for (const roundKey of Object.keys(next.rounds)) {
-                out[`${nextStage}-${roundKey}`] = {
-                  items: "empty",
-                  hasRealRounds: true,
-                };
-              }
-            } else {
-              out[`${nextStage}-all`] = {
-                items: "empty",
-                hasRealRounds: false,
-              };
-            }
-          }
-          break;
-        }
-
-        continue;
+        });
       }
+      for (const [roundKey, numbers] of Object.entries(current.rounds)) {
+        const items = numbers
+          .filter((num) => byNumber.has(num))
+          .map((num) => byNumber.get(num)!);
 
-      let stageItems: DisplayItem[] = [];
-      if (hasRounds) {
-        for (const numbers of Object.values(current.rounds)) {
-          numbers.forEach((num) => {
-            if (
-              byNumber.has(num) &&
-              !stageItems.find((i) => i.regNumber === num)
-            ) {
-              stageItems.push(byNumber.get(num)!);
-            }
-          });
-        }
-        for (const [roundKey, numbers] of Object.entries(current.rounds)) {
-          const items = numbers
-            .filter((num) => byNumber.has(num))
-            .map((num) => byNumber.get(num)!);
-
-          out[`${stage}-${roundKey}`] =
-            items.length > 0
-              ? { items, hasRealRounds: true }
-              : { items: "empty", hasRealRounds: true };
-        }
-      } else {
-        stageItems = Array.from(byNumber.values());
-        out[`${stage}-all`] =
-          stageItems.length > 0
-            ? { items: stageItems, hasRealRounds: false }
-            : { items: "empty", hasRealRounds: false };
-
-        if (stageItems.length === 0) emptyNextStages = true;
+        out[`${stage}-${roundKey}`] =
+          items.length > 0 ? { items } : { items: "empty" };
       }
     }
 
@@ -251,7 +134,7 @@ function CategoryTable({
   const groupedByStageForRender = useMemo(() => {
     const out: Record<
       string,
-      { key: string; items: DisplayItem[] | "empty"; hasRealRounds: boolean }[]
+      { key: string; items: DisplayItem[] | "empty" }[]
     > = {};
     Object.entries(groupedByRounds).forEach(([key, value]) => {
       const [stage] = key.split("-");
@@ -259,13 +142,12 @@ function CategoryTable({
       out[stage].push({
         key,
         items: value.items,
-        hasRealRounds: value.hasRealRounds,
       });
     });
     return out;
   }, [groupedByRounds]);
 
-  const hasRounds = Object.keys(groupedByRounds).length > 0;
+  const hasAnyRounds = Object.keys(groupedByRounds).length > 0;
 
   const programKeys = useMemo(
     () =>
@@ -345,7 +227,7 @@ function CategoryTable({
         </tbody>
       </table>
 
-      {roundsLoading && !hasRounds && (
+      {roundsLoading && !hasAnyRounds && (
         <div className="mt-8 p-6 bg-zinc-50/50 rounded-2xl border border-dashed border-zinc-200 flex justify-center">
           <span className="text-[13px] font-bold text-[#00a63e] uppercase animate-pulse flex items-center gap-3">
             <RefreshCw size={16} className="animate-spin" />
@@ -354,7 +236,7 @@ function CategoryTable({
         </div>
       )}
 
-      {hasRounds && (
+      {hasAnyRounds && (
         <div className="mt-10 bg-zinc-50/80 rounded-3xl p-4 sm:p-6 border border-zinc-100 shadow-inner">
           <div className="text-center mb-6 border-b border-zinc-200 pb-2">
             <h2 className="text-[15px] font-bold text-zinc-500 uppercase tracking-wide">
@@ -390,18 +272,18 @@ function CategoryTable({
                       a.key.endsWith("-all")
                         ? -1
                         : b.key.endsWith("-all")
-                          ? 1
-                          : 0
+                        ? 1
+                        : 0
                     )
-                    .map(({ key, items, hasRealRounds }) => {
+                    .map(({ key, items }) => {
                       const [, round] = key.split("-");
                       return (
                         <tr
                           key={key}
                           className="border-b border-zinc-100 last:border-0"
                         >
-                          <td className="py-5 px-3 font-medium text-zinc-600 text-[16px]">
-                            {hasRealRounds ? `Захід ${round}` : ""}
+                          <td className="py-5 px-3 font-bold text-zinc-800 text-[16px]">
+                            {`Захід ${round}`}
                           </td>
                           <td className="py-5 px-3">
                             <div className="flex flex-wrap gap-x-3 gap-y-4">
@@ -561,7 +443,14 @@ export default function CategoryClient() {
         }
 
         const participantSet = new Set(participants.map((p) => p.regNumber));
-        if (stages["F"]?.winners?.length) {
+
+        const finalStage = stages["F"];
+        const semiFinalStage = stages["1/2F"];
+
+        if (
+          (finalStage && Object.keys(finalStage.rounds).length > 0) ||
+          (semiFinalStage && semiFinalStage.winners.length > 0)
+        ) {
           finishedRef.current = true;
         } else {
           const hasAnyWinners = Object.values(stages).some(
@@ -591,16 +480,13 @@ export default function CategoryClient() {
     loadRounds(true);
 
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(
-      () => {
-        if (finishedRef.current) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          return;
-        }
-        loadRounds(false);
-      },
-      2 * 60 * 1000
-    );
+    intervalRef.current = setInterval(() => {
+      if (finishedRef.current) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        return;
+      }
+      loadRounds(false);
+    }, 2 * 60 * 1000);
 
     return () => {
       ac.abort();
@@ -631,22 +517,4 @@ export default function CategoryClient() {
       />
     </div>
   );
-}
-
-function shouldMarkEmptyNextStages(params: {
-  prevWinners: string[];
-  itemsLength: number;
-  nextStage?: string;
-  roundMap: Record<string, StageData>;
-  sortedStages: string[];
-  currentIndex: number;
-}) {
-  const { prevWinners, itemsLength, nextStage, roundMap } = params;
-
-  const nextHasRounds =
-    nextStage && Object.keys(roundMap[nextStage]?.rounds ?? {}).length > 0;
-
-  const isRealElimination = prevWinners.length > 0 && itemsLength === 0;
-
-  return isRealElimination && !nextHasRounds;
 }
