@@ -64,10 +64,12 @@ export async function GET(req: Request) {
 
       for (const sectionDateStr of sections.filter(Boolean)) {
         const slotDate = parseKyivDate(sectionDateStr);
+        console.log("SLOT_DATE:", slotDate);
 
         if (isNaN(slotDate.getTime())) continue;
 
         const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000);
+        console.log("DIFF:", diff);
 
         if (diff < 0) continue;
 
