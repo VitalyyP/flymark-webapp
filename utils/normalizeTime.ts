@@ -1,27 +1,82 @@
+import { DateTime } from "luxon";
+
 export const normalizeTimeUniversal = (raw?: string): string => {
   if (!raw) return "";
 
-  // Google Sheets "YYYY-MM-DD HH:MM:SS" / "YYYY-MM-DD H:MM:SS"
-  if (/^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}(:\d{2})?$/.test(raw)) {
+  let dt = null;
+
+  // 2026-04-04 09:00
+  // 2026:04:04 09:00
+  // 2026-04-04 9:00:00
+  if (/^\d{4}[-:]\d{2}[-:]\d{2} \d{1,2}:\d{2}(:\d{2})?$/.test(raw)) {
     const [datePart, timePart] = raw.split(" ");
-    const dateNormalized = datePart.replace(/-/g, ":");
-    const lastColon = timePart.lastIndexOf(":");
-    let timeNormalized =
-      lastColon > 0 ? timePart.slice(0, lastColon) : timePart;
 
-    const [hh, mm] = timeNormalized.split(":");
-    timeNormalized = `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
+    const normalizedDate = datePart.replace(/:/g, "-");
 
-    return `${dateNormalized} ${timeNormalized}`;
+    dt = DateTime.fromISO(`${normalizedDate}T${timePart}`, {
+      zone: "Europe/Kyiv",
+      locale: "uk",
+    });
   }
 
-  // Flymark "HH.MM"
-  if (/^\d{1,2}\.\d{1,2}$/.test(raw)) {
-    const [hh, mm] = raw.split(".");
-    return `${hh.padStart(2, "0")}:${mm.padStart(2, "0")}`;
+  // 4 квіт. 2026 09:00
+  // 4 квітня 2026 09:00
+  if (!dt) {
+    const match = raw.match(
+      /^(\d{1,2})\s+([а-яіїєґ.]+)\s+(\d{4})\s+(\d{1,2}):(\d{2})$/i
+    );
+
+    if (match) {
+      const [, d, monthStr, y, hh, mm] = match;
+
+      const months: Record<string, number> = {
+        січ: 1,
+        січня: 1,
+        лют: 2,
+        лютого: 2,
+        бер: 3,
+        березня: 3,
+        квіт: 4,
+        квітня: 4,
+        трав: 5,
+        травня: 5,
+        черв: 6,
+        червня: 6,
+        лип: 7,
+        липня: 7,
+        серп: 8,
+        серпня: 8,
+        вер: 9,
+        вересня: 9,
+        жовт: 10,
+        жовтня: 10,
+        лист: 11,
+        листопада: 11,
+        груд: 12,
+        грудня: 12,
+      };
+
+      const key = monthStr.toLowerCase().replace(".", "");
+      const month = months[key];
+
+      if (month) {
+        dt = DateTime.fromObject(
+          {
+            year: Number(y),
+            month,
+            day: Number(d),
+            hour: Number(hh),
+            minute: Number(mm),
+          },
+          { zone: "Europe/Kyiv", locale: "uk" }
+        );
+      }
+    }
   }
 
-  return raw;
+  if (!dt || !dt.isValid) return raw;
+
+  return dt.toFormat("d MMMM, H:mm");
 };
 
 type ParsedStart = {
@@ -35,8 +90,9 @@ type ParsedStart = {
 function parseTournamentStartDateTime(raw: string): ParsedStart | null {
   const trimmed = raw.trim();
 
-  const colon =
-    /^(\d{4}):(\d{2}):(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  const colon = /^(\d{4}):(\d{2}):(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(
+    trimmed
+  );
   if (colon) {
     const [, y, mo, d, hh, mm] = colon;
     return {
@@ -48,8 +104,9 @@ function parseTournamentStartDateTime(raw: string): ParsedStart | null {
     };
   }
 
-  const dash =
-    /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  const dash = /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})(?::\d{2})?$/.exec(
+    trimmed
+  );
   if (dash) {
     const [, y, mo, d, hh, mm] = dash;
     return {
@@ -71,7 +128,10 @@ export function formatTournamentTimeOnly(raw?: string): string {
   const trimmed = raw.trim();
   const parsed = parseTournamentStartDateTime(trimmed);
   if (parsed) {
-    return `${String(parsed.hh).padStart(2, "0")}:${String(parsed.min).padStart(2, "0")}`;
+    return `${String(parsed.hh).padStart(2, "0")}:${String(parsed.min).padStart(
+      2,
+      "0"
+    )}`;
   }
 
   if (/^\d{1,2}\.\d{1,2}$/.test(trimmed)) {
@@ -82,7 +142,9 @@ export function formatTournamentTimeOnly(raw?: string): string {
   const normalized = normalizeTimeUniversal(trimmed);
   const parsedNorm = parseTournamentStartDateTime(normalized);
   if (parsedNorm) {
-    return `${String(parsedNorm.hh).padStart(2, "0")}:${String(parsedNorm.min).padStart(2, "0")}`;
+    return `${String(parsedNorm.hh).padStart(2, "0")}:${String(
+      parsedNorm.min
+    ).padStart(2, "0")}`;
   }
 
   const hm = /^(\d{1,2}):(\d{2})$/.exec(trimmed);
@@ -149,7 +211,10 @@ function getUkDateAndTimeParts(
   min: number
 ): { datePart: string; timePart: string } {
   const date = new Date(y, mo - 1, d);
-  const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+  const timePart = `${String(hh).padStart(2, "0")}:${String(min).padStart(
+    2,
+    "0"
+  )}`;
 
   if (Number.isNaN(date.getTime())) {
     return { datePart: "", timePart };

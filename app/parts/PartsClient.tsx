@@ -6,10 +6,7 @@ import Image from "next/image";
 import { Clock, Calendar, ChevronRight, Loader2, Camera } from "lucide-react";
 
 import { encodeEvent } from "@/utils/eventPayload";
-import {
-  formatTournamentStartDisplayDateFirst,
-  normalizeTimeUniversal,
-} from "@/utils/normalizeTime";
+import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
 type SheetRow = {
   Time: string;
@@ -267,7 +264,7 @@ export default function PartsClient() {
                         item.enabled ? "text-zinc-800" : "text-zinc-500"
                       }`}
                     >
-                      {formatTournamentStartDisplayDateFirst(item.time)}
+                      {normalizeTimeUniversal(item.time)}
                     </span>
                   </div>
 
