@@ -8,8 +8,11 @@ import { runUpdate } from "@/utils/runUpdate";
 const executedKeys = new Set<string>();
 
 function parseKyivDate(dateStr: string): Date {
-  return DateTime.fromISO(dateStr, { zone: "Europe/Kiev" }).toJSDate();
+  return DateTime.fromFormat(dateStr, "yyyy:MM:dd HH:mm", {
+    zone: "Europe/Kyiv",
+  }).toJSDate();
 }
+
 export async function GET(req: Request) {
   console.log("CRON HIT", new Date().toISOString());
 
@@ -68,20 +71,19 @@ export async function GET(req: Request) {
 
         if (isNaN(slotDate.getTime())) continue;
 
-        const diff = Math.floor((slotDate.getTime() - now.getTime()) / 60000);
-        console.log("DIFF:", diff);
+        const diff = Math.round((slotDate.getTime() - now.getTime()) / 60000);
 
-        if (diff < 0) continue;
+        if (diff < -15 || diff > 15) continue;
 
-        let range: string | null = null;
-        if (diff < 3) range = "less3";
-        else if (diff < 10) range = "less10";
-        else if (diff < 15) range = "less15";
+        type Range = "before15" | "around5" | "after15";
 
-        console.log("CHECK SLOT:", { eventId, sectionDateStr, slotDate, diff });
+        function getRange(diff: number): Range {
+          if (diff > 5) return "before15";
+          if (diff >= -5) return "around5";
+          return "after15";
+        }
 
-        if (!range) continue;
-
+        const range = getRange(diff);
         const key = `${eventId}_${sectionDateStr}_${range}`;
         if (executedKeys.has(key)) continue;
 
