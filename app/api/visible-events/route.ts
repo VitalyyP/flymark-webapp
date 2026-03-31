@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sheets_v4 } from "googleapis";
+import { DateTime } from "luxon";
 
 import { getSheetsClient } from "@/utils/googleSheets";
 import { parseEvent } from "@/utils/parseEvent";
@@ -145,22 +146,36 @@ export async function PUT(req: Request) {
       );
     }
 
-    const events: VisibleEvent[] = await Promise.all(
-      body.events.map(async (e) => {
-        const eventId = Number(e.id);
+    const now = DateTime.now().setZone("Europe/Kyiv");
 
-        const { rows } = await parseEvent(eventId);
+    const events: VisibleEvent[] = [];
 
-        const sectionTimes = Array.from(
-          new Set(rows.map((r) => r.SectionTime).filter(Boolean))
-        ).sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+    for (const e of body.events) {
+      const eventId = Number(e.id);
+      if (!eventId) continue;
 
-        return {
-          id: normalizeId(e.id),
-          sections: sectionTimes,
-        };
-      })
-    );
+      const { rows } = await parseEvent(eventId);
+
+      const sectionTimes = Array.from(
+        new Set(rows.map((r) => r.SectionTime).filter(Boolean))
+      ).sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+
+      if (sectionTimes.length === 0) {
+        events.push({ id: normalizeId(e.id), sections: [] });
+        continue;
+      }
+
+      const hasFuture = sectionTimes.some((s) => {
+        const dt = DateTime.fromFormat(s, "yyyy:MM:dd HH:mm", {
+          zone: "Europe/Kyiv",
+        });
+        return dt.isValid && dt >= now;
+      });
+
+      if (hasFuture) {
+        events.push({ id: normalizeId(e.id), sections: sectionTimes });
+      }
+    }
 
     const { sheets, spreadsheetId: defaultId } = await getSheetsClient("write");
     const spreadsheetId = process.env.SHEET_ID ?? defaultId;

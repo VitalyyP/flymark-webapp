@@ -25,7 +25,6 @@ import {
 type VisibleEventsResponse = {
   events?: Array<{
     id: string;
-    date: string;
   }>;
 };
 
@@ -73,9 +72,7 @@ export default function HomePage() {
     return localStorage.getItem("hideMarked") === "true";
   });
 
-  const [visibleEvents, setVisibleEvents] = useState<
-    Map<string, { date?: string }>
-  >(new Map());
+  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
 
   const [visibleLoading, setVisibleLoading] = useState(true);
   const [savingCount, setSavingCount] = useState(0);
@@ -167,7 +164,7 @@ export default function HomePage() {
 
       const data: VisibleEventsResponse = await res.json();
 
-      const map = new Map<string, { date?: string }>();
+      const set = new Set<string>();
 
       if (Array.isArray(data?.events)) {
         for (const e of data.events) {
@@ -176,15 +173,13 @@ export default function HomePage() {
           const id = e.id.trim();
           if (!id) continue;
 
-          map.set(id, {
-            date: typeof e.date === "string" ? e.date : undefined,
-          });
+          set.add(id);
         }
       }
 
-      setVisibleEvents(map);
+      setVisibleEvents(set);
     } catch {
-      setVisibleEvents(new Map());
+      setVisibleEvents(new Set());
     } finally {
       setVisibleLoading(false);
     }
@@ -240,8 +235,7 @@ export default function HomePage() {
       return next;
     });
   };
-
-  const persistVisibleEvents = async (next: Map<string, { date?: string }>) => {
+  const persistVisibleEvents = async (next: Set<string>) => {
     setSavingCount((c) => c + 1);
 
     try {
@@ -249,9 +243,8 @@ export default function HomePage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          events: Array.from(next.entries()).map(([id, v]) => ({
+          events: Array.from(next).map((id) => ({
             id,
-            date: v.date ?? "",
           })),
         }),
       });
@@ -278,20 +271,12 @@ export default function HomePage() {
 
   const toggleVisible = (competitionId: string) => {
     setVisibleEvents((prev) => {
-      const next = new Map(prev);
+      const next = new Set(prev);
 
       if (next.has(competitionId)) {
         next.delete(competitionId);
       } else {
-        const comp = competitions.find(
-          (c) => String(c.CompetitionId).trim() === competitionId
-        );
-
-        next.set(competitionId, {
-          date: comp?.DateTo
-            ? new Date(comp.DateTo).toISOString().split("T")[0]
-            : "",
-        });
+        next.add(competitionId);
       }
 
       void persistVisibleEvents(next);
