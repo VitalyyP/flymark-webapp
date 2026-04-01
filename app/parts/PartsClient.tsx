@@ -187,8 +187,8 @@ export default function PartsClient() {
     <div className="flex flex-col items-center min-h-screen bg-zinc-50 p-4 sm:p-6">
       <main className="w-full max-w-md flex flex-col gap-6">
         <div className="flex flex-col items-center gap-5 pt-4">
-          {coverUrl && (
-            <div className="relative">
+          <div className="relative">
+            {coverUrl ? (
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md">
                 <Image
                   src={coverUrl}
@@ -197,13 +197,25 @@ export default function PartsClient() {
                   height={128}
                   className="object-cover w-full h-full"
                   priority
+                  onError={() => setCoverUrl("")}
                 />
               </div>
-              <div className="absolute -bottom-2 -right-2 bg-green-600 text-white p-2 rounded-full shadow-lg">
-                <Camera size={20} />
+            ) : (
+              <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-md flex items-center justify-center bg-green-100">
+                <Image
+                  src="/ok-aphoto.png"
+                  alt="A Фото"
+                  width={100}
+                  height={100}
+                  loading="eager"
+                  className="object-contain"
+                />
               </div>
+            )}
+            <div className="absolute -bottom-2 -right-2 bg-green-600 text-white p-2 rounded-full shadow-lg">
+              <Camera size={20} />
             </div>
-          )}
+          </div>
 
           <div className="flex flex-col gap-2 text-center">
             <h1 className="text-[22px] md:text-[24px] font-black text-zinc-900 tracking-tight leading-tight px-4">

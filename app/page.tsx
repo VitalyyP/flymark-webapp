@@ -37,6 +37,7 @@ export default function HomePage() {
 
   const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
   const [loadingVisible, setLoadingVisible] = useState(true);
+  const [brokenCoverIds, setBrokenCoverIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const ac = new AbortController();
@@ -192,6 +193,7 @@ export default function HomePage() {
           <ul className="flex flex-col gap-8">
             {filteredCompetitions.map((c) => {
               const id = toTrimmedString(c.CompetitionId);
+              const hasCover = Boolean(c.CoverPhoto) && !brokenCoverIds.has(id);
 
               return (
                 <li
@@ -203,11 +205,19 @@ export default function HomePage() {
                       <div className="bg-white p-2 rounded-[30px] shadow-xl border border-zinc-100 transition-transform duration-500">
                         <div className="relative w-40 h-40 md:w-44 md:h-44 rounded-[22px] overflow-hidden bg-zinc-50">
                           <Image
-                            src={c.CoverPhoto}
+                            src={hasCover ? c.CoverPhoto : "/ok-aphoto.png"}
                             alt={c.CompetitionName}
                             fill
                             sizes="(max-width: 768px) 160px, 176px"
                             className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                            onError={() =>
+                              setBrokenCoverIds((prev) => {
+                                if (prev.has(id)) return prev;
+                                const next = new Set(prev);
+                                next.add(id);
+                                return next;
+                              })
+                            }
                           />
                         </div>
                       </div>

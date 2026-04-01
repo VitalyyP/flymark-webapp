@@ -73,6 +73,7 @@ export default function HomePage() {
   });
 
   const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
+  const [brokenCoverIds, setBrokenCoverIds] = useState<Set<string>>(new Set());
 
   const [visibleLoading, setVisibleLoading] = useState(true);
   const [savingCount, setSavingCount] = useState(0);
@@ -549,6 +550,7 @@ export default function HomePage() {
                 .map((c) => {
                   const id = String(c.CompetitionId).trim();
                   const ui = findUi[id];
+                  const hasCover = Boolean(c.CoverPhoto) && !brokenCoverIds.has(id);
 
                   const isVisible = visibleEvents.has(id);
                   const isHiddenFromAdmin = hiddenEvents.has(id);
@@ -608,17 +610,30 @@ export default function HomePage() {
                         <div className="relative w-20 h-20 rounded-[20px] overflow-hidden shadow-inner bg-zinc-100 shrink-0 border border-zinc-200">
                           {c.CoverPhoto ? (
                             <Image
-                              src={c.CoverPhoto}
+                              src={hasCover ? c.CoverPhoto : "/ok-aphoto.png"}
                               alt={c.CompetitionName ?? ""}
                               fill
                               className="object-cover"
                               sizes="78px"
                               priority={true}
+                              onError={() =>
+                                setBrokenCoverIds((prev) => {
+                                  if (prev.has(id)) return prev;
+                                  const next = new Set(prev);
+                                  next.add(id);
+                                  return next;
+                                })
+                              }
                             />
                           ) : (
-                            <div className="flex items-center justify-center text-zinc-400 text-xs">
-                              No image
-                            </div>
+                            <Image
+                              src="/ok-aphoto.png"
+                              alt={c.CompetitionName ?? "Placeholder cover"}
+                              fill
+                              className="object-cover"
+                              sizes="78px"
+                              priority={true}
+                            />
                           )}
                         </div>
                         <div className="flex flex-col flex-1 min-w-0 justify-center">

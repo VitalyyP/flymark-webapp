@@ -234,14 +234,15 @@ export default function SelectParticipantPage() {
             </h2>
           </div>
           <div className="relative w-full max-w-[300px] aspect-video rounded-[22px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
-            {showCover ? (
+            {showCover || !loadingEvent ? (
               <Image
-                src={coverUrl}
+                src={coverUrl || "/ok-aphoto.png"}
                 alt={eventName || "Event cover"}
                 fill
                 sizes="(max-width: 640px) 100vw, 300px"
                 className="object-cover"
                 priority
+                onError={() => setCoverUrl("")}
               />
             ) : (
               <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400 text-sm">
