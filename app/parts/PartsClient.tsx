@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import { Clock, Calendar, ChevronRight, Loader2, Camera } from "lucide-react";
 
+import FallbackImage from "@/components/FallbackImage";
 import { encodeEvent } from "@/utils/eventPayload";
 import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
@@ -187,23 +187,23 @@ export default function PartsClient() {
     <div className="flex flex-col items-center min-h-screen bg-zinc-50 p-4 sm:p-6">
       <main className="w-full max-w-md flex flex-col gap-6">
         <div className="flex flex-col items-center gap-5 pt-4">
-          {coverUrl && (
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md">
-                <Image
-                  src={coverUrl}
-                  alt={eventName}
-                  width={128}
-                  height={128}
-                  className="object-cover w-full h-full"
-                  priority
-                />
-              </div>
-              <div className="absolute -bottom-2 -right-2 bg-green-600 text-white p-2 rounded-full shadow-lg">
-                <Camera size={20} />
-              </div>
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md bg-green-100">
+              <FallbackImage
+                src={coverUrl}
+                alt={eventName || "Обкладинка події"}
+                width={128}
+                height={128}
+                className="object-cover w-full h-full"
+                priority
+                fallbackWidth={100}
+                fallbackHeight={100}
+              />
             </div>
-          )}
+            <div className="absolute -bottom-2 -right-2 bg-green-600 text-white p-2 rounded-full shadow-lg">
+              <Camera size={20} />
+            </div>
+          </div>
 
           <div className="flex flex-col gap-2 text-center">
             <h1 className="text-[22px] md:text-[24px] font-black text-zinc-900 tracking-tight leading-tight px-4">
