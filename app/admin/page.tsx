@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   Copy,
   Eye,
@@ -15,6 +14,7 @@ import {
   LogOut,
   Check,
 } from "lucide-react";
+import FallbackImage from "@/components/FallbackImage";
 import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import {
   Competition,
@@ -25,7 +25,6 @@ import {
 type VisibleEventsResponse = {
   events?: Array<{
     id: string;
-    date: string;
   }>;
 };
 
@@ -73,9 +72,7 @@ export default function HomePage() {
     return localStorage.getItem("hideMarked") === "true";
   });
 
-  const [visibleEvents, setVisibleEvents] = useState<
-    Map<string, { date?: string }>
-  >(new Map());
+  const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
 
   const [visibleLoading, setVisibleLoading] = useState(true);
   const [savingCount, setSavingCount] = useState(0);
@@ -167,7 +164,7 @@ export default function HomePage() {
 
       const data: VisibleEventsResponse = await res.json();
 
-      const map = new Map<string, { date?: string }>();
+      const set = new Set<string>();
 
       if (Array.isArray(data?.events)) {
         for (const e of data.events) {
@@ -176,15 +173,13 @@ export default function HomePage() {
           const id = e.id.trim();
           if (!id) continue;
 
-          map.set(id, {
-            date: typeof e.date === "string" ? e.date : undefined,
-          });
+          set.add(id);
         }
       }
 
-      setVisibleEvents(map);
+      setVisibleEvents(set);
     } catch {
-      setVisibleEvents(new Map());
+      setVisibleEvents(new Set());
     } finally {
       setVisibleLoading(false);
     }
@@ -240,8 +235,7 @@ export default function HomePage() {
       return next;
     });
   };
-
-  const persistVisibleEvents = async (next: Map<string, { date?: string }>) => {
+  const persistVisibleEvents = async (next: Set<string>) => {
     setSavingCount((c) => c + 1);
 
     try {
@@ -249,9 +243,8 @@ export default function HomePage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          events: Array.from(next.entries()).map(([id, v]) => ({
+          events: Array.from(next).map((id) => ({
             id,
-            date: v.date ?? "",
           })),
         }),
       });
@@ -278,20 +271,12 @@ export default function HomePage() {
 
   const toggleVisible = (competitionId: string) => {
     setVisibleEvents((prev) => {
-      const next = new Map(prev);
+      const next = new Set(prev);
 
       if (next.has(competitionId)) {
         next.delete(competitionId);
       } else {
-        const comp = competitions.find(
-          (c) => String(c.CompetitionId).trim() === competitionId
-        );
-
-        next.set(competitionId, {
-          date: comp?.DateTo
-            ? new Date(comp.DateTo).toISOString().split("T")[0]
-            : "",
-        });
+        next.add(competitionId);
       }
 
       void persistVisibleEvents(next);
@@ -621,20 +606,16 @@ export default function HomePage() {
 
                       <div className="flex gap-4 mb-5">
                         <div className="relative w-20 h-20 rounded-[20px] overflow-hidden shadow-inner bg-zinc-100 shrink-0 border border-zinc-200">
-                          {c.CoverPhoto ? (
-                            <Image
-                              src={c.CoverPhoto}
-                              alt={c.CompetitionName ?? ""}
-                              fill
-                              className="object-cover"
-                              sizes="78px"
-                              priority={true}
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center text-zinc-400 text-xs">
-                              No image
-                            </div>
-                          )}
+                          <FallbackImage
+                            src={c.CoverPhoto}
+                            alt={c.CompetitionName ?? "Обкладинка події"}
+                            fill
+                            className="object-cover"
+                            sizes="78px"
+                            priority={true}
+                            fallbackWidth={128}
+                            fallbackHeight={128}
+                          />
                         </div>
                         <div className="flex flex-col flex-1 min-w-0 justify-center">
                           <h2 className="font-extrabold text-zinc-900 text-base md:text-xl leading-snug truncate">
@@ -668,9 +649,9 @@ export default function HomePage() {
                                 {findingId === id
                                   ? ui?.statusText
                                   : ui?.foundCount !== null &&
-                                    ui?.foundCount !== undefined
-                                  ? `Оновлено: ${ui.foundCount}`
-                                  : "Оновити Google"}
+                                      ui?.foundCount !== undefined
+                                    ? `Оновлено: ${ui.foundCount}`
+                                    : "Оновити Google"}
                               </span>
                             </button>
                           </div>

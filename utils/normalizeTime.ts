@@ -152,6 +152,14 @@ export function formatTournamentTimeOnly(raw?: string): string {
     return `${hm[1].padStart(2, "0")}:${hm[2]}`;
   }
 
+  const dateWithComma =
+    /^(\d{1,2})\s+[а-яіїєґ]+\s*,\s*(\d{1,2}):(\d{2})$/i.exec(trimmed);
+
+  if (dateWithComma) {
+    const [, , hh, mm] = dateWithComma;
+    return `${hh.padStart(2, "0")}.${mm}`;
+  }
+
   return trimmed;
 }
 
