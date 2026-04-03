@@ -138,9 +138,21 @@ function CrossTable({
                       </span>
 
                       {prog !== "Невідома" && (
-                        <span className="text-[12px] font-medium text-zinc-400 uppercase mt-1.5 tracking-tight">
-                          {prog}
-                        </span>
+                        <div className="mt-2">
+                          {prog.includes("LA") ? (
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-wider">
+                              {prog}
+                            </span>
+                          ) : prog.includes("ST") ? (
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
+                              {prog}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] font-medium text-zinc-400 uppercase tracking-tight">
+                              {prog}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </Link>
                   </td>
