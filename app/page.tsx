@@ -38,7 +38,6 @@ export default function HomePage() {
 
   const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
   const [loadingVisible, setLoadingVisible] = useState(true);
-  const [brokenCoverIds, setBrokenCoverIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const ac = new AbortController();
@@ -194,7 +193,6 @@ export default function HomePage() {
           <ul className="flex flex-col gap-8">
             {filteredCompetitions.map((c) => {
               const id = toTrimmedString(c.CompetitionId);
-              const hasCover = Boolean(c.CoverPhoto) && !brokenCoverIds.has(id);
 
               return (
                 <li

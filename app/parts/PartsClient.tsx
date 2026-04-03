@@ -89,8 +89,6 @@ export default function PartsClient() {
           setEventId(json.event.id);
           setEventName(json.event.name);
           setCoverUrl(json.event.coverUrl);
-          // setCoverUrl("");
-          // setCoverUrl("/not-existing-image.jpg");
           setDateTo(json.event.dateTo);
         } else {
           setEventId("");

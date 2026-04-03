@@ -106,8 +106,6 @@ export default function SelectParticipantPage() {
         if (data?.ok) {
           setEventName(data.event.name ?? "");
           setCoverUrl(data.event.coverUrl ?? "");
-          // setCoverUrl("");
-          // setCoverUrl("/not-existing-image.jpg");
           setDateTo(data.event.dateTo ?? "");
         }
       } finally {

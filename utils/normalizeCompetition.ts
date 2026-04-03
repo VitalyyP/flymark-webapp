@@ -22,8 +22,6 @@ export function normalizeCompetition(raw: RawCompetition): Competition | null {
   const dateTo = String(raw.DateTo ?? "").trim();
   const cityName = String(raw.City?.Name ?? "").trim();
   const cover = String(raw.CoverPhoto ?? "").trim();
-  // const cover = "";
-  // const cover = "/not-existing-image.jpg";
 
   if (!id || !name || !dateTo) return null;
 

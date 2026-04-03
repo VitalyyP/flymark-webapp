@@ -73,7 +73,6 @@ export default function HomePage() {
   });
 
   const [visibleEvents, setVisibleEvents] = useState<Set<string>>(new Set());
-  const [brokenCoverIds, setBrokenCoverIds] = useState<Set<string>>(new Set());
 
   const [visibleLoading, setVisibleLoading] = useState(true);
   const [savingCount, setSavingCount] = useState(0);
@@ -550,8 +549,6 @@ export default function HomePage() {
                 .map((c) => {
                   const id = String(c.CompetitionId).trim();
                   const ui = findUi[id];
-                  const hasCover =
-                    Boolean(c.CoverPhoto) && !brokenCoverIds.has(id);
 
                   const isVisible = visibleEvents.has(id);
                   const isHiddenFromAdmin = hiddenEvents.has(id);
