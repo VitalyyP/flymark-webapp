@@ -157,7 +157,7 @@ export function formatTournamentTimeOnly(raw?: string): string {
 
   if (dateWithComma) {
     const [, , hh, mm] = dateWithComma;
-    return `${hh.padStart(2, "0")}.${mm}`;
+    return `${hh.padStart(2, "0")}:${mm}`;
   }
 
   return trimmed;
