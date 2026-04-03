@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Search, User, ArrowRight, RefreshCw } from "lucide-react";
 
+import FallbackImage from "@/components/FallbackImage";
 import { encodeEvent } from "@/utils/eventPayload";
 
 type ParticipantOption = {
@@ -105,6 +106,8 @@ export default function SelectParticipantPage() {
         if (data?.ok) {
           setEventName(data.event.name ?? "");
           setCoverUrl(data.event.coverUrl ?? "");
+          // setCoverUrl("");
+          // setCoverUrl("/not-existing-image.jpg");
           setDateTo(data.event.dateTo ?? "");
         }
       } finally {
@@ -203,8 +206,6 @@ export default function SelectParticipantPage() {
   const initialLoading = loadingFast || (!hasFastData && loadingSlow);
   const searchingSlow =
     !!query && hasFastData && !filtered.length && loadingSlow;
-  const showCover = Boolean(coverUrl) && !loadingEvent;
-
   const handleSubmit = async () => {
     if (!selectedParticipant || !eventId || isSubmitting) return;
 
@@ -234,15 +235,16 @@ export default function SelectParticipantPage() {
             </h2>
           </div>
           <div className="relative w-full max-w-[300px] aspect-video rounded-[22px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
-            {showCover || !loadingEvent ? (
-              <Image
-                src={coverUrl || "/ok-aphoto.png"}
-                alt={eventName || "Event cover"}
+            {!loadingEvent ? (
+              <FallbackImage
+                src={coverUrl}
+                alt={eventName || "Обкладинка події"}
                 fill
                 sizes="(max-width: 640px) 100vw, 300px"
                 className="object-cover"
                 priority
-                onError={() => setCoverUrl("")}
+                fallbackWidth={128}
+                fallbackHeight={128}
               />
             ) : (
               <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-400 text-sm">

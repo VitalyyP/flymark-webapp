@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   Copy,
   Eye,
@@ -15,6 +14,7 @@ import {
   LogOut,
   Check,
 } from "lucide-react";
+import FallbackImage from "@/components/FallbackImage";
 import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import {
   Competition,
@@ -550,7 +550,8 @@ export default function HomePage() {
                 .map((c) => {
                   const id = String(c.CompetitionId).trim();
                   const ui = findUi[id];
-                  const hasCover = Boolean(c.CoverPhoto) && !brokenCoverIds.has(id);
+                  const hasCover =
+                    Boolean(c.CoverPhoto) && !brokenCoverIds.has(id);
 
                   const isVisible = visibleEvents.has(id);
                   const isHiddenFromAdmin = hiddenEvents.has(id);
@@ -608,33 +609,16 @@ export default function HomePage() {
 
                       <div className="flex gap-4 mb-5">
                         <div className="relative w-20 h-20 rounded-[20px] overflow-hidden shadow-inner bg-zinc-100 shrink-0 border border-zinc-200">
-                          {c.CoverPhoto ? (
-                            <Image
-                              src={hasCover ? c.CoverPhoto : "/ok-aphoto.png"}
-                              alt={c.CompetitionName ?? ""}
-                              fill
-                              className="object-cover"
-                              sizes="78px"
-                              priority={true}
-                              onError={() =>
-                                setBrokenCoverIds((prev) => {
-                                  if (prev.has(id)) return prev;
-                                  const next = new Set(prev);
-                                  next.add(id);
-                                  return next;
-                                })
-                              }
-                            />
-                          ) : (
-                            <Image
-                              src="/ok-aphoto.png"
-                              alt={c.CompetitionName ?? "Placeholder cover"}
-                              fill
-                              className="object-cover"
-                              sizes="78px"
-                              priority={true}
-                            />
-                          )}
+                          <FallbackImage
+                            src={c.CoverPhoto}
+                            alt={c.CompetitionName ?? "Обкладинка події"}
+                            fill
+                            className="object-cover"
+                            sizes="78px"
+                            priority={true}
+                            fallbackWidth={128}
+                            fallbackHeight={128}
+                          />
                         </div>
                         <div className="flex flex-col flex-1 min-w-0 justify-center">
                           <h2 className="font-extrabold text-zinc-900 text-base md:text-xl leading-snug truncate">
@@ -668,9 +652,9 @@ export default function HomePage() {
                                 {findingId === id
                                   ? ui?.statusText
                                   : ui?.foundCount !== null &&
-                                    ui?.foundCount !== undefined
-                                  ? `Оновлено: ${ui.foundCount}`
-                                  : "Оновити Google"}
+                                      ui?.foundCount !== undefined
+                                    ? `Оновлено: ${ui.foundCount}`
+                                    : "Оновити Google"}
                               </span>
                             </button>
                           </div>

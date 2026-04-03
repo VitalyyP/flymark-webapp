@@ -11,6 +11,7 @@ import {
   Instagram,
 } from "lucide-react";
 
+import FallbackImage from "@/components/FallbackImage";
 import { formatUaDateFromISO } from "@/utils/formatUaDateFromISO";
 import type { Competition } from "@/utils/normalizeCompetition";
 
@@ -204,20 +205,14 @@ export default function HomePage() {
                     <div className="relative shrink-0 flex justify-center">
                       <div className="bg-white p-2 rounded-[30px] shadow-xl border border-zinc-100 transition-transform duration-500">
                         <div className="relative w-40 h-40 md:w-44 md:h-44 rounded-[22px] overflow-hidden bg-zinc-50">
-                          <Image
-                            src={hasCover ? c.CoverPhoto : "/ok-aphoto.png"}
-                            alt={c.CompetitionName}
+                          <FallbackImage
+                            src={c.CoverPhoto}
+                            alt={c.CompetitionName ?? "Обкладинка події"}
                             fill
                             sizes="(max-width: 768px) 160px, 176px"
                             className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                            onError={() =>
-                              setBrokenCoverIds((prev) => {
-                                if (prev.has(id)) return prev;
-                                const next = new Set(prev);
-                                next.add(id);
-                                return next;
-                              })
-                            }
+                            fallbackWidth={128}
+                            fallbackHeight={128}
                           />
                         </div>
                       </div>

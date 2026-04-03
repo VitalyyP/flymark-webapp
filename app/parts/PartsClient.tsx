@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import { Clock, Calendar, ChevronRight, Loader2, Camera } from "lucide-react";
 
+import FallbackImage from "@/components/FallbackImage";
 import { encodeEvent } from "@/utils/eventPayload";
 import { normalizeTimeUniversal } from "@/utils/normalizeTime";
 
@@ -89,6 +89,8 @@ export default function PartsClient() {
           setEventId(json.event.id);
           setEventName(json.event.name);
           setCoverUrl(json.event.coverUrl);
+          // setCoverUrl("");
+          // setCoverUrl("/not-existing-image.jpg");
           setDateTo(json.event.dateTo);
         } else {
           setEventId("");
@@ -188,30 +190,18 @@ export default function PartsClient() {
       <main className="w-full max-w-md flex flex-col gap-6">
         <div className="flex flex-col items-center gap-5 pt-4">
           <div className="relative">
-            {coverUrl ? (
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md">
-                <Image
-                  src={coverUrl}
-                  alt={eventName}
-                  width={128}
-                  height={128}
-                  className="object-cover w-full h-full"
-                  priority
-                  onError={() => setCoverUrl("")}
-                />
-              </div>
-            ) : (
-              <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-md flex items-center justify-center bg-green-100">
-                <Image
-                  src="/ok-aphoto.png"
-                  alt="A Фото"
-                  width={100}
-                  height={100}
-                  loading="eager"
-                  className="object-contain"
-                />
-              </div>
-            )}
+            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md bg-green-100">
+              <FallbackImage
+                src={coverUrl}
+                alt={eventName || "Обкладинка події"}
+                width={128}
+                height={128}
+                className="object-cover w-full h-full"
+                priority
+                fallbackWidth={100}
+                fallbackHeight={100}
+              />
+            </div>
             <div className="absolute -bottom-2 -right-2 bg-green-600 text-white p-2 rounded-full shadow-lg">
               <Camera size={20} />
             </div>
