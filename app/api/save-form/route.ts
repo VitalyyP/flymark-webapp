@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { saveRowsToSheet, RowData } from "@/utils/googleSheets";
 import { normalizeTimeUniversal } from "@/utils/normalizeTime";
+import { checkRateLimit } from "@/utils/rateLimit";
 
 type FormItem = {
   category: string;
@@ -36,6 +37,13 @@ export async function POST(req: Request) {
 
     if (!isRecord(body)) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
+    if (!checkRateLimit(ip, 3, 3600_000)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const eventId = toTrimmedString(
