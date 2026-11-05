@@ -681,8 +681,9 @@ export function ParticipantForm({
                       className="font-bold text-[#00a63e] hover:underline decoration-dashed underline-offset-4 cursor-pointer"
                     >
                       «Відправити замовлення»
-                    </button>{" "}
-                    ми опрацьовуємо дані та передаємо їх фотографу.
+                    </button>
+                    {" – "}
+                    дані одразу отримає фотограф.
                   </p>
                 </div>
 
@@ -693,9 +694,9 @@ export function ParticipantForm({
                     </div>
                   </div>
                   <p className="text-[14px] text-zinc-600 leading-relaxed">
-                    <b>Вибір фото:</b> протягом <strong>3–7 днів</strong> на
-                    вказаний вами номер у Viber/Telegram ми надішлемо зразки
-                    фото для вибору.
+                    <b>Вибір фото (без передплати):</b> протягом{" "}
+                    <strong>3–7 днів</strong> ми надішлемо зразки для вибору у
+                    Viber.
                   </p>
                 </div>
 
@@ -706,8 +707,9 @@ export function ParticipantForm({
                     </div>
                   </div>
                   <p className="text-[14px] text-zinc-600 leading-relaxed">
-                    <b>Отримання:</b> після оплати на карту ви отримаєте
-                    посилання на «хмару» з оригіналами фото у високій якості.
+                    <b>Отримання фото:</b> після оплати на картку ви отримаєте
+                    посилання на хмарне сховище з оригіналами світлин у високій
+                    якості.
                   </p>
                 </div>
 
@@ -718,16 +720,18 @@ export function ParticipantForm({
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex justify-between text-[14px]">
-                      <span className="font-bold text-zinc-800">1–3 фото</span>
-                      <span className="text-zinc-800">100 грн/шт</span>
+                      <span className="font-bold text-zinc-800">1–4 фото</span>
+                      <span className="text-zinc-800">100 грн/шт.</span>
                     </li>
                     <li className="flex justify-between text-[14px] border-t pt-2 border-zinc-100">
-                      <span className="font-bold text-zinc-800">4+ фото</span>
-                      <span className="text-zinc-800">90 грн/шт</span>
+                      <span className="font-bold text-zinc-800">5+ фото</span>
+                      <span className="text-zinc-800">90 грн/шт.</span>
                     </li>
                     <li className="flex justify-between text-[14px] border-t pt-2 border-zinc-100">
-                      <span className="font-bold text-zinc-800">Усі фото</span>
-                      <span className="text-zinc-800">700–1100 грн</span>
+                      <span className="font-bold text-zinc-800">
+                        Всі фото одного номеру участі
+                      </span>
+                      <span className="text-zinc-800">700 - 1200 грн</span>
                     </li>
                   </ul>
 
@@ -737,16 +741,22 @@ export function ParticipantForm({
                         *
                       </span>
 
-                      <p className="text-[13px] leading-relaxed text-zinc-600">
+                      <div className="text-[13px] leading-relaxed text-zinc-600">
                         <span className="text-[#00a63e] font-bold text-[11px] uppercase tracking-wider mr-1">
-                          Опція &quot;PREMIUM&quot;
+                          Опція «ПРЕМІУМ»
                         </span>
-                        – отримайте всі фото вже завтра!
-                        <span className="text-zinc-500 italic block mt-1 text-[12px]">
-                          (За особистою домовленістю з фотографом або асистентом
-                          у день турніру)
+                        <span className="font-bold text-zinc-800">
+                          (світлини вже завтра):
                         </span>
-                      </p>
+                        <ul className="list-disc text-zinc-500 mt-1">
+                          <li>отримайте всі фото наступного дня після події</li>
+                          <li>
+                            зйомка узгоджується особисто з фотографом або
+                            асистентом після відправки замовлення
+                          </li>
+                          <li>100% передплата в день події</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
