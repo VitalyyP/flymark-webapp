@@ -232,6 +232,7 @@ export default function SelectParticipantPage() {
               {loadingEvent ? "Завантаження..." : eventName || `ID: ${eventId}`}
             </h2>
           </div>
+
           <div className="relative w-full max-w-[300px] aspect-video rounded-[22px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white bg-white shrink-0">
             {!loadingEvent ? (
               <FallbackImage
@@ -250,6 +251,80 @@ export default function SelectParticipantPage() {
               </div>
             )}
           </div>
+
+          <section className="w-full text-left">
+            <h3 className="font-black text-center text-xl md:text-2xl text-zinc-600 mb-4 md:mb-5">
+              ЩО, як?
+            </h3>
+
+            <div className="flex flex-col gap-4 md:gap-5">
+              <div className="flex gap-3 md:gap-4">
+                <div className="w-6 h-6 shrink-0 rounded-full bg-green-100 text-[#00a63e] flex items-center justify-center text-xs font-bold">
+                  1
+                </div>
+                <p className="text-[14px] text-zinc-600 leading-relaxed">
+                  <b>Заявка:</b> заповніть форму та натисніть «Відправити
+                  замовлення».
+                </p>
+              </div>
+
+              <div className="flex gap-3 md:gap-4">
+                <div className="w-6 h-6 shrink-0 rounded-full bg-green-100 text-[#00a63e] flex items-center justify-center text-xs font-bold">
+                  2
+                </div>
+                <p className="text-[14px] text-zinc-600 leading-relaxed">
+                  <b>Вибір (без передплати):</b> протягом 3–7 днів надішлемо
+                  зразки у Viber.
+                </p>
+              </div>
+
+              <div className="flex gap-3 md:gap-4">
+                <div className="w-6 h-6 shrink-0 rounded-full bg-green-100 text-[#00a63e] flex items-center justify-center text-xs font-bold">
+                  3
+                </div>
+                <p className="text-[14px] text-zinc-600 leading-relaxed">
+                  <b>Отримання:</b> після оплати на картку надаємо посилання на
+                  «хмару» з оригіналами.
+                </p>
+              </div>
+
+              <div className="mt-2 p-5 rounded-3xl bg-white border border-zinc-100 shadow-sm">
+                <h4 className="text-[13px] font-bold text-zinc-800 uppercase tracking-wide mb-3 flex items-center gap-2 justify-center">
+                  <span>💰</span>
+                  Вартість
+                </h4>
+                <ul className="space-y-2">
+                  <li className="flex justify-between text-[14px]">
+                    <span className="font-bold text-zinc-800">1–4 фото</span>
+                    <span className="text-zinc-800">100 грн/шт.</span>
+                  </li>
+                  <li className="flex justify-between text-[14px] border-t pt-2 border-zinc-100">
+                    <span className="font-bold text-zinc-800">від 5 фото</span>
+                    <span className="text-zinc-800">90 грн/шт.</span>
+                  </li>
+                  <li className="flex justify-between text-[14px] border-t pt-2 border-zinc-100">
+                    <span className="font-bold text-zinc-800">Всі фото</span>
+                    <span className="text-zinc-800">700 - 1200 грн</span>
+                  </li>
+                </ul>
+
+                <div className="mt-4 pt-4 border-t border-dashed border-zinc-200">
+                  <div className="flex gap-2">
+                    <span className="text-[#00a63e] font-bold text-lg leading-none">
+                      ⚡
+                    </span>
+                    <p className="text-[12px] sm:text-[13px] leading-relaxed text-zinc-600">
+                      <span className="text-[#00a63e] font-bold text-[11px] uppercase tracking-wider">
+                        Опція &quot;Преміум&quot;
+                      </span>{" "}
+                      (фото вже завтра): узгодьте з фотографом/асистентом після
+                      замовлення. Оплата – 100% у день події.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div className="w-full flex flex-col gap-8">
@@ -257,7 +332,7 @@ export default function SelectParticipantPage() {
             <h1 className="font-century text-[28px] md:text-[32px] font-bold text-zinc-900 tracking-tight">
               Запис на фото
             </h1>
-            <p className="text-zinc-500 font-medium text-[15px]">
+            <p className="text-zinc-500 font-medium text-[18px]">
               Введіть прізвище/імʼя спортсмена
             </p>
           </div>
